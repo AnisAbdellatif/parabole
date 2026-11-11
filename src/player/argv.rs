@@ -1,5 +1,5 @@
 use crate::model::PlayRequest;
-use crate::player::PlayerSettings;
+use crate::player::{PlayerSettings, live};
 use anyhow::{Result, bail};
 use std::ffi::OsString;
 use std::path::Path;
@@ -23,6 +23,17 @@ pub fn mpv(settings: &PlayerSettings, req: &PlayRequest, ipc: &Path) -> Vec<OsSt
     }
     if let Some(o) = &h.origin {
         args.push(format!("--http-header-fields={}", origin_header(o)).into());
+    }
+    for (k, v) in live::file_options(settings, req.media) {
+        args.push(format!("--{k}={v}").into());
+    }
+    if let Some(s) = req.start_s {
+        args.push(format!("--start={s}").into());
+    }
+    if let Some(script) = live::script_path(settings) {
+        let mut arg = OsString::from("--script=");
+        arg.push(script);
+        args.push(arg);
     }
     let mut ipc_arg = OsString::from("--input-ipc-server=");
     ipc_arg.push(ipc);
@@ -97,13 +108,14 @@ fn substitute(token: &str, req: &PlayRequest) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Headers;
+    use crate::model::{Headers, MediaKind};
 
     fn req(title: &str) -> PlayRequest {
         PlayRequest {
             url: "http://h/s.ts".into(),
             title: title.into(),
             headers: Headers::default(),
+            ..Default::default()
         }
     }
 
@@ -116,6 +128,7 @@ mod tests {
     #[test]
     fn mpv_full_argv() {
         let mut r = req("News");
+        r.media = MediaKind::Movie;
         r.headers = Headers {
             user_agent: Some("UA".into()),
             referrer: Some("http://ref".into()),
@@ -139,6 +152,22 @@ mod tests {
                 "http://h/s.ts"
             ]
         );
+    }
+
+    #[test]
+    fn mpv_live_adds_low_latency_vod_does_not() {
+        let s = PlayerSettings::default();
+        let live = strs(mpv(&s, &req("L"), Path::new("/s")));
+        assert!(live.contains(&"--cache-pause=no".to_string()));
+        assert!(
+            live.contains(&"--demuxer-lavf-o-add=fflags=+nobuffer,live_start_index=-1".to_string())
+        );
+        let mut vod = req("V");
+        vod.media = MediaKind::Movie;
+        vod.start_s = Some(12.5);
+        let vod = strs(mpv(&s, &vod, Path::new("/s")));
+        assert!(!vod.contains(&"--cache-pause=no".to_string()));
+        assert!(vod.contains(&"--start=12.5".to_string()));
     }
 
     #[test]

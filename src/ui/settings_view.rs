@@ -5,6 +5,11 @@ use std::path::PathBuf;
 
 pub struct SettingsDialog {
     default: PlayerKind,
+    live: Option<PlayerKind>,
+    movie: Option<PlayerKind>,
+    episode: Option<PlayerKind>,
+    low_latency: bool,
+    catchup: bool,
     mpv_path: String,
     vlc_path: String,
     template: String,
@@ -21,6 +26,25 @@ fn path_text(p: &Option<PathBuf>) -> String {
 fn opt_path(s: &str) -> Option<PathBuf> {
     let s = s.trim();
     (!s.is_empty()).then(|| PathBuf::from(s))
+}
+
+fn kind_label(k: &Option<PlayerKind>) -> String {
+    k.as_ref()
+        .map_or("Default".to_string(), |k| format!("{k:?}"))
+}
+
+fn kind_row(ui: &mut egui::Ui, label: &str, value: &mut Option<PlayerKind>) {
+    ui.label(label);
+    egui::ComboBox::from_id_salt(label)
+        .selected_text(kind_label(value))
+        .show_ui(ui, |ui| {
+            ui.selectable_value(value, None, "Default");
+            for k in PlayerKind::selectable() {
+                let label = format!("{k:?}");
+                ui.selectable_value(value, Some(k), label);
+            }
+        });
+    ui.end_row();
 }
 
 fn detect_text() -> String {
@@ -40,6 +64,11 @@ impl App {
         let s = &self.player_settings;
         self.settings_dialog = Some(SettingsDialog {
             default: s.default.clone(),
+            live: s.live_player.clone(),
+            movie: s.movie_player.clone(),
+            episode: s.episode_player.clone(),
+            low_latency: s.live_low_latency,
+            catchup: s.live_catchup,
             mpv_path: path_text(&s.mpv_path),
             vlc_path: path_text(&s.vlc_path),
             template: s.custom_template.clone(),
@@ -63,11 +92,20 @@ impl App {
                     egui::ComboBox::from_id_salt("default_player")
                         .selected_text(format!("{:?}", d.default))
                         .show_ui(ui, |ui| {
-                            for k in [PlayerKind::Mpv, PlayerKind::Vlc, PlayerKind::Custom] {
+                            for k in PlayerKind::selectable() {
                                 let label = format!("{k:?}");
                                 ui.selectable_value(&mut d.default, k, label);
                             }
                         });
+                    ui.end_row();
+                    kind_row(ui, "Live player", &mut d.live);
+                    kind_row(ui, "Movie player", &mut d.movie);
+                    kind_row(ui, "Episode player", &mut d.episode);
+                    ui.label("Live latency");
+                    ui.checkbox(&mut d.low_latency, "Low-latency buffering");
+                    ui.end_row();
+                    ui.label("");
+                    ui.checkbox(&mut d.catchup, "Catch up to the live edge");
                     ui.end_row();
                     ui.label("mpv path");
                     ui.text_edit_singleline(&mut d.mpv_path);
@@ -108,6 +146,11 @@ impl App {
         let mpv_args = shlex::split(&d.mpv_args).ok_or("Unbalanced quotes in mpv args")?;
         let s = PlayerSettings {
             default: d.default.clone(),
+            live_player: d.live.clone(),
+            movie_player: d.movie.clone(),
+            episode_player: d.episode.clone(),
+            live_low_latency: d.low_latency,
+            live_catchup: d.catchup,
             mpv_path: opt_path(&d.mpv_path),
             vlc_path: opt_path(&d.vlc_path),
             custom_template: d.template.trim().to_string(),

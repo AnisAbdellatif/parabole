@@ -1,7 +1,8 @@
 use super::App;
+use super::player::PlayerUi;
 use super::state::Persisted;
 use crate::db::Db;
-use crate::player::PlayerKind;
+use crate::player::{PlayerKind, live};
 use crate::worker::{self, player_settings};
 use anyhow::{Context, Result};
 use directories::ProjectDirs;
@@ -13,6 +14,12 @@ fn db_path() -> Result<PathBuf> {
         ProjectDirs::from("dev", "iptv-player", "IPTV Player").context("no home directory")?;
     std::fs::create_dir_all(dirs.data_dir()).context("create data dir")?;
     Ok(dirs.data_dir().join("iptv.db"))
+}
+
+fn install_mpv_script(db: &std::path::Path) {
+    if let Some(dir) = db.parent() {
+        let _ = live::install_script(dir);
+    }
 }
 
 pub fn run() -> eframe::Result {
@@ -34,6 +41,7 @@ pub fn run() -> eframe::Result {
 impl App {
     fn new(cc: &eframe::CreationContext<'_>) -> Result<Self> {
         let path = db_path()?;
+        install_mpv_script(&path);
         let db = Db::open(&path).context("open database")?;
         let ctx = cc.egui_ctx.clone();
         let worker = worker::spawn(path, Arc::new(move || ctx.request_repaint()))?;
@@ -59,6 +67,7 @@ impl App {
             series: None,
             refreshing: Default::default(),
             playing: None::<(String, PlayerKind)>,
+            player_ui: PlayerUi::new(cc, &player_settings),
             player_settings,
             toasts: Vec::new(),
             sources_dialog: None,

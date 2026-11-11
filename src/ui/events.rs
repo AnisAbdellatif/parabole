@@ -21,8 +21,16 @@ impl App {
                     key,
                     result,
                 } => self.series_loaded(source, &key, result),
-                Event::Playing { title, kind } => self.playing = Some((title, kind)),
-                Event::PlayerStopped => self.playing = None,
+                Event::Playing { title, kind, media } => {
+                    self.external_started(ctx, media);
+                    self.playing = Some((title, kind));
+                }
+                Event::PlayEmbedded(play) => self.on_embed_play(*play),
+                Event::PlayerStopped => {
+                    if !self.embedded_active() {
+                        self.playing = None;
+                    }
+                }
                 Event::PlayFailed(msg) => self.toast(msg),
                 Event::UrlReady(url) => {
                     ctx.copy_text(url);

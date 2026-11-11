@@ -8,6 +8,7 @@ mod import;
 mod migrate;
 mod overlay;
 mod profiles;
+mod resume;
 mod search;
 mod settings;
 mod sources;

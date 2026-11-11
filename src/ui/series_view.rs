@@ -77,6 +77,7 @@ impl App {
         }
         if let Some((source, episode, title)) = play {
             self.worker.send(Command::PlayEpisode {
+                profile: self.profile(),
                 source,
                 episode,
                 title,

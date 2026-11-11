@@ -7,6 +7,7 @@ const TOAST_TTL: Duration = Duration::from_secs(8);
 
 fn kind_name(kind: &PlayerKind) -> &'static str {
     match kind {
+        PlayerKind::Embedded => "the built-in player",
         PlayerKind::Mpv => "mpv",
         PlayerKind::Vlc => "VLC",
         PlayerKind::Custom => "custom player",
@@ -15,13 +16,22 @@ fn kind_name(kind: &PlayerKind) -> &'static str {
 
 impl App {
     pub(super) fn status_bar(&mut self, ui: &mut egui::Ui) {
+        let ctx = ui.ctx().clone();
         egui::Panel::bottom("status").show(ui, |ui| {
             ui.horizontal(|ui| match &self.playing {
                 Some((title, kind)) => {
                     ui.label(format!("Playing: {title} in {}", kind_name(kind)));
                     if ui.button("■ Stop").clicked() {
-                        self.worker.send(Command::StopPlayer);
+                        if *kind == PlayerKind::Embedded {
+                            self.stop_embedded(&ctx);
+                        } else {
+                            self.worker.send(Command::StopPlayer);
+                        }
                         self.playing = None;
+                    }
+                    if self.live_playing() && ui.button("Go live").on_hover_text("Ctrl+L").clicked()
+                    {
+                        self.go_live();
                     }
                 }
                 None => {

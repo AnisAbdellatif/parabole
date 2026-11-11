@@ -6,6 +6,7 @@ use std::path::{Path, PathBuf};
 /// Locate a player binary: settings override, PATH, then platform default locations.
 pub fn find_binary(kind: &PlayerKind, settings: &PlayerSettings) -> Option<PathBuf> {
     match kind {
+        PlayerKind::Embedded => None,
         PlayerKind::Mpv => locate(settings.mpv_path.as_deref(), "mpv", mpv_defaults()),
         PlayerKind::Vlc => locate(settings.vlc_path.as_deref(), "vlc", vlc_defaults()),
         PlayerKind::Custom => {
