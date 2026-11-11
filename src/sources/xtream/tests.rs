@@ -205,6 +205,7 @@ fn source(url: &str, user: &str, pass: &str) -> Source {
         username: Some(user.into()),
         password: Some(pass.into()),
         user_agent: None,
+        mirrors: Vec::new(),
         output_format: None,
         last_refresh: None,
         last_error: None,

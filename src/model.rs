@@ -58,6 +58,8 @@ pub struct Source {
     pub name: String,
     pub kind: SourceKind,
     pub url: String,
+    /// Extra Xtream base URLs of the same provider, tried when `url` fails.
+    pub mirrors: Vec<String>,
     pub username: Option<String>,
     pub password: Option<String>,
     pub user_agent: Option<String>,

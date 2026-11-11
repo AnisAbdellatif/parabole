@@ -3,7 +3,7 @@ use crate::model::*;
 use anyhow::{Context, Result, anyhow};
 
 const COLS: &str = "s.id, s.name, s.kind, s.url, s.username, s.password, s.user_agent, \
-                    s.output_format, s.last_refresh, s.last_error";
+                    s.output_format, s.last_refresh, s.last_error, s.mirrors";
 
 fn row_to_source(r: &rusqlite::Row) -> rusqlite::Result<Source> {
     let kind: String = r.get(2)?;
@@ -22,7 +22,15 @@ fn row_to_source(r: &rusqlite::Row) -> rusqlite::Result<Source> {
         output_format: r.get(7)?,
         last_refresh: r.get(8)?,
         last_error: r.get(9)?,
+        mirrors: r
+            .get::<_, Option<String>>(10)?
+            .map(|m| m.lines().map(str::to_string).collect())
+            .unwrap_or_default(),
     })
+}
+
+fn join_mirrors(mirrors: &[String]) -> Option<String> {
+    (!mirrors.is_empty()).then(|| mirrors.join("\n"))
 }
 
 impl Db {
@@ -30,8 +38,8 @@ impl Db {
     pub fn add_source(&self, profile: ProfileId, src: &NewSource) -> Result<SourceId> {
         let tx = self.conn.unchecked_transaction()?;
         tx.execute(
-            "INSERT INTO sources(name, kind, url, username, password, user_agent, output_format)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)",
+            "INSERT INTO sources(name, kind, url, username, password, user_agent, output_format, mirrors)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
             (
                 &src.name,
                 src.kind.as_str(),
@@ -40,6 +48,7 @@ impl Db {
                 &src.password,
                 &src.user_agent,
                 &src.output_format,
+                join_mirrors(&src.mirrors),
             ),
         )
         .context("insert source")?;
@@ -53,7 +62,7 @@ impl Db {
         self.conn
             .execute(
                 "UPDATE sources SET name=?2, kind=?3, url=?4, username=?5, password=?6,
-                 user_agent=?7, output_format=?8 WHERE id=?1",
+                 user_agent=?7, output_format=?8, mirrors=?9 WHERE id=?1",
                 (
                     src.id,
                     &src.name,
@@ -63,6 +72,7 @@ impl Db {
                     &src.password,
                     &src.user_agent,
                     &src.output_format,
+                    join_mirrors(&src.mirrors),
                 ),
             )
             .context("update source")?;

@@ -1,6 +1,7 @@
 mod client;
 mod convert;
 mod de;
+mod failover;
 mod series;
 #[cfg(test)]
 mod tests;
@@ -19,6 +20,10 @@ fn credentials(source: &Source) -> Result<(&str, &str)> {
 
 /// Fetches account info, categories and all streams, strictly one request at a time.
 pub fn fetch(source: &Source) -> Result<ParsedPlaylist> {
+    failover::run(source, fetch_one)
+}
+
+fn fetch_one(source: &Source) -> Result<ParsedPlaylist> {
     let client = Client::new(source)?;
     let account = client.call(None, &[])?;
     convert::check_account(&account)?;
@@ -43,6 +48,10 @@ pub fn fetch(source: &Source) -> Result<ParsedPlaylist> {
 }
 
 pub fn fetch_series(source: &Source, series_key: &str) -> Result<Vec<Season>> {
+    failover::run(source, |s| fetch_series_one(s, series_key))
+}
+
+fn fetch_series_one(source: &Source, series_key: &str) -> Result<Vec<Season>> {
     let info = Client::new(source)?
         .call(Some("get_series_info"), &[("series_id", series_key)])
         .context("load series info")?;
