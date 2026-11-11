@@ -18,7 +18,7 @@ use crate::model::{
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
 use anyhow::{Context, Result};
-use std::collections::VecDeque;
+use std::collections::{HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
@@ -135,6 +135,7 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
         repaint,
         was_playing: false,
         auto_queue: VecDeque::new(),
+        in_flight: HashSet::new(),
     };
     thread::Builder::new()
         .name("worker".into())
@@ -151,6 +152,7 @@ struct Worker {
     repaint: Repaint,
     was_playing: bool,
     auto_queue: VecDeque<SourceId>,
+    in_flight: HashSet<SourceId>,
 }
 
 impl Worker {
@@ -247,6 +249,10 @@ impl Worker {
 
     fn start_refresh(&mut self, id: SourceId) -> Result<()> {
         let source = self.db.source(id)?;
+        // a running refresh will emit RefreshDone for this request too
+        if !self.in_flight.insert(id) {
+            return Ok(());
+        }
         self.emit(Event::RefreshStarted(id));
         let tx = self.cmd_tx.clone();
         let repaint = self.repaint.clone();
@@ -259,6 +265,7 @@ impl Worker {
     }
 
     fn apply_fetched(&mut self, id: SourceId, res: Result<ParsedPlaylist, String>) -> Result<()> {
+        self.in_flight.remove(&id);
         let outcome = match res {
             Ok(data) => self
                 .db

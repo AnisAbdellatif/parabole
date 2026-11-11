@@ -23,7 +23,7 @@ pub fn fetch(source: &Source) -> Result<ParsedPlaylist> {
         SourceKind::Xtream => return xtream::fetch(source),
         SourceKind::M3uUrl => {
             let client = http::client(source.user_agent.as_deref())?;
-            let resp = http::get(&client, &source.url)?;
+            let resp = http::get(&client, &source.url, source.user_agent.as_deref())?;
             m3u::parse_detect(BufReader::new(http::SafeRead(resp)))?
         }
         SourceKind::M3uFile => {

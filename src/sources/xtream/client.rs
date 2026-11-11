@@ -8,6 +8,7 @@ use url::Url;
 
 pub struct Client {
     http: Http,
+    user_agent: Option<String>,
     endpoint: String,
     username: String,
     password: String,
@@ -17,6 +18,7 @@ impl Client {
     pub fn new(source: &Source) -> Result<Self> {
         let (username, password) = credentials(source)?;
         Ok(Self {
+            user_agent: source.user_agent.clone(),
             http: http::client(source.user_agent.as_deref())?,
             endpoint: format!("{}/player_api.php", source.url.trim_end_matches('/')),
             username: username.to_string(),
@@ -35,7 +37,7 @@ impl Client {
             }
             q.extend_pairs(extra);
         }
-        let body = http::get(&self.http, url.as_str())?
+        let body = http::get(&self.http, url.as_str(), self.user_agent.as_deref())?
             .bytes()
             .map_err(reqwest::Error::without_url)
             .context("read response")?;

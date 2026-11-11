@@ -132,3 +132,37 @@ fn play_failure_is_reported_not_fatal() {
     h.send(Command::Quit);
     let _ = std::fs::remove_file(path);
 }
+
+#[test]
+fn second_refresh_of_same_source_is_skipped_until_done() {
+    let db = Db::open_in_memory().unwrap();
+    let profile = db.ensure_default_profile().unwrap();
+    let fixture = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/sources/messy.m3u"
+    );
+    let id = db.add_source(profile, &m3u_source(fixture)).unwrap();
+    let (cmd_tx, _cmd_rx) = channel();
+    let (ev_tx, ev_rx) = channel();
+    let mut w = Worker {
+        db,
+        player: ExternalPlayer::default(),
+        cmd_tx,
+        ev_tx,
+        repaint: Arc::new(|| {}),
+        was_playing: false,
+        auto_queue: VecDeque::new(),
+        in_flight: HashSet::new(),
+    };
+    w.start_refresh(id).unwrap();
+    w.start_refresh(id).unwrap();
+    let started = |rx: &Receiver<Event>| {
+        rx.try_iter()
+            .filter(|e| matches!(e, Event::RefreshStarted(_)))
+            .count()
+    };
+    assert_eq!(started(&ev_rx), 1);
+    w.apply_fetched(id, Ok(ParsedPlaylist::default())).unwrap();
+    w.start_refresh(id).unwrap();
+    assert_eq!(started(&ev_rx), 1);
+}
