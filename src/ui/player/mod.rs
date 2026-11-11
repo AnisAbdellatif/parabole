@@ -1,11 +1,13 @@
 //! Embedded player UI: pane/fullscreen view, overlay controls, retry and resume handling.
 
 mod controls;
+mod dock;
 mod fullscreen;
 mod keys;
 mod pane;
 mod session;
 mod video;
+mod widgets;
 
 use super::App;
 use crate::model::MediaKind;

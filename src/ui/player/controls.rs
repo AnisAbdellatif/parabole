@@ -1,14 +1,17 @@
 use super::session::Session;
+use super::widgets::{bar, icon_button, track_menu};
 use crate::player::embed::EmbeddedPlayer;
 use crate::player::{PlayerSettings, TrackKind};
-use egui::{Align, Color32, Layout, Rect, Slider, pos2};
+use crate::ui::theme::{self, Icon};
+use egui::{Align, Color32, Layout, Rect, pos2};
 
-const BAR_HEIGHT: f32 = 40.0;
+const BAR_HEIGHT: f32 = 48.0;
 
 #[derive(Default)]
 pub struct Actions {
     pub toggle_fullscreen: bool,
     pub close: bool,
+    pub toggle_dock: bool,
 }
 
 pub fn fmt_time(seconds: f64) -> String {
@@ -19,7 +22,7 @@ pub fn fmt_time(seconds: f64) -> String {
     }
 }
 
-/// Overlay bar at the bottom of `rect`; `alpha` 0 hides it.
+/// Fullscreen overlay bar at the bottom of `rect`; `alpha` 0 hides it.
 pub fn show(
     ui: &mut egui::Ui,
     rect: Rect,
@@ -32,94 +35,73 @@ pub fn show(
     if alpha < 0.02 {
         return acts;
     }
-    let bar = Rect::from_min_max(pos2(rect.left(), rect.bottom() - BAR_HEIGHT), rect.max);
-    ui.painter()
-        .rect_filled(bar, 0.0, Color32::from_black_alpha((170.0 * alpha) as u8));
+    let bar_rect = Rect::from_min_max(pos2(rect.left(), rect.bottom() - BAR_HEIGHT), rect.max);
+    ui.painter().rect_filled(
+        bar_rect,
+        0.0,
+        Color32::from_black_alpha((190.0 * alpha) as u8),
+    );
     let st = player.state().clone();
     ui.scope_builder(
-        egui::UiBuilder::new().max_rect(bar.shrink2(egui::vec2(8.0, 4.0))),
+        egui::UiBuilder::new().max_rect(bar_rect.shrink2(egui::vec2(12.0, 4.0))),
         |ui| {
             ui.set_opacity(alpha);
             ui.horizontal_centered(|ui| {
-                if ui.button(if st.paused { "▶" } else { "⏸" }).clicked() {
+                ui.spacing_mut().item_spacing.x = 4.0;
+                let (play, tip) = if st.paused {
+                    (Icon::Play, "Play")
+                } else {
+                    (Icon::Pause, "Pause")
+                };
+                if icon_button(ui, play, tip, false).clicked() {
                     player.set_paused(!st.paused);
                 }
-                if ui.button("■").on_hover_text("Stop").clicked() {
+                if icon_button(ui, Icon::Stop, "Stop", false).clicked() {
                     acts.close = true;
                 }
-                if ui.button(if st.muted { "🔇" } else { "🔊" }).clicked() {
+                let (vol, tip) = if st.muted {
+                    (Icon::VolumeOff, "Unmute")
+                } else {
+                    (Icon::Volume, "Mute")
+                };
+                if icon_button(ui, vol, tip, false).clicked() {
                     player.set_muted(!st.muted);
                 }
-                let mut volume = st.volume;
-                ui.spacing_mut().slider_width = 70.0;
-                if ui
-                    .add(Slider::new(&mut volume, 0.0..=130.0).show_value(false))
-                    .changed()
-                {
-                    player.set_volume(volume);
+                if let Some(f) = bar(ui, 80.0, (st.volume / 130.0) as f32) {
+                    player.set_volume(f64::from(f) * 130.0);
                 }
                 if let (false, Some(pos), Some(dur)) = (session.is_live(), st.time_pos, st.duration)
                 {
-                    ui.label(fmt_time(pos));
-                    let mut at = pos;
-                    ui.spacing_mut().slider_width = (rect.width() - 520.0).max(60.0);
-                    if ui
-                        .add(Slider::new(&mut at, 0.0..=dur.max(1.0)).show_value(false))
-                        .changed()
-                    {
-                        player.seek_to(at);
+                    let time = |t| {
+                        egui::RichText::new(fmt_time(t))
+                            .font(theme::regular(12.0))
+                            .color(theme::TEXT_MUTED)
+                    };
+                    ui.label(time(pos));
+                    if let Some(f) = bar(ui, rect.width() - 520.0, (pos / dur.max(1.0)) as f32) {
+                        player.seek_to(f64::from(f) * dur);
                     }
-                    ui.label(fmt_time(dur));
+                    ui.label(time(dur));
                 }
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.button("Fullscreen").clicked() {
+                    ui.spacing_mut().item_spacing.x = 4.0;
+                    if icon_button(ui, Icon::FullscreenExit, "Exit fullscreen (Esc)", false)
+                        .clicked()
+                    {
                         acts.toggle_fullscreen = true;
                     }
-                    if session.is_live() && ui.button("Go live").on_hover_text("Ctrl+L").clicked() {
+                    if session.is_live()
+                        && icon_button(ui, Icon::Live, "Go live (Ctrl+L)", false).clicked()
+                    {
                         let _ = player.reload(settings);
                     }
-                    track_menu(ui, player, "Subs", TrackKind::Sub, true);
-                    track_menu(ui, player, "Audio", TrackKind::Audio, false);
+                    track_menu(ui, player, Icon::Subtitles, "Subtitles", TrackKind::Sub);
+                    track_menu(ui, player, Icon::Audio, "Audio track", TrackKind::Audio);
                 });
             });
         },
     );
     acts
-}
-
-fn track_menu(
-    ui: &mut egui::Ui,
-    player: &mut EmbeddedPlayer,
-    label: &str,
-    kind: TrackKind,
-    off: bool,
-) {
-    let tracks: Vec<_> = player
-        .state()
-        .tracks
-        .iter()
-        .filter(|t| t.kind == kind)
-        .cloned()
-        .collect();
-    if tracks.is_empty() {
-        return;
-    }
-    ui.menu_button(format!("{label} ▾"), |ui| {
-        if off
-            && ui
-                .selectable_label(!tracks.iter().any(|t| t.selected), "Off")
-                .clicked()
-        {
-            player.select_track(kind, None);
-            ui.close();
-        }
-        for t in &tracks {
-            if ui.selectable_label(t.selected, t.label()).clicked() {
-                player.select_track(kind, Some(t.id));
-                ui.close();
-            }
-        }
-    });
 }
 
 #[cfg(test)]

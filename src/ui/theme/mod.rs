@@ -71,3 +71,5 @@ pub fn install(ctx: &egui::Context) {
     fonts::install(ctx);
     style::install(ctx);
 }
+
+pub const VIDEO_IDLE: Color32 = hex(0x131a23);
