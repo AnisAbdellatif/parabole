@@ -1,4 +1,5 @@
 use super::App;
+use super::theme::{primary_button, secondary_button};
 use crate::model::ProfileId;
 
 #[derive(Default)]
@@ -45,10 +46,10 @@ impl App {
                     ui.horizontal(|ui| match &mut d.renaming {
                         Some((id, text)) if *id == p.id => {
                             ui.text_edit_singleline(text);
-                            if ui.button("Save").clicked() {
+                            if primary_button(ui, "Save").clicked() {
                                 op = Some(Op::Rename(p.id, text.clone()));
                             }
-                            if ui.button("Cancel").clicked() {
+                            if secondary_button(ui, "Cancel").clicked() {
                                 d.renaming = None;
                             }
                         }
@@ -64,7 +65,7 @@ impl App {
                                 if ui.button("Really delete").clicked() {
                                     op = Some(Op::Delete(p.id));
                                 }
-                                if ui.button("Cancel").clicked() {
+                                if secondary_button(ui, "Cancel").clicked() {
                                     d.confirm_delete = None;
                                 }
                             } else if can_delete && ui.button("Delete").clicked() {
@@ -77,7 +78,10 @@ impl App {
                 ui.horizontal(|ui| {
                     ui.text_edit_singleline(&mut d.new_name);
                     if ui
-                        .add_enabled(!d.new_name.trim().is_empty(), egui::Button::new("Create"))
+                        .add_enabled_ui(!d.new_name.trim().is_empty(), |ui| {
+                            primary_button(ui, "Create")
+                        })
+                        .inner
                         .clicked()
                     {
                         op = Some(Op::Create(d.new_name.trim().to_string()));

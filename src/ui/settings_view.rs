@@ -1,4 +1,5 @@
 use super::App;
+use super::theme::{primary_button, secondary_button};
 use crate::player::{PlayerKind, PlayerSettings, find_binary};
 use crate::worker::player_settings;
 use std::path::PathBuf;
@@ -122,14 +123,14 @@ impl App {
                     ui.end_row();
                 });
                 ui.horizontal(|ui| {
-                    if ui.button("Detect").clicked() {
+                    if secondary_button(ui, "Detect").clicked() {
                         d.detected = Some(detect_text());
                     }
                     if let Some(t) = &d.detected {
                         ui.weak(t);
                     }
                 });
-                save = ui.button("Save").clicked();
+                save = primary_button(ui, "Save").clicked();
             });
         if save {
             match self.save_player_settings(&d) {

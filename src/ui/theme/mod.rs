@@ -4,9 +4,11 @@
 mod fonts;
 mod icons;
 mod style;
+mod widgets;
 
 pub use fonts::{medium, regular, semibold};
 pub use icons::{Icon, icon};
+pub use widgets::{icon_button, primary_button, secondary_button};
 
 use egui::Color32;
 

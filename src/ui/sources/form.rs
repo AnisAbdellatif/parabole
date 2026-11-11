@@ -1,6 +1,7 @@
 use super::SourcesDialog;
 use crate::model::{Source, SourceInput, SourceKind};
 use crate::sources::detect::detect;
+use crate::ui::theme::{primary_button, secondary_button};
 use crate::worker::Command;
 
 impl SourcesDialog {
@@ -169,7 +170,7 @@ pub(super) fn source_form(
     let mut error = None;
     ui.horizontal(|ui| {
         let label = if d.editing.is_some() { "Save" } else { "Add" };
-        if ui.button(label).clicked() {
+        if primary_button(ui, label).clicked() {
             match d.build() {
                 Ok(src) if d.editing.is_some() => {
                     cmds.push(Command::UpdateSource(src));
@@ -183,7 +184,7 @@ pub(super) fn source_form(
                 Err(e) => error = Some(e),
             }
         }
-        if d.editing.is_some() && ui.button("Cancel edit").clicked() {
+        if d.editing.is_some() && secondary_button(ui, "Cancel edit").clicked() {
             d.reset_form();
         }
         if ui

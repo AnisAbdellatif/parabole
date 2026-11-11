@@ -14,6 +14,7 @@ mod sidebar;
 mod sort;
 mod sources;
 mod state;
+mod statusbar;
 mod stream_list;
 mod stream_row;
 mod theme;
