@@ -98,12 +98,15 @@ pub fn show(
         if icon_button(ui, vol, tip, false).clicked() {
             player.set_muted(!st.muted);
         }
-        let w = ui.available_width() - 3.0 * (BTN + 4.0) - 4.0;
+        let w = ui.available_width() - 4.0 * (BTN + 4.0) - 4.0;
         if let Some(f) = bar(ui, w, (st.volume / 130.0) as f32) {
             player.set_volume(f64::from(f) * 130.0);
         }
         if icon_button(ui, Icon::Fullscreen, "Fullscreen (F)", false).clicked() {
             acts.toggle_fullscreen = true;
+        }
+        if icon_button(ui, Icon::Mini, "Mini player (P)", false).clicked() {
+            acts.toggle_mini = true;
         }
         let (dock, tip) = if bottom {
             (Icon::DockRight, "Dock to the right")

@@ -58,6 +58,15 @@ impl EmbeddedPlayer {
         self.last = None;
     }
 
+    /// Best-effort: applies user mpv args to the running player; init-only options are rejected and ignored.
+    pub fn apply_mpv_args(&self, args: &[String]) {
+        for arg in args {
+            if let Some((k, v)) = super::split_mpv_arg(arg) {
+                let _ = self.mpv.set_property(k, v);
+            }
+        }
+    }
+
     pub fn is_loaded(&self) -> bool {
         self.last.is_some()
     }

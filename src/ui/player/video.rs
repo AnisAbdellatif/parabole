@@ -1,5 +1,6 @@
 use super::{App, PlayerUi, controls, nerd_stats};
-use egui::{Color32, Rect, Vec2};
+use crate::ui::theme;
+use egui::{Align2, Color32, Rect, Vec2, vec2};
 use std::time::{Duration, Instant};
 
 const FADE_AFTER_S: f32 = 3.0;
@@ -25,6 +26,8 @@ impl App {
             last_motion,
             video_rect,
             fullscreen,
+            mini,
+            zap,
             stats,
             ..
         } = &mut self.player_ui;
@@ -36,6 +39,10 @@ impl App {
         if *stats {
             nerd_stats::paint(ui.painter(), rect, &player.stats());
             ctx.request_repaint_after(Duration::from_millis(500));
+        }
+
+        if let Some(text) = zap.text() {
+            zap_overlay(ui.painter(), rect, text);
         }
 
         if resp.hovered()
@@ -82,16 +89,37 @@ impl App {
         } else {
             controls::Actions::default()
         };
-        acts.toggle_fullscreen |= resp.double_clicked();
+        if *mini {
+            acts.toggle_mini |= resp.double_clicked();
+        } else {
+            acts.toggle_fullscreen |= resp.double_clicked();
+        }
         if acts.toggle_stats {
             *stats = !*stats;
         }
-        let (toggle, close, on) = (acts.toggle_fullscreen, acts.close, !*fullscreen);
+        let (toggle, close, on, mini_on) =
+            (acts.toggle_fullscreen, acts.close, !*fullscreen, *mini);
         if toggle {
             self.set_fullscreen(&ctx, on);
+        }
+        if acts.toggle_mini {
+            self.set_mini(&ctx, !mini_on);
         }
         if close {
             self.stop_embedded(&ctx);
         }
     }
+}
+
+fn zap_overlay(painter: &egui::Painter, rect: Rect, text: &str) {
+    let font = theme::semibold(56.0);
+    let at = rect.right_top() + vec2(-20.0, 16.0);
+    painter.text(
+        at + vec2(2.0, 2.0),
+        Align2::RIGHT_TOP,
+        text,
+        font.clone(),
+        Color32::BLACK,
+    );
+    painter.text(at, Align2::RIGHT_TOP, text, font, Color32::WHITE);
 }
