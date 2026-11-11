@@ -1,25 +1,11 @@
-use super::App;
-use crate::model::{Source, SourceId, SourceInput, SourceKind};
+use super::SourcesDialog;
+use crate::model::{Source, SourceInput, SourceKind};
 use crate::sources::detect::detect;
 use crate::worker::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
-
-#[derive(Default)]
-pub struct SourcesDialog {
-    editing: Option<SourceId>,
-    paste: String,
-    detected: String,
-    name: String,
-    url: String,
-    user: String,
-    pass: String,
-    ua: String,
-    mirrors: String,
-    confirm_delete: Option<SourceId>,
-}
 
 impl SourcesDialog {
-    fn load(&mut self, s: &Source) {
+    pub(super) fn load(&mut self, s: &Source) {
+        self.reset_form();
         *self = SourcesDialog {
             editing: Some(s.id),
             name: s.name.clone(),
@@ -28,6 +14,8 @@ impl SourcesDialog {
             pass: s.password.clone().unwrap_or_default(),
             ua: s.user_agent.clone().unwrap_or_default(),
             mirrors: s.mirrors.join("\n"),
+            checking: std::mem::take(&mut self.checking),
+            auto_hours: self.auto_hours,
             ..Default::default()
         };
     }
@@ -122,102 +110,7 @@ fn default_name(url: &str) -> String {
         .unwrap_or_else(|| "Source".into())
 }
 
-fn ago(ts: i64) -> String {
-    let now = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .map_or(0, |d| d.as_secs() as i64);
-    match now - ts {
-        s if s < 90 => "just now".into(),
-        s if s < 5400 => format!("{} min ago", s / 60),
-        s if s < 129_600 => format!("{} h ago", s / 3600),
-        s => format!("{} d ago", s / 86_400),
-    }
-}
-
-impl App {
-    pub(super) fn open_sources(&mut self) {
-        self.sources_dialog.get_or_insert_with(Default::default);
-    }
-
-    pub(super) fn sources_window(&mut self, ctx: &egui::Context) {
-        let Some(mut d) = self.sources_dialog.take() else {
-            return;
-        };
-        let mut open = true;
-        let mut cmds = Vec::new();
-        let mut error = None;
-        egui::Window::new("Sources")
-            .open(&mut open)
-            .default_width(560.0)
-            .show(ctx, |ui| {
-                self.source_list(ui, &mut d, &mut cmds);
-                ui.separator();
-                ui.heading(if d.editing.is_some() {
-                    "Edit source"
-                } else {
-                    "Add source"
-                });
-                error = source_form(ui, &mut d, &mut cmds, self.profile());
-            });
-        for c in cmds {
-            self.worker.send(c);
-        }
-        if let Some(e) = error {
-            self.toast(e);
-        }
-        if open {
-            self.sources_dialog = Some(d);
-        }
-    }
-
-    fn source_list(&self, ui: &mut egui::Ui, d: &mut SourcesDialog, cmds: &mut Vec<Command>) {
-        if self.sources.is_empty() {
-            ui.weak("No sources yet.");
-        }
-        for s in &self.sources {
-            ui.horizontal(|ui| {
-                ui.strong(&s.name);
-                ui.weak(s.kind.as_str());
-                if self.refreshing.contains(&s.id) {
-                    ui.spinner();
-                } else if let Some(ts) = s.last_refresh {
-                    ui.weak(format!("refreshed {}", ago(ts)));
-                }
-                if ui
-                    .add_enabled(
-                        !self.refreshing.contains(&s.id),
-                        egui::Button::new("Refresh"),
-                    )
-                    .clicked()
-                {
-                    cmds.push(Command::Refresh(s.id));
-                }
-                if ui.button("Edit").clicked() {
-                    d.load(s);
-                }
-                if d.confirm_delete == Some(s.id) {
-                    if ui.button("Really delete").clicked() {
-                        cmds.push(Command::DeleteSource(s.id));
-                        d.confirm_delete = None;
-                    }
-                    if ui.button("Cancel").clicked() {
-                        d.confirm_delete = None;
-                    }
-                } else if ui.button("Delete").clicked() {
-                    d.confirm_delete = Some(s.id);
-                }
-            });
-            if let Some(e) = &s.last_error {
-                ui.colored_label(egui::Color32::LIGHT_RED, e);
-            }
-        }
-        if self.sources.len() > 1 && ui.button("Refresh all").clicked() {
-            cmds.push(Command::RefreshAll(self.profile()));
-        }
-    }
-}
-
-fn source_form(
+pub(super) fn source_form(
     ui: &mut egui::Ui,
     d: &mut SourcesDialog,
     cmds: &mut Vec<Command>,
@@ -281,18 +174,39 @@ fn source_form(
                 Ok(src) if d.editing.is_some() => {
                     cmds.push(Command::UpdateSource(src));
                     cmds.push(Command::Refresh(d.editing.unwrap_or_default()));
-                    *d = SourcesDialog::default();
+                    d.reset_form();
                 }
                 Ok(src) => {
                     cmds.push(Command::AddSource(profile, src));
-                    *d = SourcesDialog::default();
+                    d.reset_form();
                 }
                 Err(e) => error = Some(e),
             }
         }
         if d.editing.is_some() && ui.button("Cancel edit").clicked() {
-            *d = SourcesDialog::default();
+            d.reset_form();
+        }
+        if ui
+            .add_enabled(!d.testing, egui::Button::new("Test"))
+            .clicked()
+        {
+            match d.build() {
+                Ok(src) => {
+                    d.testing = true;
+                    d.test_result = None;
+                    cmds.push(Command::TestSource(src));
+                }
+                Err(e) => error = Some(e),
+            }
+        }
+        if d.testing {
+            ui.spinner();
         }
     });
+    match &d.test_result {
+        Some(Ok(msg)) => ui.colored_label(egui::Color32::LIGHT_GREEN, msg),
+        Some(Err(e)) => ui.colored_label(egui::Color32::LIGHT_RED, e),
+        None => ui.label(""),
+    };
     error
 }

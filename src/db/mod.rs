@@ -2,6 +2,7 @@
 //! (prefs, favorites, history) are keyed by natural keys and survive (PLAN.md §4).
 //! Owner: db agent. Public API below is a contract used by the worker/UI.
 
+mod account;
 mod browse;
 mod bulk;
 mod import;

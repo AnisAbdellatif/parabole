@@ -188,3 +188,17 @@ pub struct PlayRequest {
     pub title: String,
     pub headers: Headers,
 }
+
+/// Details of a movie or series, all optional because providers fill them inconsistently.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct MediaInfo {
+    pub plot: Option<String>,
+    pub cast: Option<String>,
+    pub director: Option<String>,
+    pub genre: Option<String>,
+    pub release_date: Option<String>,
+    pub duration: Option<String>,
+    pub rating: Option<String>,
+    pub cover: Option<String>,
+    pub backdrop: Option<String>,
+}

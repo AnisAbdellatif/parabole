@@ -171,6 +171,7 @@ impl App {
             RowAction::Activate if self.state.tab == MediaKind::Series => self.open_series(&row),
             RowAction::Activate => self.play(&row, None),
             RowAction::Play(kind) => self.play(&row, Some(kind)),
+            RowAction::Info => self.open_details(&row),
             RowAction::CopyUrl => self.worker.send(Command::CopyUrl { stream_id: row.id }),
             RowAction::ToggleFavorite => {
                 let res = self.db.set_favorite(
@@ -198,6 +199,7 @@ impl App {
     }
 
     fn play(&mut self, row: &StreamRow, kind: Option<crate::player::PlayerKind>) {
+        self.warn_if_connections_full(row.source_id);
         self.worker.send(Command::Play {
             profile: self.profile(),
             stream_id: row.id,

@@ -59,6 +59,8 @@ impl App {
             edit: Default::default(),
             series: None,
             refreshing: Default::default(),
+            accounts: Default::default(),
+            info: Default::default(),
             playing: None::<(String, PlayerKind)>,
             player_settings,
             toasts: Vec::new(),
@@ -68,6 +70,8 @@ impl App {
         };
         app.state.profile.get_or_insert(default_profile);
         app.reload_all();
+        app.worker
+            .send(crate::worker::Command::AutoRefresh(app.profile()));
         Ok(app)
     }
 }

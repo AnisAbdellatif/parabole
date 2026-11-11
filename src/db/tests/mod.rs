@@ -1,3 +1,4 @@
+mod account;
 mod import_scale;
 mod new_categories;
 mod overlay;

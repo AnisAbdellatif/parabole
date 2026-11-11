@@ -1,16 +1,21 @@
 //! Background thread for network, DB-write and player jobs. The UI talks to it
 //! through `Command`/`Event` channels and never blocks on it.
 
+pub mod auto_refresh;
+mod jobs;
 mod play;
 pub mod player_settings;
 #[cfg(test)]
 mod tests;
 
 use crate::db::Db;
-use crate::model::{Episode, ParsedPlaylist, ProfileId, Season, Source, SourceId};
+use crate::model::{
+    Episode, MediaInfo, MediaKind, ParsedPlaylist, ProfileId, Season, Source, SourceId,
+};
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
 use anyhow::{Context, Result};
+use std::collections::VecDeque;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
@@ -26,6 +31,16 @@ pub enum Command {
     DeleteSource(SourceId),
     Refresh(SourceId),
     RefreshAll(ProfileId),
+    /// Refreshes the profile's sources older than the `auto_refresh_hours` setting, one at a time.
+    AutoRefresh(ProfileId),
+    CheckAccount(SourceId),
+    AccountChecked(SourceId, Result<String, String>),
+    TestSource(Source),
+    LoadInfo {
+        source: SourceId,
+        media: MediaKind,
+        key: String,
+    },
     LoadSeries {
         source: SourceId,
         key: String,
@@ -54,6 +69,14 @@ pub enum Event {
     SourceChanged,
     RefreshStarted(SourceId),
     RefreshDone(SourceId, Result<(), String>),
+    AccountChecked(SourceId, Result<(), String>),
+    TestResult(Result<String, String>),
+    InfoLoaded {
+        source: SourceId,
+        media: MediaKind,
+        key: String,
+        result: Result<MediaInfo, String>,
+    },
     SeriesLoaded {
         source: SourceId,
         key: String,
@@ -91,6 +114,7 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
         ev_tx,
         repaint,
         was_playing: false,
+        auto_queue: VecDeque::new(),
     };
     thread::Builder::new()
         .name("worker".into())
@@ -106,6 +130,7 @@ struct Worker {
     ev_tx: Sender<Event>,
     repaint: Repaint,
     was_playing: bool,
+    auto_queue: VecDeque<SourceId>,
 }
 
 impl Worker {
@@ -137,6 +162,14 @@ impl Worker {
             Command::DeleteSource(id) => self.db.delete_source(id).map(|_| self.changed()),
             Command::Refresh(id) => self.start_refresh(id),
             Command::RefreshAll(profile) => self.refresh_all(profile),
+            Command::AutoRefresh(profile) => self.auto_refresh(profile),
+            Command::CheckAccount(id) => self.check_account(id),
+            Command::AccountChecked(id, res) => self.apply_account(id, res),
+            Command::TestSource(src) => {
+                self.test_source(src);
+                Ok(())
+            }
+            Command::LoadInfo { source, media, key } => self.load_info(source, media, key),
             Command::LoadSeries { source, key } => self.load_series(source, key),
             Command::Fetched(id, res) => self.apply_fetched(id, res),
             Command::Play {
@@ -203,6 +236,7 @@ impl Worker {
         self.db
             .set_refresh_result(id, outcome.as_ref().err().map(String::as_str))?;
         self.emit(Event::RefreshDone(id, outcome));
+        self.next_auto();
         Ok(())
     }
 
@@ -210,7 +244,19 @@ impl Worker {
         let src = self.db.source(source)?;
         let (tx, repaint) = (self.ev_tx.clone(), self.repaint.clone());
         thread::spawn(move || {
-            let result = sources::fetch_series(&src, &key).map_err(|e| format!("{e:#}"));
+            let fetched = sources::fetch_series(&src, &key).map_err(|e| format!("{e:#}"));
+            let result = match fetched {
+                Ok((info, seasons)) => {
+                    let _ = tx.send(Event::InfoLoaded {
+                        source,
+                        media: MediaKind::Series,
+                        key: key.clone(),
+                        result: Ok(info),
+                    });
+                    Ok(seasons)
+                }
+                Err(e) => Err(e),
+            };
             let _ = tx.send(Event::SeriesLoaded {
                 source,
                 key,

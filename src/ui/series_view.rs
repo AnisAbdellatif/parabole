@@ -1,5 +1,5 @@
 use super::App;
-use crate::model::{Season, SourceId};
+use crate::model::{MediaKind, Season, SourceId};
 use crate::worker::Command;
 
 impl App {
@@ -36,6 +36,9 @@ impl App {
             back = ui.button("← Back").clicked();
             ui.heading(&s.title);
         });
+        if let Some(info) = self.info.info_for(s.source, MediaKind::Series, &s.key) {
+            super::details_view::info_body(ui, info, None);
+        }
         if s.loading {
             ui.horizontal(|ui| {
                 ui.spinner();
@@ -76,6 +79,7 @@ impl App {
                 });
         }
         if let Some((source, episode, title)) = play {
+            self.warn_if_connections_full(source);
             self.worker.send(Command::PlayEpisode {
                 source,
                 episode,
