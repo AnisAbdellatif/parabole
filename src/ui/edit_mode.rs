@@ -125,9 +125,7 @@ impl App {
         ui.separator();
     }
 
-    // shortcut: one write per changed category (no transaction), upgrade if bulk edits feel slow
     fn bulk_hidden(&mut self, hide: impl Fn(&str) -> bool) {
-        let (profile, tab) = (self.profile(), self.state.tab);
         let changes: Vec<_> = self
             .categories
             .iter()
@@ -136,12 +134,10 @@ impl App {
                 (want != c.hidden).then(|| (c.source_id, c.key.clone(), want))
             })
             .collect();
-        for (s, k, h) in changes {
-            if let Err(e) = self.db.set_category_hidden(profile, s, tab, &k, h) {
-                self.toast(format!("{e:#}"));
-                break;
-            }
-        }
+        let res = self
+            .db
+            .set_categories_hidden(self.profile(), self.state.tab, &changes);
+        self.report(res);
         self.reload_categories();
     }
 }

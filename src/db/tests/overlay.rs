@@ -165,3 +165,15 @@ fn delete_source_cascades_overlay_and_search() {
     }
     assert!(db.search(p, None, m, "one", 10).unwrap().is_empty());
 }
+
+#[test]
+fn bulk_hide_applies_all_in_one_go() {
+    let (mut db, p, s) = setup();
+    let m = MediaKind::Live;
+    db.replace_source_data(s, &playlist(&["a", "b"], &[("1", "a", "One")]))
+        .unwrap();
+    db.set_categories_hidden(p, m, &[(s, "a".into(), true), (s, "b".into(), true)])
+        .unwrap();
+    assert!(cat_keys(&db, p, false).is_empty());
+    assert_eq!(cat_keys(&db, p, true), ["a", "b"]);
+}

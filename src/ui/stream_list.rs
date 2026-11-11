@@ -1,7 +1,7 @@
 use super::App;
 use super::state::{Sel, SeriesState};
 use super::stream_row::{self, ROW_H, RowAction};
-use crate::model::{MediaKind, StreamRow};
+use crate::model::{MediaKind, SourceKind, StreamRow};
 use crate::worker::Command;
 use egui::Key;
 use egui_dnd::{DragDropItem, dnd};
@@ -15,6 +15,7 @@ impl DragDropItem for Fav<'_> {
 }
 
 const PAGE: usize = 15;
+const MAX_DRAG_FAVORITES: usize = 300;
 
 impl App {
     pub(super) fn center(&mut self, ui: &mut egui::Ui) {
@@ -37,7 +38,9 @@ impl App {
         }
         ui.heading(self.list_title());
         let mut actions = self.key_actions(ui);
-        let favorites = self.state.sel == Some(Sel::Favorites) && self.search.applied.is_empty();
+        let favorites = self.state.sel == Some(Sel::Favorites)
+            && self.search.applied.is_empty()
+            && self.streams.len() <= MAX_DRAG_FAVORITES;
         if self.streams.is_empty() {
             ui.weak("Nothing here.");
         } else if favorites {
@@ -111,7 +114,7 @@ impl App {
         self.list_view = (out.state.clamped_offset().y, out.inner_rect.height());
     }
 
-    // shortcut: favorites are not virtualized (drag reorder needs every row), fine for hundreds
+    // shortcut: favorites are not virtualized (drag reorder needs every row); above MAX_DRAG_FAVORITES the plain virtual list is used and reordering is off
     fn favorites_list(&mut self, ui: &mut egui::Ui, actions: &mut Vec<(usize, RowAction)>) {
         let mut finished = false;
         egui::ScrollArea::vertical()
@@ -187,6 +190,14 @@ impl App {
     }
 
     fn open_series(&mut self, row: &StreamRow) {
+        let xtream = self
+            .sources
+            .iter()
+            .any(|s| s.id == row.source_id && s.kind == SourceKind::Xtream);
+        if !xtream {
+            self.toast("Episode lists need an Xtream source");
+            return;
+        }
         self.series = Some(SeriesState {
             source: row.source_id,
             key: row.key.clone(),
