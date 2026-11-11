@@ -71,3 +71,5 @@ pub fn install(ctx: &egui::Context) {
     fonts::install(ctx);
     style::install(ctx);
 }
+
+pub const POSTER_BG: Color32 = hex(0x1b222d);

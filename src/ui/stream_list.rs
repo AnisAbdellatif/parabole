@@ -1,9 +1,10 @@
 use super::App;
-use super::state::{Sel, SeriesState};
+use super::poster_grid::{self, RowCtx};
+use super::state::Sel;
 use super::stream_row::{self, ROW_H, RowAction};
-use crate::model::{MediaKind, SourceKind, StreamRow};
-use crate::worker::Command;
-use egui::Key;
+use super::theme::{self, Icon};
+use crate::model::{MediaKind, StreamRow};
+use egui::{Frame, Key, Margin, Rect, vec2};
 use egui_dnd::{DragDropItem, dnd};
 
 struct Fav<'a>(&'a StreamRow);
@@ -15,77 +16,71 @@ impl DragDropItem for Fav<'_> {
 }
 
 const PAGE: usize = 15;
+const GRID_PAGE: usize = 3;
 const MAX_DRAG_FAVORITES: usize = 300;
+const LIST_GAP: f32 = 4.0;
+
+type Actions = Vec<(usize, RowAction)>;
 
 impl App {
     pub(super) fn center(&mut self, ui: &mut egui::Ui) {
         if self.sources.is_empty() {
-            ui.centered_and_justified(|ui| {
-                ui.vertical_centered(|ui| {
-                    ui.add_space(ui.available_height() / 3.0);
-                    ui.heading("Add a source");
-                    ui.label("Paste an M3U link, an Xtream login or pick a playlist file.");
-                    if ui.button("Add a source").clicked() {
-                        self.open_sources();
-                    }
-                });
-            });
+            self.no_sources(ui);
             return;
         }
         if self.series.is_some() {
             self.series_ui(ui);
             return;
         }
-        ui.horizontal(|ui| {
-            ui.heading(self.list_title());
-            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                self.sort_selector(ui);
-            });
-        });
-        let mut actions = self.key_actions(ui);
+        self.list_header(ui);
         let favorites = self.state.sel == Some(Sel::Favorites)
             && self.search.applied.is_empty()
             && self.streams.len() <= MAX_DRAG_FAVORITES;
-        if self.streams.is_empty() {
-            ui.weak("Nothing here.");
-        } else if favorites {
-            self.favorites_list(ui, &mut actions);
-        } else {
-            self.virtual_list(ui, &mut actions);
-        }
+        let grid = self.state.tab != MediaKind::Live && !favorites;
+        let mut actions = self.key_actions(ui, grid);
+        Frame::NONE
+            .inner_margin(Margin {
+                left: 24,
+                right: 24,
+                top: 0,
+                bottom: 24,
+            })
+            .show(ui, |ui| {
+                if self.streams.is_empty() {
+                    self.empty_list(ui);
+                } else if favorites {
+                    self.favorites_list(ui, &mut actions);
+                } else {
+                    self.virtual_list(ui, &mut actions, grid);
+                }
+            });
         for (idx, action) in actions {
             self.row_action(idx, action);
         }
     }
 
-    fn list_title(&self) -> String {
-        if !self.search.applied.is_empty() {
-            return format!("Search: “{}” ({})", self.search.applied, self.streams.len());
-        }
-        match &self.state.sel {
-            Some(Sel::Favorites) => "★ Favorites".into(),
-            Some(Sel::Recent) => "⟲ Recent".into(),
-            Some(Sel::Category(s, k)) => self
-                .categories
-                .iter()
-                .find(|c| c.source_id == *s && c.key == *k)
-                .map_or(String::new(), |c| c.name.clone()),
-            None => "Select a category".into(),
-        }
-    }
-
-    fn key_actions(&mut self, ui: &egui::Ui) -> Vec<(usize, RowAction)> {
+    fn key_actions(&mut self, ui: &egui::Ui, grid: bool) -> Actions {
         let mut out = Vec::new();
         if ui.ctx().egui_wants_keyboard_input() || self.streams.is_empty() {
             return out;
         }
+        let cols = if grid {
+            poster_grid::columns(ui.available_width() - 48.0).0
+        } else {
+            1
+        };
         let last = self.streams.len() - 1;
         let step = ui.input(|i| {
-            let mut s = 0isize;
-            s += i.key_pressed(Key::ArrowDown) as isize - i.key_pressed(Key::ArrowUp) as isize;
-            s += PAGE as isize
-                * (i.key_pressed(Key::PageDown) as isize - i.key_pressed(Key::PageUp) as isize);
-            s
+            let key = |k: Key| i.key_pressed(k) as isize;
+            let rows = key(Key::ArrowDown) - key(Key::ArrowUp);
+            let pages = key(Key::PageDown) - key(Key::PageUp);
+            let page = if grid { GRID_PAGE } else { PAGE } as isize;
+            let sideways = if grid {
+                key(Key::ArrowRight) - key(Key::ArrowLeft)
+            } else {
+                0
+            };
+            (rows + pages * page) * cols as isize + sideways
         });
         if step != 0 {
             self.selected = self.selected.saturating_add_signed(step).min(last);
@@ -97,33 +92,62 @@ impl App {
         out
     }
 
-    fn virtual_list(&mut self, ui: &mut egui::Ui, actions: &mut Vec<(usize, RowAction)>) {
+    fn virtual_list(&mut self, ui: &mut egui::Ui, actions: &mut Actions, grid: bool) {
         let edit = self.edit.on;
-        let spacing = ui.spacing().item_spacing.y;
+        let (cols, card_w) = if grid {
+            poster_grid::columns(ui.available_width())
+        } else {
+            (1, 0.0)
+        };
+        let (row_h, gap) = if grid {
+            (poster_grid::card_height(card_w), theme::GAP)
+        } else {
+            (ROW_H, LIST_GAP)
+        };
+        ui.spacing_mut().item_spacing.y = gap;
         let mut area = egui::ScrollArea::vertical().auto_shrink(false);
         if std::mem::take(&mut self.scroll_to_selected) {
             let (offset, height) = self.list_view;
-            let top = self.selected as f32 * (ROW_H + spacing);
+            let top = (self.selected / cols) as f32 * (row_h + gap);
             if top < offset {
                 area = area.vertical_scroll_offset(top);
-            } else if top + ROW_H > offset + height {
-                area = area.vertical_scroll_offset(top + ROW_H - height);
+            } else if top + row_h > offset + height {
+                area = area.vertical_scroll_offset(top + row_h - height);
             }
         }
-        let out = area.show_rows(ui, ROW_H, self.streams.len(), |ui, range| {
-            for i in range {
-                for a in stream_row::show(ui, &self.streams[i], i == self.selected, edit) {
-                    actions.push((i, a));
+        let playing = self.playing.as_ref().map(|(title, _)| title.as_str());
+        let total = self.streams.len().div_ceil(cols);
+        let out = area.show_rows(ui, row_h, total, |ui, range| {
+            for r in range {
+                let start = r * cols;
+                let end = (start + cols).min(self.streams.len());
+                if grid {
+                    let cx = RowCtx {
+                        first_index: start,
+                        card_w,
+                        cursor: self.selected,
+                        playing,
+                        edit,
+                    };
+                    actions.extend(poster_grid::show_row(ui, &self.streams[start..end], &cx));
+                } else {
+                    let row = &self.streams[start];
+                    let on = playing == Some(row.name.as_str());
+                    for a in stream_row::show(ui, row, start == self.selected, on, edit) {
+                        actions.push((start, a));
+                    }
                 }
             }
         });
         self.list_view = (out.state.clamped_offset().y, out.inner_rect.height());
     }
 
-    // shortcut: favorites are not virtualized (drag reorder needs every row); above MAX_DRAG_FAVORITES the plain virtual list is used and reordering is off
-    fn favorites_list(&mut self, ui: &mut egui::Ui, actions: &mut Vec<(usize, RowAction)>) {
+    // shortcut: favorites are not virtualized (drag reorder needs every row) and use list rows on every tab; above MAX_DRAG_FAVORITES the virtual list/grid is used and reordering is off
+    fn favorites_list(&mut self, ui: &mut egui::Ui, actions: &mut Actions) {
         let mut finished = false;
         let edit = self.edit.on;
+        ui.spacing_mut().item_spacing.y = LIST_GAP;
+        let playing = self.playing.as_ref().map(|(title, _)| title.as_str());
         egui::ScrollArea::vertical()
             .auto_shrink(false)
             .show(ui, |ui| {
@@ -131,11 +155,19 @@ impl App {
                     self.streams.iter().map(Fav),
                     |ui, item, handle, state| {
                         ui.horizontal(|ui| {
-                            handle.ui(ui, |ui| {
-                                ui.label("☰");
+                            let size = vec2(22.0, ROW_H);
+                            handle.ui_sized(ui, size, |ui| {
+                                let at = Rect::from_center_size(
+                                    ui.max_rect().center(),
+                                    vec2(14.0, 14.0),
+                                );
+                                theme::icon(Icon::Grip, 14.0, theme::TEXT_FAINT)
+                                    .show_loading_spinner(false)
+                                    .paint_at(ui, at);
                             });
+                            let on = playing == Some(item.0.name.as_str());
                             for a in
-                                stream_row::show(ui, item.0, state.index == self.selected, edit)
+                                stream_row::show(ui, item.0, state.index == self.selected, on, edit)
                             {
                                 actions.push((state.index, a));
                             }
@@ -156,77 +188,5 @@ impl App {
                 .reorder_favorites(self.profile(), self.state.tab, &items);
             self.report(res);
         }
-    }
-
-    fn row_action(&mut self, idx: usize, action: RowAction) {
-        let Some(row) = self.streams.get(idx).cloned() else {
-            return;
-        };
-        let profile = self.profile();
-        if row.missing && !matches!(action, RowAction::ToggleFavorite | RowAction::Select) {
-            return;
-        }
-        match action {
-            RowAction::Select => self.selected = idx,
-            RowAction::Activate if self.state.tab == MediaKind::Series => self.open_series(&row),
-            RowAction::Activate => self.play(&row, None),
-            RowAction::Play(kind) => self.play(&row, Some(kind)),
-            RowAction::Info => self.open_details(&row),
-            RowAction::CopyUrl => self.worker.send(Command::CopyUrl { stream_id: row.id }),
-            RowAction::ToggleFavorite => {
-                let res = self.db.set_favorite(
-                    profile,
-                    row.source_id,
-                    row.media,
-                    &row.key,
-                    !row.favorite,
-                );
-                self.report(res);
-                self.reload_streams();
-            }
-            RowAction::ToggleHidden => {
-                let res = self.db.set_stream_hidden(
-                    profile,
-                    row.source_id,
-                    row.media,
-                    &row.key,
-                    !row.hidden,
-                );
-                self.report(res);
-                self.reload_streams();
-            }
-        }
-    }
-
-    fn play(&mut self, row: &StreamRow, kind: Option<crate::player::PlayerKind>) {
-        self.warn_if_connections_full(row.source_id);
-        self.worker.send(Command::Play {
-            profile: self.profile(),
-            stream_id: row.id,
-            kind,
-        });
-    }
-
-    fn open_series(&mut self, row: &StreamRow) {
-        let xtream = self
-            .sources
-            .iter()
-            .any(|s| s.id == row.source_id && s.kind == SourceKind::Xtream);
-        if !xtream {
-            self.toast("Episode lists need an Xtream source");
-            return;
-        }
-        self.series = Some(SeriesState {
-            source: row.source_id,
-            key: row.key.clone(),
-            title: row.name.clone(),
-            loading: true,
-            seasons: Vec::new(),
-            season: 0,
-        });
-        self.worker.send(Command::LoadSeries {
-            source: row.source_id,
-            key: row.key.clone(),
-        });
     }
 }
