@@ -83,7 +83,11 @@ pub struct Headers {
 /// Result of classifying user-pasted text in the add-source dialog.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum SourceInput {
-    Xtream { base: String, username: String, password: String },
+    Xtream {
+        base: String,
+        username: String,
+        password: String,
+    },
     M3uUrl(String),
     M3uFile(String),
 }
