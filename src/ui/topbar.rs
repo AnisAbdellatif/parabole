@@ -162,6 +162,7 @@ impl App {
                 ui.set_height(38.0);
                 ui.set_width(width);
                 ui.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                    ui.spacing_mut().interact_size.y = 18.0;
                     ui.add(theme::icon(theme::Icon::Search, 16.0, theme::TEXT_MUTED));
                     resp = Some(
                         ui.add(

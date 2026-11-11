@@ -1,5 +1,4 @@
 //! Design tokens from the redesign mockup (dark, teal accent, Inter) and the global egui style.
-#![allow(dead_code, unused_imports)] // shortcut: tokens land before their users, remove once the redesign uses them all
 
 mod fonts;
 mod icons;

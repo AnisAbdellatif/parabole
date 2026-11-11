@@ -22,16 +22,8 @@ pub enum Icon {
     DockBottom,
     Live,
     Back,
-    ChevronDown,
-    Refresh,
-    Plus,
-    Info,
-    Edit,
-    Trash,
     Subtitles,
     Audio,
-    User,
-    List,
 }
 
 fn source(i: Icon) -> ImageSource<'static> {
@@ -56,16 +48,8 @@ fn source(i: Icon) -> ImageSource<'static> {
         Icon::DockBottom => include_image!("../../../assets/icons/dock_bottom.svg"),
         Icon::Live => include_image!("../../../assets/icons/live.svg"),
         Icon::Back => include_image!("../../../assets/icons/back.svg"),
-        Icon::ChevronDown => include_image!("../../../assets/icons/chevron_down.svg"),
-        Icon::Refresh => include_image!("../../../assets/icons/refresh.svg"),
-        Icon::Plus => include_image!("../../../assets/icons/plus.svg"),
-        Icon::Info => include_image!("../../../assets/icons/info.svg"),
-        Icon::Edit => include_image!("../../../assets/icons/edit.svg"),
-        Icon::Trash => include_image!("../../../assets/icons/trash.svg"),
         Icon::Subtitles => include_image!("../../../assets/icons/subtitles.svg"),
         Icon::Audio => include_image!("../../../assets/icons/audio.svg"),
-        Icon::User => include_image!("../../../assets/icons/user.svg"),
-        Icon::List => include_image!("../../../assets/icons/list.svg"),
     }
 }
 
