@@ -22,7 +22,7 @@ pub fn check_account(account: &Value) -> Result<()> {
     if let Some(auth) = user_info.get("auth")
         && !super::de::bool01(Some(auth))
     {
-        bail!("invalid credentials");
+        bail!("invalid username or password");
     }
     Ok(())
 }

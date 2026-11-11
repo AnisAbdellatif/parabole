@@ -2,13 +2,14 @@
 
 mod boot;
 mod data;
+mod details_view;
 mod edit_mode;
 mod events;
 mod profiles_view;
 mod series_view;
 mod settings_view;
 mod sidebar;
-mod sources_dialog;
+mod sources;
 mod state;
 mod stream_list;
 mod stream_row;
@@ -20,9 +21,10 @@ pub use boot::run;
 use crate::db::Db;
 use crate::model::{CategoryRow, Profile, Source, SourceId, StreamRow};
 use crate::player::{PlayerKind, PlayerSettings};
+use crate::sources::xtream::AccountInfo;
 use crate::worker::Handle;
 use state::{EditState, Persisted, SearchState, SeriesState, Toast};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 pub struct App {
     db: Db,
@@ -39,10 +41,12 @@ pub struct App {
     edit: EditState,
     series: Option<SeriesState>,
     refreshing: HashSet<SourceId>,
+    accounts: HashMap<SourceId, AccountInfo>,
+    info: details_view::InfoStore,
     playing: Option<(String, PlayerKind)>,
     player_settings: PlayerSettings,
     toasts: Vec<Toast>,
-    sources_dialog: Option<sources_dialog::SourcesDialog>,
+    sources_dialog: Option<sources::SourcesDialog>,
     settings_dialog: Option<settings_view::SettingsDialog>,
     profiles_dialog: Option<profiles_view::ProfilesDialog>,
 }
@@ -74,5 +78,6 @@ impl App {
         self.sources_window(ctx);
         self.settings_window(ctx);
         self.profiles_window(ctx);
+        self.details_window(ctx);
     }
 }

@@ -12,6 +12,7 @@ pub enum RowAction {
     ToggleFavorite,
     Hide,
     CopyUrl,
+    Info,
 }
 
 fn is_http(url: &str) -> bool {
@@ -78,6 +79,10 @@ fn context_menu(ui: &mut egui::Ui, row: &StreamRow, out: &mut Vec<RowAction>) {
     }
     if ui.button("Hide").clicked() {
         out.push(RowAction::Hide);
+        ui.close();
+    }
+    if row.media != MediaKind::Live && ui.button("Info…").clicked() {
+        out.push(RowAction::Info);
         ui.close();
     }
     if row.media == MediaKind::Series {

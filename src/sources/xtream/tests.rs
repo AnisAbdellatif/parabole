@@ -151,7 +151,7 @@ fn vod_and_series_conversion() {
 fn account_checks() {
     assert!(convert::check_account(&fixture!("account_ok.json")).is_ok());
     let err = convert::check_account(&fixture!("account_bad.json")).unwrap_err();
-    assert_eq!(err.to_string(), "invalid credentials");
+    assert_eq!(err.to_string(), "invalid username or password");
     assert!(convert::check_account(&json!({})).is_err());
     let json = convert::account_json(&fixture!("account_ok.json"));
     assert!(json.contains("user_info") && json.contains("server_info"));
@@ -259,5 +259,38 @@ fn url_building() {
     assert_eq!(
         urls::episode(&prefixed, "1", Some("mkv")).unwrap(),
         "http://h.tv/panel/series/u/p/1.mkv"
+    );
+}
+
+#[test]
+fn vod_info_is_lenient() {
+    let i = info::parse_info(&fixture!("vod_info.json"));
+    assert_eq!(i.cast.as_deref(), Some("Ann, Bob"));
+    assert_eq!(i.duration.as_deref(), Some("5400"));
+    assert_eq!(i.rating.as_deref(), Some("7.5"));
+    assert_eq!(i.release_date.as_deref(), Some("2020-05-01"));
+    assert_eq!(i.cover.as_deref(), Some("http://i/poster.jpg"));
+    assert_eq!(i.backdrop.as_deref(), Some("http://i/b1.jpg"));
+    assert_eq!(
+        info::parse_info(&fixture!("vod_info_empty.json")),
+        MediaInfo::default()
+    );
+}
+
+#[test]
+fn series_info_section() {
+    let v = fixture!("series_info_meta.json");
+    let i = info::parse_info(&v);
+    assert_eq!(i.plot, None);
+    assert_eq!(i.genre, None);
+    assert_eq!(i.cast.as_deref(), Some("Dee, Eve"));
+    assert_eq!(i.release_date.as_deref(), Some("2019-01-02"));
+    assert_eq!(i.duration.as_deref(), Some("45"));
+    assert_eq!(i.rating.as_deref(), Some("3.5"));
+    assert_eq!(i.backdrop.as_deref(), Some("http://i/back.jpg"));
+    assert!(series::parse_seasons(&v).is_empty());
+    assert_eq!(
+        info::parse_info(&fixture!("series_info_object.json")),
+        MediaInfo::default()
     );
 }

@@ -38,6 +38,7 @@ impl App {
             Ok(s) => self.sources = s,
             Err(e) => self.toast(format!("{e:#}")),
         }
+        self.reload_accounts();
         if !self.sources.iter().any(|s| Some(s.id) == self.state.source) {
             self.state.source = None;
         }

@@ -16,6 +16,26 @@ impl App {
                     }
                     self.reload_sources();
                 }
+                Event::AccountChecked(id, res) => {
+                    if let Some(d) = self.sources_dialog.as_mut() {
+                        d.account_checked(id);
+                    }
+                    match res {
+                        Ok(()) => self.reload_accounts(),
+                        Err(e) => self.toast(format!("Account check failed: {e}")),
+                    }
+                }
+                Event::TestResult(res) => {
+                    if let Some(d) = self.sources_dialog.as_mut() {
+                        d.test_finished(res);
+                    }
+                }
+                Event::InfoLoaded {
+                    source,
+                    media,
+                    key,
+                    result,
+                } => self.info_loaded(source, media, key, result),
                 Event::SeriesLoaded {
                     source,
                     key,

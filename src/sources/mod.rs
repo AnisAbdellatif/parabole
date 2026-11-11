@@ -4,10 +4,12 @@
 pub mod detect;
 mod http;
 pub mod m3u;
+pub mod probe;
 pub mod xtream;
 
 use crate::model::{
-    MediaKind, ParsedCategory, ParsedPlaylist, ParsedStream, PlayInfo, Season, Source, SourceKind,
+    MediaInfo, MediaKind, ParsedCategory, ParsedPlaylist, ParsedStream, PlayInfo, Season, Source,
+    SourceKind,
 };
 use anyhow::{Context, Result, bail};
 use std::fs::File;
@@ -56,9 +58,22 @@ fn single_stream(source: &Source) -> ParsedPlaylist {
     }
 }
 
-/// Lazily load seasons/episodes of an Xtream series. `series_key` = the stream's ext_key.
-pub fn fetch_series(source: &Source, series_key: &str) -> Result<Vec<Season>> {
+/// Lazily load info and seasons/episodes of an Xtream series. `series_key` = the stream's ext_key.
+pub fn fetch_series(source: &Source, series_key: &str) -> Result<(MediaInfo, Vec<Season>)> {
     xtream::fetch_series(source, series_key)
+}
+
+/// Xtream `get_vod_info`; `vod_key` = the movie's ext_key.
+pub fn fetch_vod_info(source: &Source, vod_key: &str) -> Result<MediaInfo> {
+    if source.kind != SourceKind::Xtream {
+        bail!("movie info is only available for Xtream sources");
+    }
+    xtream::fetch_vod_info(source, vod_key)
+}
+
+/// Account call only, with backup-URL failover; returns the JSON to store.
+pub fn check_account(source: &Source) -> Result<String> {
+    xtream::check_account(source)
 }
 
 /// Final playable URL for a stream (M3U: stored url; Xtream: built from creds).
