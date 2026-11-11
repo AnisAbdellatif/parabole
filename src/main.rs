@@ -1,3 +1,3 @@
-fn main() {
-    println!("UI not implemented yet");
+fn main() -> eframe::Result {
+    iptv_player::ui::run()
 }
