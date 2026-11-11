@@ -56,6 +56,7 @@ pub fn show(
     session: &Session,
     settings: &PlayerSettings,
     bottom: bool,
+    stats_on: bool,
 ) -> Actions {
     let mut acts = Actions::default();
     let st = player.state().clone();
@@ -116,18 +117,17 @@ pub fn show(
             acts.close = true;
         }
     });
-    let has_tracks = st.tracks.iter().any(|t| t.kind != TrackKind::Video);
-    if session.is_live() || has_tracks {
-        ui.horizontal(|ui| {
-            ui.spacing_mut().item_spacing.x = 4.0;
-            track_menu(ui, player, Icon::Subtitles, "Subtitles", TrackKind::Sub);
-            track_menu(ui, player, Icon::Audio, "Audio track", TrackKind::Audio);
-            if session.is_live() && icon_button(ui, Icon::Live, "Go live (Ctrl+L)", false).clicked()
-            {
-                let _ = player.reload(settings);
-            }
-        });
-    }
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = 4.0;
+        track_menu(ui, player, Icon::Subtitles, "Subtitles", TrackKind::Sub);
+        track_menu(ui, player, Icon::Audio, "Audio track", TrackKind::Audio);
+        if session.is_live() && icon_button(ui, Icon::Live, "Go live (Ctrl+L)", false).clicked() {
+            let _ = player.reload(settings);
+        }
+        if icon_button(ui, Icon::Info, "Stats for nerds (I)", stats_on).clicked() {
+            acts.toggle_stats = true;
+        }
+    });
     acts
 }
 

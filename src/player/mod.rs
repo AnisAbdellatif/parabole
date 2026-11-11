@@ -13,11 +13,13 @@ mod process;
 pub mod retry;
 mod settings;
 mod state;
+mod stats;
 mod validate;
 
 pub use locate::find_binary;
 pub use settings::PlayerSettings;
 pub use state::{Notice, PlayerState, TrackInfo, TrackKind};
+pub use stats::Stats;
 
 use crate::model::PlayRequest;
 use anyhow::{Result, anyhow, bail};

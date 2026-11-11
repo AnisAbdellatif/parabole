@@ -74,7 +74,14 @@ impl App {
         let ui_state = &mut self.player_ui;
         let acts = match (ui_state.embed.as_mut(), ui_state.session.as_ref()) {
             (Some(player), Some(session)) => {
-                let acts = dock::show(ui, player, session, &self.player_settings, bottom);
+                let acts = dock::show(
+                    ui,
+                    player,
+                    session,
+                    &self.player_settings,
+                    bottom,
+                    ui_state.stats,
+                );
                 ui.add_space(12.0);
                 let live = if session.is_live() {
                     " · Ctrl+L go live"
@@ -83,7 +90,9 @@ impl App {
                 };
                 separator_and_hint(
                     ui,
-                    &format!("Space pause · F fullscreen · PgUp/PgDn change channel{live}"),
+                    &format!(
+                        "Space pause · F fullscreen · PgUp/PgDn change channel · I stats{live}"
+                    ),
                 );
                 acts
             }
@@ -103,6 +112,9 @@ impl App {
                 return;
             }
         };
+        if acts.toggle_stats {
+            self.player_ui.stats = !self.player_ui.stats;
+        }
         if acts.toggle_dock {
             self.state.player_dock_bottom = !bottom;
         }

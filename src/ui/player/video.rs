@@ -1,4 +1,4 @@
-use super::{App, PlayerUi, controls};
+use super::{App, PlayerUi, controls, nerd_stats};
 use egui::{Color32, Rect, Vec2};
 use std::time::{Duration, Instant};
 
@@ -25,6 +25,7 @@ impl App {
             last_motion,
             video_rect,
             fullscreen,
+            stats,
             ..
         } = &mut self.player_ui;
         let (Some(player), Some(s)) = (embed.as_mut(), session.as_mut()) else {
@@ -32,6 +33,10 @@ impl App {
         };
         *video_rect = rect;
         player.paint(ui, frame, rect);
+        if *stats {
+            nerd_stats::paint(ui.painter(), rect, &player.stats());
+            ctx.request_repaint_after(Duration::from_millis(500));
+        }
 
         if resp.hovered()
             && ctx.input(|i| i.pointer.delta() != Vec2::ZERO || i.pointer.any_pressed())
@@ -73,11 +78,14 @@ impl App {
         }
 
         let mut acts = if overlay {
-            controls::show(ui, rect, player, s, &self.player_settings, alpha)
+            controls::show(ui, rect, player, s, &self.player_settings, alpha, *stats)
         } else {
             controls::Actions::default()
         };
         acts.toggle_fullscreen |= resp.double_clicked();
+        if acts.toggle_stats {
+            *stats = !*stats;
+        }
         let (toggle, close, on) = (acts.toggle_fullscreen, acts.close, !*fullscreen);
         if toggle {
             self.set_fullscreen(&ctx, on);

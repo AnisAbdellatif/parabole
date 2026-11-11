@@ -4,6 +4,7 @@
 mod commands;
 mod events;
 mod render;
+mod stats;
 
 use super::{Notice, PlayerSettings, PlayerState, live};
 use anyhow::{Context, Result};

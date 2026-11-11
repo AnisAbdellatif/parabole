@@ -1,7 +1,7 @@
 //! Stand-in used when built without the `embedded-mpv` feature: it never initializes.
 
 use super::state::TrackKind;
-use super::{Notice, PlayerSettings, PlayerState};
+use super::{Notice, PlayerSettings, PlayerState, Stats};
 use crate::model::PlayRequest;
 use anyhow::{Result, bail};
 
@@ -35,4 +35,7 @@ impl EmbeddedPlayer {
     pub fn set_muted(&mut self, _muted: bool) {}
     pub fn seek_to(&self, _seconds: f64) {}
     pub fn select_track(&self, _kind: TrackKind, _id: Option<i64>) {}
+    pub fn stats(&self) -> Stats {
+        Stats::default()
+    }
 }

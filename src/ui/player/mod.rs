@@ -4,6 +4,7 @@ mod controls;
 mod dock;
 mod fullscreen;
 mod keys;
+mod nerd_stats;
 mod pane;
 mod session;
 mod video;
@@ -22,6 +23,8 @@ pub struct PlayerUi {
     init_error: Option<String>,
     session: Option<Session>,
     fullscreen: bool,
+    /// Stats-for-nerds overlay on the video.
+    stats: bool,
     last_motion: Instant,
     video_rect: egui::Rect,
     prev_stream: Option<i64>,
@@ -40,6 +43,7 @@ impl PlayerUi {
             init_error,
             session: None,
             fullscreen: false,
+            stats: false,
             last_motion: Instant::now(),
             video_rect: egui::Rect::NOTHING,
             prev_stream: None,

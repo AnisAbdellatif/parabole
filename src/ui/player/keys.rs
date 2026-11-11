@@ -81,6 +81,9 @@ impl App {
         if self.player_ui.fullscreen && key(Modifiers::NONE, Key::Escape) {
             self.set_fullscreen(ctx, false);
         }
+        if focused && key(Modifiers::NONE, Key::I) {
+            self.player_ui.stats = !self.player_ui.stats;
+        }
         if focused && key(Modifiers::NONE, Key::F) {
             let on = !self.player_ui.fullscreen;
             self.set_fullscreen(ctx, on);

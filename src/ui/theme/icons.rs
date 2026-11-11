@@ -22,6 +22,7 @@ pub enum Icon {
     DockBottom,
     Live,
     Back,
+    Info,
     Subtitles,
     Audio,
 }
@@ -48,6 +49,7 @@ fn source(i: Icon) -> ImageSource<'static> {
         Icon::DockBottom => include_image!("../../../assets/icons/dock_bottom.svg"),
         Icon::Live => include_image!("../../../assets/icons/live.svg"),
         Icon::Back => include_image!("../../../assets/icons/back.svg"),
+        Icon::Info => include_image!("../../../assets/icons/info.svg"),
         Icon::Subtitles => include_image!("../../../assets/icons/subtitles.svg"),
         Icon::Audio => include_image!("../../../assets/icons/audio.svg"),
     }

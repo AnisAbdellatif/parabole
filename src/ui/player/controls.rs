@@ -12,6 +12,7 @@ pub struct Actions {
     pub toggle_fullscreen: bool,
     pub close: bool,
     pub toggle_dock: bool,
+    pub toggle_stats: bool,
 }
 
 pub fn fmt_time(seconds: f64) -> String {
@@ -30,6 +31,7 @@ pub fn show(
     session: &Session,
     settings: &PlayerSettings,
     alpha: f32,
+    stats_on: bool,
 ) -> Actions {
     let mut acts = Actions::default();
     if alpha < 0.02 {
@@ -89,6 +91,9 @@ pub fn show(
                         .clicked()
                     {
                         acts.toggle_fullscreen = true;
+                    }
+                    if icon_button(ui, Icon::Info, "Stats for nerds (I)", stats_on).clicked() {
+                        acts.toggle_stats = true;
                     }
                     if session.is_live()
                         && icon_button(ui, Icon::Live, "Go live (Ctrl+L)", false).clicked()
