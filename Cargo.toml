@@ -11,6 +11,7 @@ egui = "0.37.0"
 egui_dnd = { version = "0.18.0", default-features = false }
 egui_extras = { version = "0.37.0", features = ["all_loaders"] }
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
+libmpv2 = { version = "7.0.1", optional = true }
 reqwest = { version = "0.13.5", default-features = false, features = ["blocking", "gzip", "rustls"] }
 rfd = "0.18.0"
 rusqlite = { version = "0.42.0", features = ["bundled"] }
@@ -18,3 +19,7 @@ serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 shlex = "2.0.1"
 url = "2.5.8"
+
+[features]
+default = ["embedded-mpv"]
+embedded-mpv = ["dep:libmpv2"]

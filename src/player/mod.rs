@@ -1,47 +1,48 @@
-//! External player launching (mpv, VLC, custom template). Owner: player agent.
+//! External player launching (mpv, VLC, custom template) and the embedded libmpv player.
 
 mod argv;
+#[cfg(feature = "embedded-mpv")]
+pub mod embed;
+#[cfg(not(feature = "embedded-mpv"))]
+#[path = "embed_off.rs"]
+pub mod embed;
+pub mod live;
 mod locate;
 mod mpv_ipc;
 mod process;
+pub mod retry;
+mod settings;
+mod state;
 mod validate;
 
 pub use locate::find_binary;
+pub use settings::PlayerSettings;
+pub use state::{Notice, PlayerState, TrackInfo, TrackKind};
 
 use crate::model::PlayRequest;
-use anyhow::{Result, anyhow};
+use anyhow::{Result, anyhow, bail};
 use serde::{Deserialize, Serialize};
 use std::ffi::OsString;
 use std::path::{Path, PathBuf};
 use std::process::Child;
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PlayerKind {
+    /// In-app libmpv player; needs the `embedded-mpv` cargo feature.
+    Embedded,
     Mpv,
     Vlc,
     Custom,
 }
 
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
-pub struct PlayerSettings {
-    pub default: PlayerKind,
-    /// None = auto-detect.
-    pub mpv_path: Option<PathBuf>,
-    pub vlc_path: Option<PathBuf>,
-    /// e.g. `potplayer {url} /title={title}`; placeholders: {url} {title} {user_agent} {referrer}
-    pub custom_template: String,
-    /// Extra `--key=value` args appended to mpv.
-    pub mpv_args: Vec<String>,
-}
-
-impl Default for PlayerSettings {
-    fn default() -> Self {
-        Self {
-            default: PlayerKind::Mpv,
-            mpv_path: None,
-            vlc_path: None,
-            custom_template: String::new(),
-            mpv_args: Vec::new(),
+impl PlayerKind {
+    /// Kinds offered in the settings UI.
+    pub fn selectable() -> Vec<PlayerKind> {
+        let mut kinds = vec![PlayerKind::Mpv, PlayerKind::Vlc, PlayerKind::Custom];
+        if cfg!(feature = "embedded-mpv") {
+            kinds.insert(0, PlayerKind::Embedded);
         }
+        kinds
     }
 }
 
@@ -49,6 +50,8 @@ struct Running {
     child: Child,
     kind: PlayerKind,
     ipc: Option<PathBuf>,
+    /// Last `loadfile` payload, re-sent by `go_live`.
+    last_payload: String,
 }
 
 /// Owns the currently running external player process (one stream at a time).
@@ -66,9 +69,12 @@ impl ExternalPlayer {
         req: &PlayRequest,
     ) -> Result<()> {
         let req = validate::clean_request(req)?;
+        if *kind == PlayerKind::Embedded {
+            bail!("the embedded player is not an external process");
+        }
         let binary = find_binary(kind, settings)
             .ok_or_else(|| anyhow!("{kind:?} player not found; set its path in settings"))?;
-        if *kind == PlayerKind::Mpv && self.reuse_mpv(&req) {
+        if *kind == PlayerKind::Mpv && self.reuse_mpv(settings, &req) {
             return Ok(());
         }
         let (args, ipc) = match kind {
@@ -78,8 +84,24 @@ impl ExternalPlayer {
             }
             PlayerKind::Vlc => (argv::vlc(&req), None),
             PlayerKind::Custom => (argv::custom(&settings.custom_template, &req)?, None),
+            PlayerKind::Embedded => unreachable!("rejected above"),
         };
-        self.start(kind, &binary, &args, ipc)
+        self.start(kind, &binary, &args, ipc)?;
+        if let Some(r) = self.running.as_mut() {
+            r.last_payload = mpv_ipc::loadfile_payload(settings, &req);
+        }
+        Ok(())
+    }
+
+    /// Reloads the current stream through mpv IPC, which lands on the live edge.
+    pub fn go_live(&mut self) -> Result<()> {
+        let Some(r) = self.running.as_ref().filter(|r| r.kind == PlayerKind::Mpv) else {
+            bail!("go live needs a running mpv");
+        };
+        let Some(ipc) = r.ipc.clone() else {
+            bail!("mpv has no IPC socket");
+        };
+        mpv_ipc::send(&ipc, &r.last_payload)
     }
 
     pub fn stop(&mut self) {
@@ -99,7 +121,7 @@ impl ExternalPlayer {
         alive
     }
 
-    fn reuse_mpv(&mut self, req: &PlayRequest) -> bool {
+    fn reuse_mpv(&mut self, settings: &PlayerSettings, req: &PlayRequest) -> bool {
         let Some(ipc) = self
             .running
             .as_ref()
@@ -108,7 +130,12 @@ impl ExternalPlayer {
         else {
             return false;
         };
-        self.is_running() && mpv_ipc::send(&ipc, &mpv_ipc::loadfile_payload(req)).is_ok()
+        let payload = mpv_ipc::loadfile_payload(settings, req);
+        let sent = self.is_running() && mpv_ipc::send(&ipc, &payload).is_ok();
+        if sent && let Some(r) = self.running.as_mut() {
+            r.last_payload = payload;
+        }
+        sent
     }
 
     fn start(
@@ -127,6 +154,7 @@ impl ExternalPlayer {
             child,
             kind: kind.clone(),
             ipc,
+            last_payload: String::new(),
         });
         Ok(())
     }
@@ -206,6 +234,7 @@ mod tests {
             url: "--script=/tmp/x.lua".into(),
             title: String::new(),
             headers: Headers::default(),
+            ..Default::default()
         };
         assert!(
             p.play(&PlayerKind::Mpv, &PlayerSettings::default(), &req)
@@ -220,10 +249,11 @@ mod tests {
             url: "http://h/s".into(),
             title: "t".into(),
             headers: Headers::default(),
+            ..Default::default()
         };
-        assert!(!p.reuse_mpv(&req));
+        assert!(!p.reuse_mpv(&PlayerSettings::default(), &req));
         p.start(&PlayerKind::Vlc, Path::new("sleep"), &sleep_args(), None)
             .unwrap();
-        assert!(!p.reuse_mpv(&req));
+        assert!(!p.reuse_mpv(&PlayerSettings::default(), &req));
     }
 }

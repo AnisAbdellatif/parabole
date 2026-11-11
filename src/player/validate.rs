@@ -50,6 +50,8 @@ pub fn clean_request(req: &PlayRequest) -> Result<PlayRequest> {
             referrer: clean_opt(&req.headers.referrer),
             origin: clean_opt(&req.headers.origin),
         },
+        media: req.media,
+        start_s: req.start_s,
     })
 }
 
@@ -112,6 +114,7 @@ mod tests {
                 referrer: Some("\n".into()),
                 origin: None,
             },
+            ..Default::default()
         };
         let c = clean_request(&req).unwrap();
         assert_eq!(c.title, "tx");

@@ -17,6 +17,7 @@ pub struct Persisted {
     pub source: Option<SourceId>,
     pub sel: Option<Sel>,
     pub sidebar_width: f32,
+    pub player_dock_bottom: bool,
 }
 
 impl Default for Persisted {
@@ -27,6 +28,7 @@ impl Default for Persisted {
             source: None,
             sel: None,
             sidebar_width: 260.0,
+            player_dock_bottom: false,
         }
     }
 }

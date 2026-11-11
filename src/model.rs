@@ -182,11 +182,14 @@ pub struct Episode {
     pub container_ext: Option<String>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct PlayRequest {
     pub url: String,
     pub title: String,
     pub headers: Headers,
+    pub media: MediaKind,
+    /// Resume offset for VOD.
+    pub start_s: Option<f64>,
 }
 
 /// Details of a movie or series, all optional because providers fill them inconsistently.

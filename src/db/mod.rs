@@ -10,6 +10,7 @@ mod migrate;
 mod new_categories;
 mod overlay;
 mod profiles;
+mod resume;
 mod search;
 mod settings;
 mod sources;

@@ -6,6 +6,7 @@ mod details_view;
 mod edit_mode;
 mod events;
 mod hide_new;
+mod player;
 mod profiles_view;
 mod series_view;
 mod settings_view;
@@ -47,6 +48,7 @@ pub struct App {
     accounts: HashMap<SourceId, AccountInfo>,
     info: details_view::InfoStore,
     playing: Option<(String, PlayerKind)>,
+    player_ui: player::PlayerUi,
     player_settings: PlayerSettings,
     toasts: Vec<Toast>,
     sources_dialog: Option<sources::SourcesDialog>,
@@ -55,14 +57,18 @@ pub struct App {
 }
 
 impl eframe::App for App {
-    fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
+    fn ui(&mut self, ui: &mut egui::Ui, frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
         self.pump_events(&ctx);
         self.apply_search_if_due(&ctx);
-        self.topbar(ui);
-        self.status_bar(ui);
-        self.sidebar(ui);
-        egui::CentralPanel::default().show(ui, |ui| self.center(ui));
+        self.embed_tick(&ctx);
+        if !self.embed_fullscreen(ui, frame) {
+            self.topbar(ui);
+            self.status_bar(ui);
+            self.sidebar(ui);
+            self.embed_pane(ui, frame);
+            egui::CentralPanel::default().show(ui, |ui| self.center(ui));
+        }
         self.dialogs(&ctx);
         self.toasts(&ctx);
     }
@@ -72,6 +78,7 @@ impl eframe::App for App {
     }
 
     fn on_exit(&mut self, _gl: Option<&eframe::glow::Context>) {
+        self.shutdown_embedded();
         self.worker.send(crate::worker::Command::Quit);
     }
 }

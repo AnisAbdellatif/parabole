@@ -1,5 +1,5 @@
-use super::{Event, Worker, player_settings};
-use crate::model::{Episode, Headers, PlayRequest, ProfileId, SourceId};
+use super::{EmbedPlay, Event, Track, Worker, episode_key, player_settings};
+use crate::model::{Episode, Headers, MediaKind, PlayRequest, ProfileId, SourceId};
 use crate::player::PlayerKind;
 use crate::sources;
 use anyhow::Result;
@@ -15,12 +15,20 @@ impl Worker {
         let src = self.db.source(info.source_id)?;
         let mut headers = info.headers.clone();
         headers.user_agent = headers.user_agent.or_else(|| src.user_agent.clone());
+        let track = Track {
+            profile,
+            source: info.source_id,
+            media: info.media,
+            key: info.key.clone(),
+        };
         let req = PlayRequest {
             url: sources::resolve_url(&src, &info)?,
             title: info.name.clone(),
             headers,
+            media: info.media,
+            start_s: None,
         };
-        if self.launch(kind, &req) {
+        if self.launch(kind, &req, Some(track), Some(stream_id)) {
             self.db
                 .record_watch(profile, info.source_id, info.media, &info.key)?;
         }
@@ -29,6 +37,7 @@ impl Worker {
 
     pub(super) fn play_episode(
         &mut self,
+        profile: ProfileId,
         source: SourceId,
         episode: &Episode,
         title: String,
@@ -42,8 +51,16 @@ impl Worker {
                 user_agent: src.user_agent.clone(),
                 ..Default::default()
             },
+            media: MediaKind::Series,
+            start_s: None,
         };
-        self.launch(kind, &req);
+        let track = Track {
+            profile,
+            source,
+            media: MediaKind::Series,
+            key: episode_key(&episode.id),
+        };
+        self.launch(kind, &req, Some(track), None);
         Ok(())
     }
 
@@ -54,15 +71,38 @@ impl Worker {
         Ok(())
     }
 
-    fn launch(&mut self, kind: Option<&PlayerKind>, req: &PlayRequest) -> bool {
+    pub(super) fn launch(
+        &mut self,
+        kind: Option<&PlayerKind>,
+        req: &PlayRequest,
+        track: Option<Track>,
+        stream_id: Option<i64>,
+    ) -> bool {
         let settings = player_settings::load(&self.db);
-        let kind = kind.unwrap_or(&settings.default).clone();
-        match self.player.play(&kind, &settings, req) {
+        let mut kind = kind
+            .cloned()
+            .unwrap_or_else(|| settings.kind_for(req.media));
+        if kind == PlayerKind::Embedded && !cfg!(feature = "embedded-mpv") {
+            kind = PlayerKind::Mpv;
+        }
+        let req = self.with_resume(req.clone(), track.as_ref());
+        if kind == PlayerKind::Embedded {
+            self.player.stop();
+            self.was_playing = false;
+            self.emit(Event::PlayEmbedded(Box::new(EmbedPlay {
+                req,
+                track,
+                stream_id,
+            })));
+            return true;
+        }
+        match self.player.play(&kind, &settings, &req) {
             Ok(()) => {
                 self.was_playing = true;
                 self.emit(Event::Playing {
                     title: req.title.clone(),
                     kind,
+                    media: req.media,
                 });
                 true
             }

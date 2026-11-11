@@ -6,6 +6,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("schema.sql"),
     include_str!("migration_2.sql"),
     include_str!("migration_3.sql"),
+    include_str!("migration_4.sql"),
 ];
 
 pub fn run(conn: &mut Connection) -> Result<()> {

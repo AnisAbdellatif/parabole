@@ -81,6 +81,7 @@ impl App {
         if let Some((source, episode, title)) = play {
             self.warn_if_connections_full(source);
             self.worker.send(Command::PlayEpisode {
+                profile: self.profile(),
                 source,
                 episode,
                 title,

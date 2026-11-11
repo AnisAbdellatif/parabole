@@ -1,5 +1,6 @@
 use crate::model::PlayRequest;
 use crate::player::argv::origin_header;
+use crate::player::{PlayerSettings, live};
 use anyhow::Result;
 use serde_json::{Value, json};
 use std::path::{Path, PathBuf};
@@ -24,9 +25,15 @@ pub fn remove_stale(path: &Path) {
 }
 
 /// `loadfile` with per-file options (mpv >= 0.38 argument order).
-pub fn loadfile_payload(req: &PlayRequest) -> String {
+pub fn loadfile_payload(settings: &PlayerSettings, req: &PlayRequest) -> String {
     let mut opts = serde_json::Map::new();
     opts.insert("force-media-title".into(), json!(req.title));
+    for (k, v) in live::file_options(settings, req.media) {
+        opts.insert(k.into(), json!(v));
+    }
+    if let Some(s) = req.start_s {
+        opts.insert("start".into(), json!(s.to_string()));
+    }
     let h = &req.headers;
     if let Some(ua) = &h.user_agent {
         opts.insert("user-agent".into(), json!(ua));
@@ -85,7 +92,7 @@ pub fn send(path: &Path, payload: &str) -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::model::Headers;
+    use crate::model::{Headers, MediaKind};
 
     fn req() -> PlayRequest {
         PlayRequest {
@@ -96,12 +103,29 @@ mod tests {
                 referrer: None,
                 origin: Some("http://o".into()),
             },
+            media: MediaKind::Movie,
+            ..Default::default()
         }
     }
 
     #[test]
+    fn live_payload_carries_low_latency_options() {
+        let mut r = req();
+        r.media = MediaKind::Live;
+        let v: Value =
+            serde_json::from_str(&loadfile_payload(&PlayerSettings::default(), &r)).unwrap();
+        let opts = &v["command"][4];
+        assert_eq!(opts["cache-pause"], "no");
+        assert_eq!(
+            opts["demuxer-lavf-o-add"],
+            "fflags=+nobuffer,live_start_index=-1"
+        );
+    }
+
+    #[test]
     fn payload_format() {
-        let v: Value = serde_json::from_str(&loadfile_payload(&req())).unwrap();
+        let v: Value =
+            serde_json::from_str(&loadfile_payload(&PlayerSettings::default(), &req())).unwrap();
         assert_eq!(
             v,
             json!({"command": ["loadfile", "http://h/s.ts", "replace", -1, {
@@ -114,7 +138,7 @@ mod tests {
 
     #[test]
     fn payload_is_single_line() {
-        assert!(!loadfile_payload(&req()).contains('\n'));
+        assert!(!loadfile_payload(&PlayerSettings::default(), &req()).contains('\n'));
     }
 
     #[cfg(unix)]
@@ -143,7 +167,7 @@ mod tests {
             "ok",
             "{\"event\":\"x\"}\n{\"error\":\"success\",\"data\":null}\n",
         );
-        send(&path, &loadfile_payload(&req())).unwrap();
+        send(&path, &loadfile_payload(&PlayerSettings::default(), &req())).unwrap();
         assert!(h.join().unwrap().contains("loadfile"));
         let _ = std::fs::remove_file(path);
     }

@@ -2,15 +2,18 @@
 //! through `Command`/`Event` channels and never blocks on it.
 
 pub mod auto_refresh;
+mod embed;
 mod jobs;
 mod play;
 pub mod player_settings;
 #[cfg(test)]
 mod tests;
 
+pub use embed::{EmbedPlay, Track, episode_key};
+
 use crate::db::Db;
 use crate::model::{
-    Episode, MediaInfo, MediaKind, ParsedPlaylist, ProfileId, Season, Source, SourceId,
+    Episode, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Season, Source, SourceId,
 };
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
@@ -51,6 +54,7 @@ pub enum Command {
         kind: Option<PlayerKind>,
     },
     PlayEpisode {
+        profile: ProfileId,
         source: SourceId,
         episode: Episode,
         title: String,
@@ -59,6 +63,20 @@ pub enum Command {
     CopyUrl {
         stream_id: i64,
     },
+    /// Hand an already-resolved request to a player (embedded-player fallback).
+    LaunchRequest {
+        req: PlayRequest,
+        kind: PlayerKind,
+        track: Option<Track>,
+        stream_id: Option<i64>,
+    },
+    SavePosition {
+        track: Track,
+        position_s: f64,
+        duration_s: f64,
+    },
+    /// Reload the external mpv stream, landing on the live edge.
+    GoLive,
     StopPlayer,
     Fetched(SourceId, Result<ParsedPlaylist, String>),
     Quit,
@@ -85,7 +103,9 @@ pub enum Event {
     Playing {
         title: String,
         kind: PlayerKind,
+        media: MediaKind,
     },
+    PlayEmbedded(Box<EmbedPlay>),
     PlayerStopped,
     PlayFailed(String),
     UrlReady(String),
@@ -178,12 +198,25 @@ impl Worker {
                 kind,
             } => self.play(profile, stream_id, kind.as_ref()),
             Command::PlayEpisode {
+                profile,
                 source,
                 episode,
                 title,
                 kind,
-            } => self.play_episode(source, &episode, title, kind.as_ref()),
+            } => self.play_episode(profile, source, &episode, title, kind.as_ref()),
             Command::CopyUrl { stream_id } => self.copy_url(stream_id),
+            Command::LaunchRequest {
+                req,
+                kind,
+                track,
+                stream_id,
+            } => self.launch_request(req, kind, track, stream_id),
+            Command::SavePosition {
+                track,
+                position_s,
+                duration_s,
+            } => self.save_position(&track, position_s, duration_s),
+            Command::GoLive => self.player.go_live(),
             Command::StopPlayer => {
                 self.player.stop();
                 Ok(())
