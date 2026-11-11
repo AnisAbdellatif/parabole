@@ -6,6 +6,7 @@ use crate::ui::theme::{self, Icon};
 use egui::{Align, Color32, Layout, Rect, pos2};
 
 const BAR_HEIGHT: f32 = 48.0;
+const COMPACT_BELOW: f32 = 640.0;
 
 #[derive(Default)]
 pub struct Actions {
@@ -13,6 +14,7 @@ pub struct Actions {
     pub close: bool,
     pub toggle_dock: bool,
     pub toggle_stats: bool,
+    pub toggle_mini: bool,
 }
 
 pub fn fmt_time(seconds: f64) -> String {
@@ -44,6 +46,7 @@ pub fn show(
         Color32::from_black_alpha((190.0 * alpha) as u8),
     );
     let st = player.state().clone();
+    let compact = rect.width() < COMPACT_BELOW;
     ui.scope_builder(
         egui::UiBuilder::new().max_rect(bar_rect.shrink2(egui::vec2(12.0, 4.0))),
         |ui| {
@@ -69,10 +72,11 @@ pub fn show(
                 if icon_button(ui, vol, tip, false).clicked() {
                     player.set_muted(!st.muted);
                 }
-                if let Some(f) = bar(ui, 80.0, (st.volume / 130.0) as f32) {
+                if !compact && let Some(f) = bar(ui, 80.0, (st.volume / 130.0) as f32) {
                     player.set_volume(f64::from(f) * 130.0);
                 }
-                if let (false, Some(pos), Some(dur)) = (session.is_live(), st.time_pos, st.duration)
+                if let (false, false, Some(pos), Some(dur)) =
+                    (compact, session.is_live(), st.time_pos, st.duration)
                 {
                     let time = |t| {
                         egui::RichText::new(fmt_time(t))
@@ -87,15 +91,27 @@ pub fn show(
                 }
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.spacing_mut().item_spacing.x = 4.0;
-                    if icon_button(ui, Icon::FullscreenExit, "Exit fullscreen (Esc)", false)
-                        .clicked()
+                    if !compact
+                        && icon_button(ui, Icon::FullscreenExit, "Exit fullscreen (Esc)", false)
+                            .clicked()
                     {
                         acts.toggle_fullscreen = true;
                     }
-                    if icon_button(ui, Icon::Info, "Stats for nerds (I)", stats_on).clicked() {
+                    let tip = if compact {
+                        "Exit mini player (P)"
+                    } else {
+                        "Mini player (P)"
+                    };
+                    if icon_button(ui, Icon::Mini, tip, compact).clicked() {
+                        acts.toggle_mini = true;
+                    }
+                    if !compact
+                        && icon_button(ui, Icon::Info, "Stats for nerds (I)", stats_on).clicked()
+                    {
                         acts.toggle_stats = true;
                     }
-                    if session.is_live()
+                    if !compact
+                        && session.is_live()
                         && icon_button(ui, Icon::Live, "Go live (Ctrl+L)", false).clicked()
                     {
                         let _ = player.reload(settings);

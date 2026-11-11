@@ -27,6 +27,7 @@ impl EmbeddedPlayer {
         bail!("built without the embedded-mpv feature")
     }
     pub fn stop(&mut self) {}
+    pub fn apply_mpv_args(&self, _args: &[String]) {}
     pub fn is_loaded(&self) -> bool {
         false
     }

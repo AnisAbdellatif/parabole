@@ -4,11 +4,13 @@ mod controls;
 mod dock;
 mod fullscreen;
 mod keys;
+mod mini;
 mod nerd_stats;
 mod pane;
 mod session;
 mod video;
 mod widgets;
+mod zap;
 
 use super::App;
 use crate::model::MediaKind;
@@ -23,6 +25,10 @@ pub struct PlayerUi {
     init_error: Option<String>,
     session: Option<Session>,
     fullscreen: bool,
+    mini: bool,
+    /// Size and position of the normal window, restored when leaving mini mode.
+    windowed: Option<(egui::Vec2, Option<egui::Pos2>)>,
+    zap: zap::ZapBuffer,
     /// Stats-for-nerds overlay on the video.
     stats: bool,
     last_motion: Instant,
@@ -43,11 +49,20 @@ impl PlayerUi {
             init_error,
             session: None,
             fullscreen: false,
+            mini: false,
+            windowed: None,
+            zap: zap::ZapBuffer::default(),
             stats: false,
             last_motion: Instant::now(),
             video_rect: egui::Rect::NOTHING,
             prev_stream: None,
             ext_media: None,
+        }
+    }
+
+    pub fn apply_mpv_args(&self, args: &[String]) {
+        if let Some(p) = &self.embed {
+            p.apply_mpv_args(args);
         }
     }
 }
@@ -110,6 +125,7 @@ impl App {
         if self.player_ui.fullscreen {
             self.set_fullscreen(ctx, false);
         }
+        self.set_mini(ctx, false);
         if matches!(self.playing, Some((_, PlayerKind::Embedded))) {
             self.playing = None;
         }
@@ -141,6 +157,7 @@ impl App {
 
     /// Per-frame housekeeping: mpv events, live retry, periodic resume saves, key shortcuts.
     pub(super) fn embed_tick(&mut self, ctx: &egui::Context) {
+        self.remember_window(ctx);
         self.player_keys(ctx);
         let ui = &mut self.player_ui;
         let (Some(player), Some(s)) = (ui.embed.as_mut(), ui.session.as_mut()) else {

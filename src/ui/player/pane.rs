@@ -118,6 +118,9 @@ impl App {
         if acts.toggle_dock {
             self.state.player_dock_bottom = !bottom;
         }
+        if acts.toggle_mini {
+            self.set_mini(&ctx, true);
+        }
         if acts.toggle_fullscreen {
             self.set_fullscreen(&ctx, true);
         }

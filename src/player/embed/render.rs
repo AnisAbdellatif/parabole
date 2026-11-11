@@ -136,8 +136,6 @@ impl VideoOutput {
     }
 
     /// Returns the FBO, its egui texture and the allocated size, growing the texture when needed.
-    // shortcut: the texture only grows (in 256px steps) and a replaced egui texture id is not freed;
-    // upgrade to eframe-owned `replace_native_texture` if resize churn ever matters.
     fn ensure_target(
         &self,
         frame: &mut eframe::Frame,
@@ -145,22 +143,34 @@ impl VideoOutput {
     ) -> Option<(i32, TextureId, (i32, i32))> {
         let gl = frame.gl()?.clone();
         let mut slot = self.target.lock().unwrap_or_else(|e| e.into_inner());
-        let big_enough = |t: &Target| t.alloc.0 >= used.0 && t.alloc.1 >= used.1;
-        if !slot.as_ref().is_some_and(big_enough) {
-            let alloc = (round_up(used.0.max(512)), round_up(used.1.max(288)));
-            let old = slot.take();
-            let (fbo, tex) = unsafe { create_target(&gl, alloc, old) }?;
-            let id = frame.register_native_glow_texture(tex);
-            *slot = Some(Target {
-                fbo,
-                tex,
-                id,
-                alloc,
-            });
+        let alloc = alloc_size(used);
+        match slot.as_mut() {
+            Some(t) if t.alloc.0 >= used.0 && t.alloc.1 >= used.1 => {}
+            // Same GL texture and FBO, new storage: the egui texture id stays valid and nothing leaks
+            // (eframe has no API to free or replace a registered native texture).
+            Some(t) => {
+                unsafe { allocate_storage(&gl, t.tex, alloc) };
+                t.alloc = alloc;
+            }
+            None => {
+                let (fbo, tex) = unsafe { create_target(&gl, alloc) }?;
+                let id = frame.register_native_glow_texture(tex);
+                *slot = Some(Target {
+                    fbo,
+                    tex,
+                    id,
+                    alloc,
+                });
+            }
         }
         let t = slot.as_ref()?;
         Some((t.fbo.0.get() as i32, t.id, t.alloc))
     }
+}
+
+/// Texture size to allocate for a pane of `used` pixels: at least 512x288, rounded up to 256 steps.
+fn alloc_size((w, h): (i32, i32)) -> (i32, i32) {
+    (round_up(w.max(512)), round_up(h.max(288)))
 }
 
 fn round_up(v: i32) -> i32 {
@@ -169,17 +179,8 @@ fn round_up(v: i32) -> i32 {
 
 /// # Safety
 /// The GL context behind `gl` must be current.
-unsafe fn create_target(
-    gl: &glow::Context,
-    (w, h): (i32, i32),
-    old: Option<Target>,
-) -> Option<(glow::Framebuffer, glow::Texture)> {
+unsafe fn allocate_storage(gl: &glow::Context, tex: glow::Texture, (w, h): (i32, i32)) {
     unsafe {
-        if let Some(old) = old {
-            gl.delete_framebuffer(old.fbo);
-            gl.delete_texture(old.tex);
-        }
-        let tex = gl.create_texture().ok()?;
         gl.bind_texture(glow::TEXTURE_2D, Some(tex));
         gl.tex_image_2d(
             glow::TEXTURE_2D,
@@ -192,6 +193,20 @@ unsafe fn create_target(
             glow::UNSIGNED_BYTE,
             glow::PixelUnpackData::Slice(None),
         );
+        gl.bind_texture(glow::TEXTURE_2D, None);
+    }
+}
+
+/// # Safety
+/// The GL context behind `gl` must be current.
+unsafe fn create_target(
+    gl: &glow::Context,
+    size: (i32, i32),
+) -> Option<(glow::Framebuffer, glow::Texture)> {
+    unsafe {
+        let tex = gl.create_texture().ok()?;
+        allocate_storage(gl, tex, size);
+        gl.bind_texture(glow::TEXTURE_2D, Some(tex));
         for (param, value) in [
             (glow::TEXTURE_MIN_FILTER, glow::LINEAR),
             (glow::TEXTURE_MAG_FILTER, glow::LINEAR),
@@ -200,7 +215,10 @@ unsafe fn create_target(
         ] {
             gl.tex_parameter_i32(glow::TEXTURE_2D, param, value as i32);
         }
-        let fbo = gl.create_framebuffer().ok()?;
+        let Ok(fbo) = gl.create_framebuffer() else {
+            gl.delete_texture(tex);
+            return None;
+        };
         gl.bind_framebuffer(glow::FRAMEBUFFER, Some(fbo));
         gl.framebuffer_texture_2d(
             glow::FRAMEBUFFER,
@@ -212,5 +230,17 @@ unsafe fn create_target(
         gl.bind_framebuffer(glow::FRAMEBUFFER, None);
         gl.bind_texture(glow::TEXTURE_2D, None);
         Some((fbo, tex))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::alloc_size;
+
+    #[test]
+    fn alloc_has_minimum_and_rounds_up() {
+        assert_eq!(alloc_size((1, 1)), (512, 512));
+        assert_eq!(alloc_size((513, 300)), (768, 512));
+        assert_eq!(alloc_size((1280, 720)), (1280, 768));
     }
 }

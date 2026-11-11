@@ -25,6 +25,7 @@ pub enum Icon {
     Info,
     Subtitles,
     Audio,
+    Mini,
 }
 
 fn source(i: Icon) -> ImageSource<'static> {
@@ -52,6 +53,7 @@ fn source(i: Icon) -> ImageSource<'static> {
         Icon::Info => include_image!("../../../assets/icons/info.svg"),
         Icon::Subtitles => include_image!("../../../assets/icons/subtitles.svg"),
         Icon::Audio => include_image!("../../../assets/icons/audio.svg"),
+        Icon::Mini => include_image!("../../../assets/icons/mini.svg"),
     }
 }
 

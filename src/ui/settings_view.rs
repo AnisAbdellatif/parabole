@@ -158,6 +158,7 @@ impl App {
             mpv_args,
         };
         player_settings::save(&self.db, &s).map_err(|e| format!("{e:#}"))?;
+        self.player_ui.apply_mpv_args(&s.mpv_args);
         self.player_settings = s;
         Ok(())
     }

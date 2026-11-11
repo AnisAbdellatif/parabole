@@ -7,12 +7,13 @@ impl App {
         ui: &mut egui::Ui,
         frame: &mut eframe::Frame,
     ) -> bool {
-        if !self.player_ui.fullscreen {
+        if !(self.player_ui.fullscreen || self.player_ui.mini) {
             return false;
         }
         if !self.embedded_active() {
             let ctx = ui.ctx().clone();
             self.set_fullscreen(&ctx, false);
+            self.set_mini(&ctx, false);
             return false;
         }
         egui::CentralPanel::default()

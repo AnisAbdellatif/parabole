@@ -63,9 +63,11 @@ impl App {
         }
         let ui = &self.player_ui;
         let focused = ui.fullscreen
+            || ui.mini
             || ctx
                 .pointer_hover_pos()
                 .is_some_and(|p| ui.video_rect.contains(p));
+        self.zap_keys(ctx, focused);
         if key(Modifiers::CTRL, Key::ArrowUp) || (focused && key(Modifiers::NONE, Key::PageUp)) {
             self.zap(-1);
         }
@@ -81,10 +83,17 @@ impl App {
         if self.player_ui.fullscreen && key(Modifiers::NONE, Key::Escape) {
             self.set_fullscreen(ctx, false);
         }
+        if self.player_ui.mini && key(Modifiers::NONE, Key::Escape) {
+            self.set_mini(ctx, false);
+        }
+        if focused && key(Modifiers::NONE, Key::P) {
+            let on = !self.player_ui.mini;
+            self.set_mini(ctx, on);
+        }
         if focused && key(Modifiers::NONE, Key::I) {
             self.player_ui.stats = !self.player_ui.stats;
         }
-        if focused && key(Modifiers::NONE, Key::F) {
+        if focused && !self.player_ui.mini && key(Modifiers::NONE, Key::F) {
             let on = !self.player_ui.fullscreen;
             self.set_fullscreen(ctx, on);
         }
