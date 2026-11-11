@@ -1,0 +1,3 @@
+[{"num":1,"name":"Show","series_id":"9","cover":"http://i/s.png","plot":"A plot","rating":"8","backdrop_path":["http://i/1.jpg","http://i/2.jpg"],"category_id":"2"},
+ {"name":"Show2","series_id":10,"cover":"","backdrop_path":"http://i/3.jpg","category_id":"2"},
+ {"name":"Show3","series_id":11,"backdrop_path":[],"category_id":"2"}]
