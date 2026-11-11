@@ -3,7 +3,7 @@ use super::poster_grid::{self, RowCtx};
 use super::state::Sel;
 use super::stream_row::{self, ROW_H, RowAction};
 use super::theme::{self, Icon};
-use crate::model::{MediaKind, StreamRow};
+use crate::model::StreamRow;
 use egui::{Frame, Key, Margin, Rect, vec2};
 use egui_dnd::{DragDropItem, dnd};
 
@@ -33,10 +33,11 @@ impl App {
             return;
         }
         self.list_header(ui);
-        let favorites = self.state.sel == Some(Sel::Favorites)
+        self.publish_menu_data(ui.ctx());
+        let favorites = matches!(self.state.sel, Some(Sel::Favorites | Sel::Group(_)))
             && self.search.applied.is_empty()
             && self.streams.len() <= MAX_DRAG_FAVORITES;
-        let grid = self.state.tab != MediaKind::Live && !favorites;
+        let grid = self.grid_view() && !favorites;
         let mut actions = self.key_actions(ui, grid);
         Frame::NONE
             .inner_margin(Margin {
@@ -54,6 +55,12 @@ impl App {
                     self.virtual_list(ui, &mut actions, grid);
                 }
             });
+        if actions
+            .iter()
+            .any(|(_, a)| matches!(a, RowAction::LoadAlternates))
+        {
+            ui.ctx().request_repaint();
+        }
         for (idx, action) in actions {
             self.row_action(idx, action);
         }
@@ -142,7 +149,7 @@ impl App {
         self.list_view = (out.state.clamped_offset().y, out.inner_rect.height());
     }
 
-    // shortcut: favorites are not virtualized (drag reorder needs every row) and use list rows on every tab; above MAX_DRAG_FAVORITES the virtual list/grid is used and reordering is off
+    // shortcut: favorites and group items are not virtualized (drag reorder needs every row) and use list rows on every tab; above MAX_DRAG_FAVORITES the virtual list/grid is used and reordering is off
     fn favorites_list(&mut self, ui: &mut egui::Ui, actions: &mut Actions) {
         let mut finished = false;
         let edit = self.edit.on;
@@ -183,9 +190,12 @@ impl App {
                 .iter()
                 .map(|s| (s.source_id, s.key.clone()))
                 .collect();
-            let res = self
-                .db
-                .reorder_favorites(self.profile(), self.state.tab, &items);
+            let res = match self.state.sel {
+                Some(Sel::Group(g)) => self.db.reorder_group_items(g, &items),
+                _ => self
+                    .db
+                    .reorder_favorites(self.profile(), self.state.tab, &items),
+            };
             self.report(res);
         }
     }

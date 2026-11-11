@@ -39,6 +39,7 @@ impl App {
             Err(e) => self.toast(format!("{e:#}")),
         }
         self.reload_accounts();
+        self.alts = None;
         if !self.sources.iter().any(|s| Some(s.id) == self.state.source) {
             self.state.source = None;
         }
@@ -56,7 +57,9 @@ impl App {
             Ok(c) => self.categories = c,
             Err(e) => self.toast(format!("{e:#}")),
         }
+        self.reload_groups();
         let valid = match &self.state.sel {
+            Some(Sel::Group(id)) => self.groups.iter().any(|g| g.id == *id),
             Some(Sel::Category(s, k)) => self
                 .categories
                 .iter()
@@ -81,8 +84,8 @@ impl App {
         let res = if !self.search.applied.is_empty() {
             self.db.search(
                 profile,
-                self.state.source,
-                tab,
+                self.search.filter.source(self.state.source),
+                self.search.filter.media(tab),
                 &self.search.applied,
                 SEARCH_LIMIT,
             )
@@ -90,6 +93,7 @@ impl App {
             match &self.state.sel {
                 Some(Sel::Favorites) => self.db.favorites(profile, tab),
                 Some(Sel::Recent) => self.db.recent(profile, tab, RECENT_LIMIT),
+                Some(Sel::Group(id)) => self.db.group_streams(profile, *id, tab),
                 Some(Sel::Category(s, k)) => self
                     .db
                     .streams_in_category(profile, *s, tab, k, self.edit.on)
@@ -145,6 +149,9 @@ impl App {
         }
         self.search.edited_at = None;
         self.search.applied = self.search.text.trim().to_string();
+        if self.search.applied.is_empty() {
+            self.search.filter = Default::default();
+        }
         self.series = None;
         self.selected = 0;
         self.reload_streams();

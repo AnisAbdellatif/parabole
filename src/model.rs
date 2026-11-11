@@ -155,6 +155,21 @@ pub struct StreamRow {
     pub missing: bool,
 }
 
+/// A user-made, ordered list of streams of one media kind.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StreamGroup {
+    pub id: i64,
+    pub name: String,
+    pub count: i64,
+}
+
+/// The same live channel offered by another source of the profile.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Alternate {
+    pub stream_id: i64,
+    pub source_name: String,
+}
+
 /// What the player layer needs to resolve a stream URL.
 #[derive(Clone, Debug, PartialEq)]
 pub struct PlayInfo {

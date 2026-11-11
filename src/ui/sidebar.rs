@@ -72,6 +72,7 @@ impl App {
         self.selected = 0;
         self.search.text.clear();
         self.search.applied.clear();
+        self.search.filter = Default::default();
         self.reload_streams();
     }
 

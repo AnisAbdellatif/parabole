@@ -176,7 +176,7 @@ fn delete_source_cascades_overlay_and_search() {
             .unwrap();
         assert_eq!(n, 0, "{t}");
     }
-    assert!(db.search(p, None, m, "one", 10).unwrap().is_empty());
+    assert!(db.search(p, None, Some(m), "one", 10).unwrap().is_empty());
 }
 
 #[test]

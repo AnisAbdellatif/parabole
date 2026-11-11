@@ -14,6 +14,7 @@ enum Op {
     Rename(ProfileId, String),
     Duplicate(ProfileId, String),
     Delete(ProfileId),
+    CopyFavorites { from: ProfileId, to: ProfileId },
 }
 
 fn copy_name(profiles: &[crate::model::Profile], base: &str) -> String {
@@ -61,6 +62,19 @@ impl App {
                             if ui.button("Duplicate").clicked() {
                                 op = Some(Op::Duplicate(p.id, copy_name(&self.profiles, &p.name)));
                             }
+                            if self.profiles.len() > 1 {
+                                ui.menu_button("Copy favorites from…", |ui| {
+                                    for other in self.profiles.iter().filter(|o| o.id != p.id) {
+                                        if ui.button(&other.name).clicked() {
+                                            op = Some(Op::CopyFavorites {
+                                                from: other.id,
+                                                to: p.id,
+                                            });
+                                            ui.close();
+                                        }
+                                    }
+                                });
+                            }
                             if d.confirm_delete == Some(p.id) {
                                 if ui.button("Really delete").clicked() {
                                     op = Some(Op::Delete(p.id));
@@ -98,6 +112,12 @@ impl App {
 
     fn run_profile_op(&mut self, op: Op, d: &mut ProfilesDialog) {
         let res = match op {
+            Op::CopyFavorites { from, to } => self.db.copy_favorites(from, to).map(|n| {
+                self.toast(format!(
+                    "Copied {n} favorite{}",
+                    if n == 1 { "" } else { "s" }
+                ));
+            }),
             Op::Create(name) => {
                 d.new_name.clear();
                 self.db.create_profile(&name).map(|_| ())

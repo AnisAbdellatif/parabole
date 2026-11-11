@@ -34,6 +34,16 @@ impl App {
                     });
                 });
             });
+        if !self.search.applied.is_empty() {
+            Frame::NONE
+                .inner_margin(Margin {
+                    left: 24,
+                    right: 24,
+                    top: 0,
+                    bottom: 12,
+                })
+                .show(ui, |ui| self.search_chips(ui));
+        }
     }
 
     fn list_title(&self) -> String {
@@ -43,6 +53,11 @@ impl App {
         match &self.state.sel {
             Some(Sel::Favorites) => "Favorites".into(),
             Some(Sel::Recent) => "Recent".into(),
+            Some(Sel::Group(id)) => self
+                .groups
+                .iter()
+                .find(|g| g.id == *id)
+                .map_or(String::new(), |g| g.name.clone()),
             Some(Sel::Category(s, k)) => self
                 .categories
                 .iter()
@@ -60,6 +75,8 @@ impl App {
             )
         } else if self.state.sel == Some(Sel::Favorites) {
             "Nothing here yet. Star a channel to add it to Favorites.".to_string()
+        } else if matches!(self.state.sel, Some(Sel::Group(_))) {
+            "Empty group. Right-click an item and pick Add to group.".to_string()
         } else {
             "Nothing here yet.".to_string()
         };

@@ -3,20 +3,26 @@
 mod boot;
 mod data;
 mod details_view;
+mod edit_groups;
 mod edit_mode;
 mod edit_toolbar;
 mod events;
+mod group_actions;
+mod group_dialog;
 mod hide_new;
 mod kit;
 mod list_header;
+mod menu_data;
 mod player;
 mod poster_grid;
 mod profiles_view;
 mod row_actions;
 mod row_menu;
+mod search_filter;
 mod series_view;
 mod settings_view;
 mod sidebar;
+mod sidebar_groups;
 mod sidebar_rows;
 mod sort;
 mod sources;
@@ -32,7 +38,7 @@ mod topbar;
 pub use boot::run;
 
 use crate::db::Db;
-use crate::model::{CategoryRow, Profile, Source, SourceId, StreamRow};
+use crate::model::{Alternate, CategoryRow, Profile, Source, SourceId, StreamGroup, StreamRow};
 use crate::player::{PlayerKind, PlayerSettings};
 use crate::sources::xtream::AccountInfo;
 use crate::worker::Handle;
@@ -47,6 +53,9 @@ pub struct App {
     sources: Vec<Source>,
     categories: Vec<CategoryRow>,
     streams: Vec<StreamRow>,
+    groups: Vec<StreamGroup>,
+    alts: Option<(i64, Vec<Alternate>)>,
+    group_dialog: Option<group_dialog::GroupDialog>,
     selected: usize,
     sort: sort::SortMode,
     scroll_to_selected: bool,
@@ -100,6 +109,7 @@ impl App {
         self.sources_window(ctx);
         self.settings_window(ctx);
         self.profiles_window(ctx);
+        self.group_window(ctx);
         self.details_window(ctx);
     }
 }

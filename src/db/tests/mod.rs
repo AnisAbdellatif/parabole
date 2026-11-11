@@ -1,4 +1,7 @@
 mod account;
+mod alternates;
+mod copy_favorites;
+mod groups;
 mod import_scale;
 mod new_categories;
 mod overlay;
@@ -82,7 +85,7 @@ fn migrations_are_idempotent_on_reopen() {
         .conn
         .query_row("PRAGMA user_version", [], |r| r.get(0))
         .unwrap();
-    assert_eq!(v, 4);
+    assert_eq!(v, 5);
     std::fs::remove_dir_all(dir).unwrap();
 }
 
