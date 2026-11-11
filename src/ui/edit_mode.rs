@@ -93,6 +93,17 @@ impl App {
             }
             let single = self.single_source();
             let reset = ui.add_enabled(single.is_some(), egui::Button::new("Reset order"));
+            let sort = ui.add_enabled(single.is_some(), egui::Button::new("Sort A–Z"));
+            if let (true, Some(s)) = (sort.clicked(), single) {
+                let mut sorted: Vec<_> = self.categories.iter().collect();
+                sorted.sort_by_cached_key(|c| c.name.to_lowercase());
+                let keys: Vec<String> = sorted.iter().map(|c| c.key.clone()).collect();
+                let res = self
+                    .db
+                    .reorder_categories(self.profile(), s, self.state.tab, &keys);
+                self.report(res);
+                self.reload_categories();
+            }
             if let (true, Some(s)) = (reset.clicked(), single) {
                 let res = self
                     .db
