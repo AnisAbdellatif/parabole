@@ -1,34 +1,66 @@
 use super::App;
+use super::kit;
 use super::state::Sel;
+use super::theme;
 use crate::model::CategoryRow;
+use egui::{Align, Frame, Layout, Margin, RichText, Stroke, vec2};
 
 impl App {
     pub(super) fn sidebar(&mut self, ui: &mut egui::Ui) {
         let panel = egui::Panel::left("sidebar")
-            .resizable(true)
-            .default_size(self.state.sidebar_width)
+            .resizable(false)
+            .exact_size(theme::SIDEBAR_W)
+            .frame(Frame::NONE.fill(theme::PANEL))
             .show(ui, |ui| {
-                ui.horizontal(|ui| {
-                    ui.heading("Categories");
-                    ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                        if ui.selectable_label(self.edit.on, "Edit").clicked() {
-                            self.edit.on = !self.edit.on;
-                            self.reload_categories();
-                        }
-                    });
-                });
+                self.sidebar_header(ui);
                 if self.edit.on {
                     self.edit_ui(ui);
                 } else {
                     self.normal_ui(ui);
                 }
             });
-        self.state.sidebar_width = panel.response.rect.width();
+        let rect = panel.response.rect;
+        ui.painter().vline(
+            rect.right() - 0.5,
+            rect.y_range(),
+            Stroke::new(1.0, theme::DIVIDER),
+        );
+    }
+
+    fn sidebar_header(&mut self, ui: &mut egui::Ui) {
+        Frame::NONE
+            .inner_margin(Margin {
+                left: 18,
+                right: 16,
+                top: 14,
+                bottom: 8,
+            })
+            .show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.label(
+                        RichText::new("CATEGORIES")
+                            .font(theme::semibold(12.0))
+                            .color(theme::TEXT_MUTED),
+                    );
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        let (label, on) = if self.edit.on {
+                            ("Done", true)
+                        } else {
+                            ("Edit", false)
+                        };
+                        let size = vec2(kit::pill_width(ui, label) - 4.0, 30.0);
+                        if kit::pill(ui, label, size, on, true).clicked() {
+                            self.edit.on = !self.edit.on;
+                            self.reload_categories();
+                        }
+                    });
+                });
+            });
     }
 
     pub(super) fn cat_label(&self, c: &CategoryRow) -> String {
         if self.show_source_prefix() {
-            format!("{}: {}", self.source_name(c.source_id), c.name)
+            format!("{} · {}", self.source_name(c.source_id), c.name)
         } else {
             c.name.clone()
         }
@@ -41,54 +73,6 @@ impl App {
         self.search.text.clear();
         self.search.applied.clear();
         self.reload_streams();
-    }
-
-    fn normal_ui(&mut self, ui: &mut egui::Ui) {
-        let mut picked = None;
-        let mut pin = None;
-        for (label, sel) in [("★ Favorites", Sel::Favorites), ("⟲ Recent", Sel::Recent)] {
-            if ui
-                .selectable_label(self.state.sel.as_ref() == Some(&sel), label)
-                .clicked()
-            {
-                picked = Some(sel);
-            }
-        }
-        ui.separator();
-        let row_h = ui.spacing().interact_size.y;
-        egui::ScrollArea::vertical().auto_shrink(false).show_rows(
-            ui,
-            row_h,
-            self.categories.len(),
-            |ui, range| {
-                for c in &self.categories[range] {
-                    ui.horizontal(|ui| {
-                        let star = if c.pinned { "★" } else { "☆" };
-                        if ui.small_button(star).on_hover_text("Pin to top").clicked() {
-                            pin = Some((c.source_id, c.key.clone(), !c.pinned));
-                        }
-                        let sel = Sel::Category(c.source_id, c.key.clone());
-                        let text = format!("{}  ({})", self.cat_label(c), c.count);
-                        if ui
-                            .selectable_label(self.state.sel.as_ref() == Some(&sel), text)
-                            .clicked()
-                        {
-                            picked = Some(sel);
-                        }
-                    });
-                }
-            },
-        );
-        if let Some((source, key, pinned)) = pin {
-            let res =
-                self.db
-                    .set_category_pinned(self.profile(), source, self.state.tab, &key, pinned);
-            self.report(res);
-            self.reload_categories();
-        }
-        if let Some(sel) = picked {
-            self.select(sel);
-        }
     }
 
     pub(super) fn report(&mut self, res: anyhow::Result<()>) {

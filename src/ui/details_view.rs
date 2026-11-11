@@ -1,5 +1,7 @@
 //! Movie/series details: a window opened from the row menu, and a block reused atop the series view.
 use super::App;
+use super::theme;
+use super::tile::is_http;
 use crate::model::{MediaInfo, MediaKind, SourceId, SourceKind, StreamRow};
 use crate::worker::Command;
 use std::collections::{HashMap, HashSet};
@@ -18,10 +20,6 @@ pub struct InfoStore {
     cache: HashMap<Key, MediaInfo>,
     loading: HashSet<Key>,
     open: Option<Open>,
-}
-
-fn is_http(url: &str) -> bool {
-    url.starts_with("http://") || url.starts_with("https://")
 }
 
 impl InfoStore {
@@ -105,7 +103,11 @@ pub fn info_body(ui: &mut egui::Ui, info: &MediaInfo, fallback_poster: Option<&s
         .filter(|u| is_http(u));
     ui.horizontal_top(|ui| {
         if let Some(url) = poster {
-            ui.add(egui::Image::new(url).max_width(150.0));
+            ui.add(
+                egui::Image::new(url)
+                    .max_width(150.0)
+                    .corner_radius(theme::RADIUS_CARD),
+            );
         }
         ui.vertical(|ui| {
             let fields = [
@@ -122,13 +124,17 @@ pub fn info_body(ui: &mut egui::Ui, info: &MediaInfo, fallback_poster: Option<&s
                 if let Some(v) = value {
                     any = true;
                     ui.horizontal_wrapped(|ui| {
-                        ui.strong(format!("{label}:"));
+                        ui.label(
+                            egui::RichText::new(format!("{label}:"))
+                                .font(theme::semibold(13.0))
+                                .color(theme::TEXT_MUTED),
+                        );
                         ui.label(v);
                     });
                 }
             }
             if !any {
-                ui.weak("No details available.");
+                ui.label(egui::RichText::new("No details available.").color(theme::TEXT_MUTED));
             }
         });
     });

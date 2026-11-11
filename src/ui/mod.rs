@@ -4,13 +4,20 @@ mod boot;
 mod data;
 mod details_view;
 mod edit_mode;
+mod edit_toolbar;
 mod events;
 mod hide_new;
+mod kit;
+mod list_header;
 mod player;
+mod poster_grid;
 mod profiles_view;
+mod row_actions;
+mod row_menu;
 mod series_view;
 mod settings_view;
 mod sidebar;
+mod sidebar_rows;
 mod sort;
 mod sources;
 mod state;
@@ -18,6 +25,7 @@ mod statusbar;
 mod stream_list;
 mod stream_row;
 mod theme;
+mod tile;
 mod toasts;
 mod topbar;
 
@@ -69,7 +77,9 @@ impl eframe::App for App {
             self.status_bar(ui);
             self.sidebar(ui);
             self.embed_pane(ui, frame);
-            egui::CentralPanel::default().show(ui, |ui| self.center(ui));
+            egui::CentralPanel::default()
+                .frame(egui::Frame::NONE.fill(theme::BG))
+                .show(ui, |ui| self.center(ui));
         }
         self.dialogs(&ctx);
         self.toasts(&ctx);
