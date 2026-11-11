@@ -53,6 +53,8 @@ impl App {
             .corner_radius(theme::RADIUS_L)
             .inner_margin(egui::Margin::same(3))
             .show(ui, |ui| {
+                // horizontal_centered children otherwise stretch to the full bar height
+                ui.set_height(30.0);
                 ui.spacing_mut().item_spacing.x = 0.0;
                 ui.spacing_mut().interact_size.y = 30.0;
                 for kind in MediaKind::ALL {
@@ -151,7 +153,10 @@ impl App {
         if ui.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::F)) {
             ui.memory_mut(|m| m.request_focus(id));
         }
-        let width = (ui.available_width() - 40.0).clamp(120.0, 436.0);
+        let avail = ui.available_width();
+        let outer = avail.clamp(146.0, 460.0);
+        ui.add_space(((avail - outer) / 2.0).max(0.0));
+        let width = outer - 26.0;
         let mut resp = None;
         egui::Frame::new()
             .fill(theme::INPUT_BG)
@@ -178,6 +183,7 @@ impl App {
                         .corner_radius(5)
                         .inner_margin(egui::Margin::symmetric(6, 1))
                         .show(ui, |ui| {
+                            ui.set_height(16.0);
                             ui.label(
                                 egui::RichText::new("Esc")
                                     .size(11.0)
