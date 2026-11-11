@@ -153,6 +153,16 @@ pub struct StreamRow {
     pub hidden: bool,
     /// A favorite whose stream the provider no longer lists; not playable.
     pub missing: bool,
+    /// Watched fraction (0..1) of a movie, or of the episode in progress for a series.
+    pub progress: Option<f32>,
+    /// Continue-watching series rows: the episode to pick up.
+    pub resume_episode: Option<EpisodeRef>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct EpisodeRef {
+    pub id: String,
+    pub label: String,
 }
 
 /// What the player layer needs to resolve a stream URL.

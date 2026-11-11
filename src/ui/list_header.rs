@@ -43,6 +43,7 @@ impl App {
         match &self.state.sel {
             Some(Sel::Favorites) => "Favorites".into(),
             Some(Sel::Recent) => "Recent".into(),
+            Some(Sel::Continue) => "Continue watching".into(),
             Some(Sel::Category(s, k)) => self
                 .categories
                 .iter()
@@ -60,6 +61,8 @@ impl App {
             )
         } else if self.state.sel == Some(Sel::Favorites) {
             "Nothing here yet. Star a channel to add it to Favorites.".to_string()
+        } else if self.state.sel == Some(Sel::Continue) {
+            "Nothing in progress. Started movies and episodes show up here.".to_string()
         } else {
             "Nothing here yet.".to_string()
         };

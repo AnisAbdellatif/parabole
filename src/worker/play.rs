@@ -1,4 +1,4 @@
-use super::{EmbedPlay, Event, Track, Worker, episode_key, player_settings};
+use super::{EmbedPlay, Event, SeriesCtx, Track, Worker, episode_key, player_settings};
 use crate::model::{Episode, Headers, MediaKind, PlayRequest, ProfileId, SourceId};
 use crate::player::PlayerKind;
 use crate::sources;
@@ -28,7 +28,7 @@ impl Worker {
             media: info.media,
             start_s: None,
         };
-        if self.launch(kind, &req, Some(track), Some(stream_id)) {
+        if self.launch(kind, &req, Some(track), Some(stream_id), None) {
             self.db
                 .record_watch(profile, info.source_id, info.media, &info.key)?;
         }
@@ -42,6 +42,7 @@ impl Worker {
         episode: &Episode,
         title: String,
         kind: Option<&PlayerKind>,
+        series: Option<SeriesCtx>,
     ) -> Result<()> {
         let src = self.db.source(source)?;
         let req = PlayRequest {
@@ -60,7 +61,16 @@ impl Worker {
             media: MediaKind::Series,
             key: episode_key(&episode.id),
         };
-        self.launch(kind, &req, Some(track), None);
+        let key = track.key.clone();
+        let launched = self.launch(kind, &req, Some(track), None, series.clone());
+        if let (true, Some(ctx)) = (launched, series) {
+            let label = crate::episodes::find(&ctx.seasons, &episode.id).map_or_else(
+                || episode.title.clone(),
+                |(s, e)| crate::episodes::label(s, e),
+            );
+            self.db
+                .record_episode_watch(profile, source, &key, &label, &ctx.key)?;
+        }
         Ok(())
     }
 
@@ -77,6 +87,7 @@ impl Worker {
         req: &PlayRequest,
         track: Option<Track>,
         stream_id: Option<i64>,
+        series: Option<SeriesCtx>,
     ) -> bool {
         let settings = player_settings::load(&self.db);
         let mut kind = kind
@@ -93,6 +104,7 @@ impl Worker {
                 req,
                 track,
                 stream_id,
+                series,
             })));
             return true;
         }

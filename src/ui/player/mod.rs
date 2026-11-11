@@ -1,5 +1,6 @@
 //! Embedded player UI: pane/fullscreen view, overlay controls, retry and resume handling.
 
+mod autonext;
 mod controls;
 mod dock;
 mod fullscreen;
@@ -8,6 +9,7 @@ mod mini;
 mod nerd_stats;
 mod pane;
 mod session;
+mod track_memory;
 mod video;
 mod widgets;
 mod zap;
@@ -159,6 +161,7 @@ impl App {
     pub(super) fn embed_tick(&mut self, ctx: &egui::Context) {
         self.remember_window(ctx);
         self.player_keys(ctx);
+        self.autonext_tick(ctx);
         let ui = &mut self.player_ui;
         let (Some(player), Some(s)) = (ui.embed.as_mut(), ui.session.as_mut()) else {
             if let Some(p) = ui.embed.as_mut() {
@@ -210,10 +213,14 @@ impl App {
                     position_s: dur,
                     duration_s: dur,
                 });
+                s.known = Some((dur, dur));
             }
-            self.stop_embedded(ctx);
+            if !self.begin_autonext() {
+                self.stop_embedded(ctx);
+            }
             return;
         }
+        track_memory::tick(&self.db, player, s, ctx);
         if !s.is_live() {
             if s.last_save.elapsed() >= SAVE_EVERY {
                 self.save_position();

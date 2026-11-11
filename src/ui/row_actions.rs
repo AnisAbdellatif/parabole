@@ -71,6 +71,9 @@ impl App {
             loading: true,
             seasons: Vec::new(),
             season: 0,
+            autoplay: row.resume_episode.as_ref().map(|e| e.id.clone()),
+            progress: Default::default(),
+            progress_at: None,
         });
         self.worker.send(Command::LoadSeries {
             source: row.source_id,

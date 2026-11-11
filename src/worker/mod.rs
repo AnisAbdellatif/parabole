@@ -9,7 +9,7 @@ pub mod player_settings;
 #[cfg(test)]
 mod tests;
 
-pub use embed::{EmbedPlay, Track, episode_key};
+pub use embed::{EmbedPlay, SeriesCtx, Track, episode_key};
 
 use crate::db::Db;
 use crate::model::{
@@ -59,6 +59,7 @@ pub enum Command {
         episode: Episode,
         title: String,
         kind: Option<PlayerKind>,
+        series: Option<SeriesCtx>,
     },
     CopyUrl {
         stream_id: i64,
@@ -205,7 +206,8 @@ impl Worker {
                 episode,
                 title,
                 kind,
-            } => self.play_episode(profile, source, &episode, title, kind.as_ref()),
+                series,
+            } => self.play_episode(profile, source, &episode, title, kind.as_ref(), series),
             Command::CopyUrl { stream_id } => self.copy_url(stream_id),
             Command::LaunchRequest {
                 req,

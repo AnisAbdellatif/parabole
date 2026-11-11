@@ -102,6 +102,8 @@ mod tests {
             favorite: false,
             hidden: false,
             missing: false,
+            progress: None,
+            resume_episode: None,
         }
     }
 

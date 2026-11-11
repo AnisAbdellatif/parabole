@@ -1,5 +1,6 @@
 //! One 62px Live channel row.
 use super::kit;
+use super::progress_marks;
 use super::row_menu;
 use super::theme::{self, Icon};
 use super::tile;
@@ -57,6 +58,11 @@ pub fn show(
         out.push(RowAction::ToggleFavorite);
     }
     let mut text_right = star_rect.left() - 8.0;
+    if progress_marks::is_watched(row.progress) {
+        progress_marks::paint_check(&ui, pos2(text_right - 9.0, cy));
+        text_right -= 26.0;
+    }
+    progress_marks::paint_bar(&ui, rect.shrink2(vec2(10.0, 0.0)), row.progress);
     if edit {
         let eye_rect = button(star_rect.left() - 4.0);
         let (ic, tip) = if row.hidden {

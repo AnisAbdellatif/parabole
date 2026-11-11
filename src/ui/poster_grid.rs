@@ -1,5 +1,6 @@
 //! Movies/Series poster cards laid out in rows of a responsive grid.
 use super::kit;
+use super::progress_marks;
 use super::row_menu;
 use super::stream_row::RowAction;
 use super::theme::{self, Icon};
@@ -99,7 +100,12 @@ fn show_card(
             theme::TEXT_FAINT,
         );
     }
-    paint_title(&ui, rect, poster.bottom(), &row.name);
+    let sub = row.resume_episode.as_ref().map(|e| e.label.as_str());
+    paint_title(&ui, rect, poster.bottom(), &row.name, sub);
+    progress_marks::paint_bar(&ui, poster, row.progress);
+    if progress_marks::is_watched(row.progress) {
+        progress_marks::paint_check(&ui, pos2(poster.left() + 16.0, poster.bottom() - 16.0));
+    }
     ui.painter()
         .rect_stroke(rect, radius, Stroke::new(1.0, border), StrokeKind::Inside);
 
@@ -144,7 +150,7 @@ fn paint_scrim(ui: &Ui, rect: Rect) {
         .rect_filled(rect, CornerRadius::same(8), Color32::from_black_alpha(140));
 }
 
-fn paint_title(ui: &Ui, card: Rect, top: f32, name: &str) {
+fn paint_title(ui: &Ui, card: Rect, top: f32, name: &str, sub: Option<&str>) {
     let mut job = LayoutJob::simple(
         name.to_owned(),
         theme::semibold(13.0),
@@ -153,11 +159,31 @@ fn paint_title(ui: &Ui, card: Rect, top: f32, name: &str) {
     );
     job.wrap = TextWrapping {
         max_width: card.width() - 24.0,
-        max_rows: 2,
+        max_rows: if sub.is_some() { 1 } else { 2 },
         break_anywhere: false,
         overflow_character: Some('…'),
     };
     let galley = ui.painter().layout_job(job);
     ui.painter()
         .galley(pos2(card.left() + 12.0, top + 10.0), galley, theme::TEXT);
+    if let Some(sub) = sub {
+        let mut job = LayoutJob::simple(
+            sub.to_owned(),
+            theme::regular(11.5),
+            theme::TEXT_MUTED,
+            card.width() - 24.0,
+        );
+        job.wrap = TextWrapping {
+            max_width: card.width() - 24.0,
+            max_rows: 2,
+            break_anywhere: false,
+            overflow_character: Some('…'),
+        };
+        let galley = ui.painter().layout_job(job);
+        ui.painter().galley(
+            pos2(card.left() + 12.0, top + 30.0),
+            galley,
+            theme::TEXT_MUTED,
+        );
+    }
 }

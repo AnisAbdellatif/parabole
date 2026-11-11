@@ -1,11 +1,13 @@
 use crate::model::{MediaKind, ProfileId, Season, SourceId};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use std::time::Instant;
 
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum Sel {
     Favorites,
     Recent,
+    Continue,
     Category(SourceId, String),
 }
 
@@ -53,6 +55,11 @@ pub struct SeriesState {
     pub loading: bool,
     pub seasons: Vec<Season>,
     pub season: usize,
+    /// Episode to start as soon as the seasons arrive (Continue watching).
+    pub autoplay: Option<String>,
+    /// Watched fraction by history key (`ep:<id>`), refreshed periodically.
+    pub progress: HashMap<String, f32>,
+    pub progress_at: Option<Instant>,
 }
 
 pub struct Toast {

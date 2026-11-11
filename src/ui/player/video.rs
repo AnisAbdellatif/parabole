@@ -1,4 +1,4 @@
-use super::{App, PlayerUi, controls, nerd_stats};
+use super::{App, PlayerUi, autonext, controls, nerd_stats};
 use crate::ui::theme;
 use egui::{Align2, Color32, Rect, Vec2, vec2};
 use std::time::{Duration, Instant};
@@ -45,6 +45,14 @@ impl App {
             zap_overlay(ui.painter(), rect, text);
         }
 
+        if let Some(n) = s.autonext.as_ref() {
+            let choice = autonext::paint(ui, rect, n);
+            ctx.request_repaint_after(Duration::from_millis(100));
+            if let Some(c) = choice {
+                self.autonext_choice(&ctx, c);
+            }
+            return;
+        }
         if resp.hovered()
             && ctx.input(|i| i.pointer.delta() != Vec2::ZERO || i.pointer.any_pressed())
         {

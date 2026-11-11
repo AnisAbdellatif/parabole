@@ -12,6 +12,7 @@ mod list_header;
 mod player;
 mod poster_grid;
 mod profiles_view;
+mod progress_marks;
 mod row_actions;
 mod row_menu;
 mod series_view;
