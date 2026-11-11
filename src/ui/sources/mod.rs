@@ -2,6 +2,7 @@
 mod account;
 mod form;
 mod list;
+mod ua_preset;
 
 use super::App;
 use crate::model::SourceId;
@@ -19,6 +20,7 @@ pub struct SourcesDialog {
     user: String,
     pass: String,
     ua: String,
+    ua_custom: bool,
     mirrors: String,
     confirm_delete: Option<SourceId>,
     testing: bool,

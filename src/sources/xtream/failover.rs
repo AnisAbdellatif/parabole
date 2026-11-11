@@ -1,10 +1,13 @@
 use crate::model::Source;
 use anyhow::{Result, anyhow};
 use std::net::{TcpStream, ToSocketAddrs};
+use std::sync::Arc;
+use std::sync::mpsc::channel;
+use std::thread;
 use std::time::Duration;
 use url::Url;
 
-const PROBE_TIMEOUT: Duration = Duration::from_secs(3);
+const PROBE_TIMEOUT: Duration = Duration::from_secs(4);
 
 fn candidates(source: &Source) -> Vec<Source> {
     std::iter::once(&source.url)
@@ -17,9 +20,17 @@ fn candidates(source: &Source) -> Vec<Source> {
         .collect()
 }
 
-/// Runs `f` against the primary URL, then each mirror, until one succeeds.
+/// Runs `f` against the first reachable URL (preference order), then the others, until one succeeds.
 pub fn run<T>(source: &Source, f: impl Fn(&Source) -> Result<T>) -> Result<T> {
-    let all = candidates(source);
+    let mut all = candidates(source);
+    if all.len() > 1 {
+        let first = pick_index(all.len(), {
+            let urls: Vec<String> = all.iter().map(|s| s.url.clone()).collect();
+            Arc::new(move |i| reachable(&urls[i]))
+        });
+        let healthy = all.remove(first);
+        all.insert(0, healthy);
+    }
     let mut failures = Vec::new();
     for s in &all {
         match f(s) {
@@ -69,14 +80,39 @@ fn reachable(base: &str) -> bool {
         .unwrap_or(false)
 }
 
+/// Index of the most preferred healthy candidate, probing all concurrently (0 if none is healthy).
+/// Returns as soon as a healthy one is known and every more preferred one has failed.
+fn pick_index(n: usize, probe: Arc<dyn Fn(usize) -> bool + Send + Sync>) -> usize {
+    let (tx, rx) = channel();
+    for i in 0..n {
+        let (tx, probe) = (tx.clone(), probe.clone());
+        thread::spawn(move || {
+            let _ = tx.send((i, probe(i)));
+        });
+    }
+    drop(tx);
+    let mut done: Vec<Option<bool>> = vec![None; n];
+    for (i, ok) in rx {
+        done[i] = Some(ok);
+        let Some(best) = done.iter().position(|d| *d != Some(false)) else {
+            break;
+        };
+        if done[best] == Some(true) {
+            return best;
+        }
+    }
+    0
+}
+
 /// First URL (primary, then mirrors) accepting TCP connections; the primary if none do.
 pub fn pick(source: &Source) -> Source {
     let mut all = candidates(source);
     if all.len() == 1 {
         return all.remove(0);
     }
-    let first_ok = all.iter().position(|s| reachable(&s.url)).unwrap_or(0);
-    all.swap_remove(first_ok)
+    let urls: Vec<String> = all.iter().map(|s| s.url.clone()).collect();
+    let first = pick_index(all.len(), Arc::new(move |i| reachable(&urls[i])));
+    all.swap_remove(first)
 }
 
 #[cfg(test)]
@@ -125,6 +161,37 @@ mod tests {
         .unwrap_err();
         let msg = format!("{err:#}");
         assert!(msg.contains("all 2 server URLs failed") && msg.contains("a: down"));
+    }
+
+    fn fake(
+        healthy: &'static [bool],
+        delay_ms: &'static [u64],
+    ) -> Arc<dyn Fn(usize) -> bool + Send + Sync> {
+        Arc::new(move |i| {
+            thread::sleep(Duration::from_millis(delay_ms[i]));
+            healthy[i]
+        })
+    }
+
+    #[test]
+    fn pick_index_prefers_configured_order_over_speed() {
+        let i = pick_index(3, fake(&[true, true, true], &[60, 0, 0]));
+        assert_eq!(i, 0);
+        let i = pick_index(3, fake(&[false, true, true], &[0, 40, 0]));
+        assert_eq!(i, 1);
+    }
+
+    #[test]
+    fn pick_index_does_not_wait_for_slow_less_preferred() {
+        let t = std::time::Instant::now();
+        let i = pick_index(2, fake(&[true, false], &[0, 2000]));
+        assert_eq!(i, 0);
+        assert!(t.elapsed() < Duration::from_millis(1000));
+    }
+
+    #[test]
+    fn pick_index_defaults_to_primary_when_all_dead() {
+        assert_eq!(pick_index(2, fake(&[false, false], &[0, 0])), 0);
     }
 
     #[test]

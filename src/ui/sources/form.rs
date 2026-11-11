@@ -1,4 +1,5 @@
 use super::SourcesDialog;
+use super::ua_preset::{is_custom, ua_row};
 use crate::model::{Source, SourceInput, SourceKind};
 use crate::sources::detect::detect;
 use crate::ui::theme::{primary_button, secondary_button};
@@ -14,6 +15,7 @@ impl SourcesDialog {
             user: s.username.clone().unwrap_or_default(),
             pass: s.password.clone().unwrap_or_default(),
             ua: s.user_agent.clone().unwrap_or_default(),
+            ua_custom: is_custom(s.user_agent.as_deref().unwrap_or_default()),
             mirrors: s.mirrors.join("\n"),
             checking: std::mem::take(&mut self.checking),
             auto_hours: self.auto_hours,
@@ -164,7 +166,7 @@ pub(super) fn source_form(
             ui.add(egui::TextEdit::singleline(&mut d.pass).password(true));
             ui.end_row();
             ui.label("User agent");
-            ui.text_edit_singleline(&mut d.ua);
+            ua_row(ui, &mut d.ua, &mut d.ua_custom);
             ui.end_row();
         });
     let mut error = None;

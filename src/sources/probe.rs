@@ -16,7 +16,11 @@ pub fn test_connection(source: &Source) -> Result<String> {
         }
         SourceKind::M3uUrl => {
             let client = http::client(source.user_agent.as_deref())?;
-            describe(http::SafeRead(http::get(&client, &source.url)?))
+            describe(http::SafeRead(http::get(
+                &client,
+                &source.url,
+                source.user_agent.as_deref(),
+            )?))
         }
         SourceKind::M3uFile => describe(File::open(&source.url).context("open playlist file")?),
     }
