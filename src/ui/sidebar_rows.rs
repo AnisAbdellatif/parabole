@@ -1,6 +1,7 @@
 //! Normal (non-edit) sidebar body: Favorites/Recent entries and the virtualized category list.
 use super::App;
 use super::kit;
+use super::sidebar_groups::{group_row, groups_header};
 use super::state::Sel;
 use super::theme::{self, Icon};
 use crate::model::MediaKind;
@@ -8,6 +9,8 @@ use egui::{Frame, Id, Margin, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 enum Line {
     Header(&'static str),
+    GroupsHeader,
+    Group(usize),
     Cat(usize),
 }
 
@@ -17,6 +20,7 @@ impl App {
     pub(super) fn normal_ui(&mut self, ui: &mut Ui) {
         let mut picked = None;
         let mut pin = None;
+        let mut new_group = false;
         Frame::NONE
             .inner_margin(Margin::symmetric(10, 0))
             .show(ui, |ui| {
@@ -50,6 +54,16 @@ impl App {
                         for (n, line) in lines[range.clone()].iter().enumerate() {
                             match line {
                                 Line::Header(text) => header_row(ui, text),
+                                Line::GroupsHeader => new_group |= groups_header(ui),
+                                Line::Group(i) => {
+                                    let g = &self.groups[*i];
+                                    let sel = Sel::Group(g.id);
+                                    let on = self.state.sel.as_ref() == Some(&sel);
+                                    let id = ui.scope_id().with(("group", g.id));
+                                    if group_row(ui, id, &g.name, g.count, on) {
+                                        picked = Some(sel);
+                                    }
+                                }
                                 Line::Cat(i) => {
                                     let c = &self.categories[*i];
                                     let sel = Sel::Category(c.source_id, c.key.clone());
@@ -76,6 +90,9 @@ impl App {
             self.report(res);
             self.reload_categories();
         }
+        if new_group {
+            self.open_group_dialog(None, String::new(), None);
+        }
         if let Some(sel) = picked {
             self.select(sel);
         }
@@ -83,7 +100,9 @@ impl App {
 
     fn lines(&self) -> Vec<Line> {
         let pinned = self.categories.iter().filter(|c| c.pinned).count();
-        let mut out = Vec::with_capacity(self.categories.len() + 2);
+        let mut out = Vec::with_capacity(self.categories.len() + self.groups.len() + 3);
+        out.push(Line::GroupsHeader);
+        out.extend((0..self.groups.len()).map(Line::Group));
         if pinned > 0 {
             out.push(Line::Header("PINNED"));
             out.extend(
@@ -108,7 +127,7 @@ impl App {
     }
 }
 
-fn row_rect(ui: &mut Ui) -> Rect {
+pub(super) fn row_rect(ui: &mut Ui) -> Rect {
     ui.allocate_exact_size(
         vec2(ui.available_width(), theme::SIDEBAR_ROW_H),
         Sense::hover(),
@@ -116,7 +135,7 @@ fn row_rect(ui: &mut Ui) -> Rect {
     .0
 }
 
-fn paint_row_bg(ui: &Ui, rect: Rect, selected: bool) {
+pub(super) fn paint_row_bg(ui: &Ui, rect: Rect, selected: bool) {
     let r = theme::RADIUS;
     if selected {
         ui.painter().rect_filled(rect, r, theme::SELECTED_BG);

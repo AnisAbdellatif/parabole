@@ -50,6 +50,7 @@ impl App {
                 );
             });
         self.edit_toolbar(ui);
+        self.edit_groups(ui);
 
         let needle = self.edit.filter.to_lowercase();
         let mut actions = Vec::new();

@@ -17,7 +17,7 @@ fn profiles_have_isolated_overlays() {
     assert_eq!(cat_keys(&db, p2, false), ["a"]);
     assert!(db.favorites(p1, MediaKind::Live).unwrap().is_empty());
     assert_eq!(
-        db.search(p2, None, MediaKind::Live, "two", 10)
+        db.search(p2, None, Some(MediaKind::Live), "two", 10)
             .unwrap()
             .len(),
         0

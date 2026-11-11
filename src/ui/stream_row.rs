@@ -18,6 +18,11 @@ pub enum RowAction {
     ToggleHidden,
     CopyUrl,
     Info,
+    AddToGroup(i64),
+    NewGroup,
+    RemoveFromGroup,
+    PlayFrom(i64),
+    LoadAlternates,
 }
 
 /// One list row; `cursor` is the keyboard selection, `playing` the channel in the player.

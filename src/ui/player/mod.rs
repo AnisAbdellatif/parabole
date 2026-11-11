@@ -1,5 +1,6 @@
 //! Embedded player UI: pane/fullscreen view, overlay controls, retry and resume handling.
 
+mod alternate;
 mod autonext;
 mod controls;
 mod dock;
@@ -36,6 +37,8 @@ pub struct PlayerUi {
     last_motion: Instant,
     video_rect: egui::Rect,
     prev_stream: Option<i64>,
+    /// Stream picked by the automatic source switch, see `alternate.rs`.
+    switched_to: Option<i64>,
     /// Media of the stream an external player is playing.
     ext_media: Option<MediaKind>,
 }
@@ -58,6 +61,7 @@ impl PlayerUi {
             last_motion: Instant::now(),
             video_rect: egui::Rect::NOTHING,
             prev_stream: None,
+            switched_to: None,
             ext_media: None,
         }
     }
@@ -170,6 +174,7 @@ impl App {
             return;
         };
         let mut finished = false;
+        let mut give_up = None;
         for notice in player.poll() {
             let Notice::Ended { failed } = notice else {
                 continue;
@@ -181,7 +186,8 @@ impl App {
                     ctx.request_repaint_after(d);
                 }
                 EndAction::GiveUp => {
-                    s.error = Some("The stream stopped and could not be reopened".into())
+                    s.error = Some("The stream stopped and could not be reopened".into());
+                    give_up = s.stream_id.filter(|_| s.is_live());
                 }
                 EndAction::Finish => finished = true,
             }
@@ -226,6 +232,9 @@ impl App {
                 self.save_position();
             }
             ctx.request_repaint_after(SAVE_EVERY);
+        }
+        if let Some(id) = give_up {
+            self.switch_to_alternate(id);
         }
     }
 }

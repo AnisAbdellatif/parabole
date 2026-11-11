@@ -8,6 +8,7 @@ pub enum Sel {
     Favorites,
     Recent,
     Continue,
+    Group(i64),
     Category(SourceId, String),
 }
 
@@ -40,12 +41,14 @@ pub struct SearchState {
     pub text: String,
     pub applied: String,
     pub edited_at: Option<Instant>,
+    pub filter: super::search_filter::SearchFilter,
 }
 
 #[derive(Default)]
 pub struct EditState {
     pub on: bool,
     pub filter: String,
+    pub confirm_group: Option<i64>,
 }
 
 pub struct SeriesState {

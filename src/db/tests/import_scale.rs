@@ -24,7 +24,7 @@ fn import_200k_streams() {
     eprintln!("200k import: {elapsed:?}");
     assert!(elapsed.as_secs() < 30, "{elapsed:?}");
     let rows = db
-        .search(p, None, MediaKind::Live, "chann 1999", 50)
+        .search(p, None, Some(MediaKind::Live), "chann 1999", 50)
         .unwrap();
     assert!(!rows.is_empty());
     let c = db.categories(p, None, MediaKind::Live, false).unwrap();

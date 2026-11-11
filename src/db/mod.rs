@@ -3,8 +3,12 @@
 //! Owner: db agent. Public API below is a contract used by the worker/UI.
 
 mod account;
+mod alt_name;
+mod alternates;
 mod browse;
 mod bulk;
+mod copy_favorites;
+mod groups;
 mod import;
 mod migrate;
 mod new_categories;

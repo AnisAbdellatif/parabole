@@ -11,12 +11,17 @@ impl App {
             return;
         };
         let profile = self.profile();
-        if row.missing && !matches!(action, RowAction::ToggleFavorite | RowAction::Select) {
+        if row.missing
+            && !matches!(
+                action,
+                RowAction::ToggleFavorite | RowAction::Select | RowAction::RemoveFromGroup
+            )
+        {
             return;
         }
         match action {
             RowAction::Select => self.selected = idx,
-            RowAction::Activate if self.state.tab == MediaKind::Series => self.open_series(&row),
+            RowAction::Activate if row.media == MediaKind::Series => self.open_series(&row),
             RowAction::Activate => self.play(&row, None),
             RowAction::Play(kind) => self.play(&row, Some(kind)),
             RowAction::Info => self.open_details(&row),
@@ -32,6 +37,14 @@ impl App {
                 self.report(res);
                 self.reload_streams();
             }
+            RowAction::AddToGroup(g) => self.add_to_group(g, &row),
+            RowAction::NewGroup => {
+                let item = Some((row.source_id, row.key.clone()));
+                self.open_group_dialog(None, String::new(), item);
+            }
+            RowAction::RemoveFromGroup => self.remove_from_group(&row),
+            RowAction::PlayFrom(id) => self.play_alternate(id),
+            RowAction::LoadAlternates => self.load_alternates(&row),
             RowAction::ToggleHidden => {
                 let res = self.db.set_stream_hidden(
                     profile,
