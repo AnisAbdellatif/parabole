@@ -1,11 +1,15 @@
 use super::App;
 use super::kit;
+use super::progress_marks;
 use super::theme::{self, Icon};
 use crate::model::{MediaKind, Season, SourceId};
-use crate::worker::Command;
+use crate::worker::{SeriesCtx, episode_key};
 use egui::{CornerRadius, Frame, Margin, Rect, RichText, Sense, Ui, pos2, vec2};
+use std::sync::Arc;
+use std::time::Duration;
 
 const EPISODE_H: f32 = 44.0;
+const PROGRESS_EVERY: Duration = Duration::from_secs(3);
 
 fn back_pill(ui: &mut Ui, size: egui::Vec2) -> egui::Response {
     let resp = kit::pill(ui, "Back", size, false, true);
@@ -19,16 +23,23 @@ fn back_pill(ui: &mut Ui, size: egui::Vec2) -> egui::Response {
     resp
 }
 
-/// One episode row; true when double-clicked.
-fn episode_row(ui: &mut Ui, number: Option<i64>, title: &str) -> bool {
+enum EpisodeEvent {
+    Play,
+    ToggleWatched,
+}
+
+/// One episode row with its progress bar and watched toggle.
+fn episode_row(
+    ui: &mut Ui,
+    number: Option<i64>,
+    title: &str,
+    progress: Option<f32>,
+) -> Option<EpisodeEvent> {
     let rect = ui
         .allocate_exact_size(vec2(ui.available_width(), EPISODE_H), Sense::hover())
         .0;
-    let resp = ui.interact(
-        rect,
-        ui.scope_id().with(("ep", number, title)),
-        Sense::click(),
-    );
+    let id = ui.scope_id().with(("ep", number, title));
+    let resp = ui.interact(rect, id, Sense::click());
     if resp.hovered() {
         ui.painter()
             .rect_filled(rect, CornerRadius::same(theme::RADIUS_L), theme::ROW_HOVER);
@@ -48,12 +59,26 @@ fn episode_row(ui: &mut Ui, number: Option<i64>, title: &str) -> bool {
         ui,
         rect.left() + 68.0,
         cy,
-        rect.width() - 82.0,
+        rect.width() - 118.0,
         title,
         theme::regular(14.0),
         theme::TEXT,
     );
-    resp.double_clicked()
+    progress_marks::paint_bar(ui, rect.shrink2(vec2(10.0, 0.0)), progress);
+    let watched = progress_marks::is_watched(progress);
+    let button = Rect::from_min_size(pos2(rect.right() - 38.0, cy - 16.0), vec2(32.0, 32.0));
+    let mut event = resp.double_clicked().then_some(EpisodeEvent::Play);
+    if watched || resp.hovered() {
+        let (tint, tip) = if watched {
+            (theme::ACCENT, "Mark unwatched")
+        } else {
+            (theme::TEXT_MUTED, "Mark watched")
+        };
+        if kit::icon_btn(ui, button, id.with("seen"), Icon::Check, 16.0, tint, tip).clicked() {
+            event = Some(EpisodeEvent::ToggleWatched);
+        }
+    }
+    event
 }
 
 impl App {
@@ -72,7 +97,12 @@ impl App {
         };
         s.loading = false;
         match result {
-            Ok(seasons) => s.seasons = seasons,
+            Ok(seasons) => {
+                s.seasons = seasons;
+                if let Some(id) = s.autoplay.take() {
+                    self.play_series_episode(&id);
+                }
+            }
             Err(e) => {
                 self.series = None;
                 self.toast(format!("Could not load series: {e}"));
@@ -80,12 +110,75 @@ impl App {
         }
     }
 
+    fn series_ctx(&self) -> Option<(SeriesCtx, SourceId)> {
+        let s = self.series.as_ref()?;
+        let ctx = SeriesCtx {
+            key: s.key.clone(),
+            title: s.title.clone(),
+            seasons: Arc::new(s.seasons.clone()),
+        };
+        Some((ctx, s.source))
+    }
+
+    fn play_series_episode(&mut self, episode_id: &str) {
+        let Some((ctx, source)) = self.series_ctx() else {
+            return;
+        };
+        if let Some(cmd) = ctx.play_command(self.profile(), source, episode_id) {
+            self.warn_if_connections_full(source);
+            self.worker.send(cmd);
+        }
+    }
+
+    fn toggle_watched(&mut self, episode_id: &str, watched: bool) {
+        let Some((ctx, source)) = self.series_ctx() else {
+            return;
+        };
+        let profile = self.profile();
+        let key = episode_key(episode_id);
+        let res = if watched {
+            let label = crate::episodes::find(&ctx.seasons, episode_id)
+                .map_or_else(String::new, |(s, e)| crate::episodes::label(s, e));
+            self.db
+                .record_episode_watch(profile, source, &key, &label, &ctx.key)
+                .and_then(|_| {
+                    self.db
+                        .set_watched(profile, source, MediaKind::Series, &key, true)
+                })
+        } else {
+            self.db
+                .set_watched(profile, source, MediaKind::Series, &key, false)
+        };
+        self.report(res);
+        if let Some(s) = self.series.as_mut() {
+            s.progress_at = None;
+        }
+    }
+
+    fn refresh_episode_progress(&mut self, ctx: &egui::Context) {
+        let profile = self.profile();
+        let Some(s) = self.series.as_mut() else {
+            return;
+        };
+        if s.progress_at.is_some_and(|t| t.elapsed() < PROGRESS_EVERY) {
+            ctx.request_repaint_after(PROGRESS_EVERY);
+            return;
+        }
+        s.progress_at = Some(std::time::Instant::now());
+        if let Ok(map) = self.db.episode_progress(profile, s.source) {
+            s.progress = map;
+        }
+        ctx.request_repaint_after(PROGRESS_EVERY);
+    }
+
     pub(super) fn series_ui(&mut self, ui: &mut egui::Ui) {
+        self.refresh_episode_progress(&ui.ctx().clone());
         let Some(s) = self.series.as_mut() else {
             return;
         };
         let mut back = false;
         let mut play = None;
+        let mut toggle = None;
         let margin = Margin {
             left: 24,
             right: 24,
@@ -135,24 +228,25 @@ impl App {
                     season.episodes.len(),
                     |ui, range| {
                         for ep in &season.episodes[range] {
-                            if episode_row(ui, ep.episode_num, &ep.title) {
-                                let title = format!("{} S{} {}", s.title, season.number, ep.title);
-                                play = Some((s.source, ep.clone(), title));
+                            let progress = s.progress.get(&episode_key(&ep.id)).copied();
+                            match episode_row(ui, ep.episode_num, &ep.title, progress) {
+                                Some(EpisodeEvent::Play) => play = Some(ep.id.clone()),
+                                Some(EpisodeEvent::ToggleWatched) => {
+                                    toggle =
+                                        Some((ep.id.clone(), !progress_marks::is_watched(progress)))
+                                }
+                                None => {}
                             }
                         }
                     },
                 );
             }
         });
-        if let Some((source, episode, title)) = play {
-            self.warn_if_connections_full(source);
-            self.worker.send(Command::PlayEpisode {
-                profile: self.profile(),
-                source,
-                episode,
-                title,
-                kind: None,
-            });
+        if let Some(id) = play {
+            self.play_series_episode(&id);
+        }
+        if let Some((id, watched)) = toggle {
+            self.toggle_watched(&id, watched);
         }
         if back {
             self.series = None;

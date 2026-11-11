@@ -1,6 +1,7 @@
-use super::Worker;
-use crate::model::{MediaKind, PlayRequest, ProfileId, SourceId};
+use super::{Command, Worker};
+use crate::model::{MediaKind, PlayRequest, ProfileId, Season, SourceId};
 use anyhow::Result;
+use std::sync::Arc;
 
 /// Identifies the history row of what an embedded player is playing.
 #[derive(Clone, Debug, PartialEq)]
@@ -18,6 +19,34 @@ pub struct EmbedPlay {
     pub track: Option<Track>,
     /// Row id in the stream list, for channel up/down.
     pub stream_id: Option<i64>,
+    /// Set for episodes started from the series view, so the next one can follow.
+    pub series: Option<SeriesCtx>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct SeriesCtx {
+    pub key: String,
+    pub title: String,
+    pub seasons: Arc<Vec<Season>>,
+}
+
+impl SeriesCtx {
+    pub fn play_command(
+        &self,
+        profile: ProfileId,
+        source: SourceId,
+        episode_id: &str,
+    ) -> Option<Command> {
+        let (season, ep) = crate::episodes::find(&self.seasons, episode_id)?;
+        Some(Command::PlayEpisode {
+            profile,
+            source,
+            episode: ep.clone(),
+            title: format!("{} {}", self.title, crate::episodes::label(season, ep)),
+            kind: None,
+            series: Some(self.clone()),
+        })
+    }
 }
 
 /// History key of an episode; the prefix keeps it from colliding with series keys.
@@ -55,7 +84,7 @@ impl Worker {
         track: Option<Track>,
         stream_id: Option<i64>,
     ) -> Result<()> {
-        self.launch(Some(&kind), &req, track, stream_id);
+        self.launch(Some(&kind), &req, track, stream_id, None);
         Ok(())
     }
 }

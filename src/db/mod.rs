@@ -10,12 +10,14 @@ mod migrate;
 mod new_categories;
 mod overlay;
 mod profiles;
+pub mod progress;
 mod resume;
 mod search;
 mod settings;
 mod sources;
 #[cfg(test)]
 mod tests;
+pub mod track_prefs;
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;

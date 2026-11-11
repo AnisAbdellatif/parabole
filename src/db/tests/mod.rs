@@ -3,8 +3,10 @@ mod import_scale;
 mod new_categories;
 mod overlay;
 mod profiles;
+mod progress;
 mod search;
 mod settings;
+mod track_prefs;
 
 use super::Db;
 use crate::model::*;
@@ -82,7 +84,7 @@ fn migrations_are_idempotent_on_reopen() {
         .conn
         .query_row("PRAGMA user_version", [], |r| r.get(0))
         .unwrap();
-    assert_eq!(v, 4);
+    assert_eq!(v, 5);
     std::fs::remove_dir_all(dir).unwrap();
 }
 

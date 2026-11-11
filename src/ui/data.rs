@@ -90,6 +90,7 @@ impl App {
             match &self.state.sel {
                 Some(Sel::Favorites) => self.db.favorites(profile, tab),
                 Some(Sel::Recent) => self.db.recent(profile, tab, RECENT_LIMIT),
+                Some(Sel::Continue) => self.db.continue_watching(profile, tab, RECENT_LIMIT),
                 Some(Sel::Category(s, k)) => self
                     .db
                     .streams_in_category(profile, *s, tab, k, self.edit.on)

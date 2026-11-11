@@ -1,6 +1,8 @@
+use super::autonext::AutoNext;
+use super::track_memory::TrackMemory;
 use crate::model::{MediaKind, PlayRequest};
 use crate::player::retry;
-use crate::worker::{EmbedPlay, Track};
+use crate::worker::{EmbedPlay, SeriesCtx, Track};
 use std::time::{Duration, Instant};
 
 pub const SAVE_EVERY: Duration = Duration::from_secs(10);
@@ -35,6 +37,9 @@ pub struct Session {
     pub error: Option<String>,
     /// Last seen (position, duration) in seconds; survives the properties vanishing at end of file.
     pub known: Option<(f64, f64)>,
+    pub series: Option<SeriesCtx>,
+    pub autonext: Option<AutoNext>,
+    pub memory: TrackMemory,
 }
 
 impl Session {
@@ -48,6 +53,9 @@ impl Session {
             last_save: Instant::now(),
             error: None,
             known: None,
+            series: play.series,
+            autonext: None,
+            memory: TrackMemory::default(),
         }
     }
 

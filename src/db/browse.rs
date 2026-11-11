@@ -1,12 +1,15 @@
-use super::Db;
+use super::{Db, progress};
 use crate::model::*;
 use anyhow::{Result, anyhow};
 use rusqlite::Row;
 
 /// Stream columns plus the overlay join; `?1` must be the profile id.
 pub(super) const STREAM_SELECT: &str = "SELECT s.id, s.source_id, s.ext_key, s.name, s.num, s.logo,
-    COALESCE(sp.fav_position IS NOT NULL, 0), COALESCE(sp.hidden, 0), 0
+    COALESCE(sp.fav_position IS NOT NULL, 0), COALESCE(sp.hidden, 0), 0,
+    h.position_s, h.duration_s
     FROM streams s
+    LEFT JOIN history h ON h.profile_id = ?1 AND h.source_id = s.source_id
+      AND h.media = s.media AND h.stream_key = s.ext_key
     LEFT JOIN stream_prefs sp ON sp.profile_id = ?1 AND sp.source_id = s.source_id
       AND sp.media = s.media AND sp.stream_key = s.ext_key";
 
@@ -23,6 +26,8 @@ pub(super) fn stream_row(media: MediaKind) -> impl Fn(&Row) -> rusqlite::Result<
             favorite: r.get(6)?,
             hidden: r.get(7)?,
             missing: r.get(8)?,
+            progress: progress::fraction(r.get(9)?, r.get(10)?),
+            resume_episode: None,
         })
     }
 }
@@ -99,11 +104,13 @@ impl Db {
         let mut stmt = self.conn.prepare(
             "SELECT COALESCE(s.id, 0), sp.source_id, sp.stream_key,
                COALESCE(s.name, sp.last_name, sp.stream_key), s.num, COALESCE(s.logo, sp.last_logo),
-               1, sp.hidden, s.id IS NULL
+               1, sp.hidden, s.id IS NULL, h.position_s, h.duration_s
              FROM stream_prefs sp
              JOIN profile_sources ps ON ps.profile_id = ?1 AND ps.source_id = sp.source_id
              LEFT JOIN streams s ON s.source_id = sp.source_id AND s.media = sp.media
                AND s.ext_key = sp.stream_key
+             LEFT JOIN history h ON h.profile_id = ?1 AND h.source_id = sp.source_id
+               AND h.media = sp.media AND h.stream_key = sp.stream_key
              WHERE sp.profile_id = ?1 AND sp.media = ?2 AND sp.fav_position IS NOT NULL
              ORDER BY sp.fav_position",
         )?;
@@ -121,9 +128,7 @@ impl Db {
         let mut stmt = self.conn.prepare(&format!(
             "{STREAM_SELECT}
              JOIN profile_sources ps ON ps.profile_id = ?1 AND ps.source_id = s.source_id
-             JOIN history h ON h.profile_id = ?1 AND h.source_id = s.source_id
-               AND h.media = s.media AND h.stream_key = s.ext_key
-             WHERE s.media = ?2
+             WHERE s.media = ?2 AND h.watched_at IS NOT NULL
              ORDER BY h.watched_at DESC LIMIT ?3"
         ))?;
         let rows = stmt.query_map((profile, media.as_str(), limit as i64), stream_row(media))?;

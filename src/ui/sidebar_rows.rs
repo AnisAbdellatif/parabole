@@ -3,6 +3,7 @@ use super::App;
 use super::kit;
 use super::state::Sel;
 use super::theme::{self, Icon};
+use crate::model::MediaKind;
 use egui::{Frame, Id, Margin, Rect, Sense, Stroke, StrokeKind, Ui, pos2, vec2};
 
 enum Line {
@@ -20,10 +21,14 @@ impl App {
             .inner_margin(Margin::symmetric(10, 0))
             .show(ui, |ui| {
                 ui.spacing_mut().item_spacing.y = ROW_GAP;
-                for (label, ic, sel) in [
+                let mut entries = vec![
                     ("Favorites", Icon::StarFilled, Sel::Favorites),
                     ("Recent", Icon::Recent, Sel::Recent),
-                ] {
+                ];
+                if self.state.tab != MediaKind::Live {
+                    entries.push(("Continue watching", Icon::Resume, Sel::Continue));
+                }
+                for (label, ic, sel) in entries {
                     let on = self.state.sel.as_ref() == Some(&sel);
                     if entry_row(ui, label, ic, on).clicked() {
                         picked = Some(sel);
