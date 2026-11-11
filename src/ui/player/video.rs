@@ -12,10 +12,13 @@ impl App {
         ui: &mut egui::Ui,
         frame: &mut eframe::Frame,
         rect: Rect,
+        overlay: bool,
     ) {
         let ctx = ui.ctx().clone();
         let resp = ui.allocate_rect(rect, egui::Sense::click());
-        ui.painter().rect_filled(rect, 0.0, Color32::BLACK);
+        if overlay {
+            ui.painter().rect_filled(rect, 0.0, Color32::BLACK);
+        }
         let PlayerUi {
             embed,
             session,
@@ -69,7 +72,11 @@ impl App {
             );
         }
 
-        let mut acts = controls::show(ui, rect, player, s, &self.player_settings, alpha);
+        let mut acts = if overlay {
+            controls::show(ui, rect, player, s, &self.player_settings, alpha)
+        } else {
+            controls::Actions::default()
+        };
         acts.toggle_fullscreen |= resp.double_clicked();
         let (toggle, close, on) = (acts.toggle_fullscreen, acts.close, !*fullscreen);
         if toggle {

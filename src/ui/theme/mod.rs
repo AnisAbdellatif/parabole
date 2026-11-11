@@ -75,3 +75,4 @@ pub fn install(ctx: &egui::Context) {
 }
 
 pub const POSTER_BG: Color32 = hex(0x1b222d);
+pub const VIDEO_IDLE: Color32 = hex(0x131a23);

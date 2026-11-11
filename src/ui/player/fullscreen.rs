@@ -19,7 +19,7 @@ impl App {
             .frame(egui::Frame::NONE)
             .show(ui, |ui| {
                 let rect = ui.max_rect();
-                self.video_surface(ui, frame, rect);
+                self.video_surface(ui, frame, rect, true);
             });
         true
     }
