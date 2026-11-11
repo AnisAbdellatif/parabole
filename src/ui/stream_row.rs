@@ -10,7 +10,7 @@ pub enum RowAction {
     Activate,
     Play(PlayerKind),
     ToggleFavorite,
-    Hide,
+    ToggleHidden,
     CopyUrl,
 }
 
@@ -19,7 +19,7 @@ fn is_http(url: &str) -> bool {
 }
 
 /// One list row; returns what the user asked for.
-pub fn show(ui: &mut egui::Ui, row: &StreamRow, selected: bool) -> Vec<RowAction> {
+pub fn show(ui: &mut egui::Ui, row: &StreamRow, selected: bool, edit: bool) -> Vec<RowAction> {
     let mut out = Vec::new();
     let (rect, resp) = ui.allocate_exact_size(vec2(ui.available_width(), ROW_H), Sense::click());
     if selected {
@@ -40,6 +40,16 @@ pub fn show(ui: &mut egui::Ui, row: &StreamRow, selected: bool) -> Vec<RowAction
         [40.0, ROW_H],
         egui::Label::new(egui::RichText::new(num).weak()),
     );
+    if edit {
+        let eye = if row.hidden { "🚫" } else { "👁" };
+        if child
+            .small_button(eye)
+            .on_hover_text("Show / hide")
+            .clicked()
+        {
+            out.push(RowAction::ToggleHidden);
+        }
+    }
     let star = if row.favorite { "★" } else { "☆" };
     if child.small_button(star).on_hover_text("Favorite").clicked() {
         out.push(RowAction::ToggleFavorite);
@@ -54,12 +64,18 @@ pub fn show(ui: &mut egui::Ui, row: &StreamRow, selected: bool) -> Vec<RowAction
         }
         None => child.add_space(LOGO),
     }
-    child.add(egui::Label::new(&row.name).truncate());
+    let dim = row.hidden || row.missing;
+    let name = match row.missing {
+        true => format!("{} (unavailable)", row.name),
+        false => row.name.clone(),
+    };
+    let name = egui::RichText::new(name);
+    child.add(egui::Label::new(if dim { name.weak() } else { name }).truncate());
 
     if resp.clicked() {
         out.push(RowAction::Select);
     }
-    if resp.double_clicked() {
+    if resp.double_clicked() && !row.missing {
         out.push(RowAction::Activate);
     }
     resp.context_menu(|ui| context_menu(ui, row, &mut out));
@@ -67,6 +83,13 @@ pub fn show(ui: &mut egui::Ui, row: &StreamRow, selected: bool) -> Vec<RowAction
 }
 
 fn context_menu(ui: &mut egui::Ui, row: &StreamRow, out: &mut Vec<RowAction>) {
+    if row.missing {
+        if ui.button("Remove from favorites").clicked() {
+            out.push(RowAction::ToggleFavorite);
+            ui.close();
+        }
+        return;
+    }
     let fav = if row.favorite {
         "Unfavorite"
     } else {
@@ -76,8 +99,11 @@ fn context_menu(ui: &mut egui::Ui, row: &StreamRow, out: &mut Vec<RowAction>) {
         out.push(RowAction::ToggleFavorite);
         ui.close();
     }
-    if ui.button("Hide").clicked() {
-        out.push(RowAction::Hide);
+    if ui
+        .button(if row.hidden { "Unhide" } else { "Hide" })
+        .clicked()
+    {
+        out.push(RowAction::ToggleHidden);
         ui.close();
     }
     if row.media == MediaKind::Series {

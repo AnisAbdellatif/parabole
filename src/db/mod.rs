@@ -6,6 +6,7 @@ mod browse;
 mod bulk;
 mod import;
 mod migrate;
+mod new_categories;
 mod overlay;
 mod profiles;
 mod search;

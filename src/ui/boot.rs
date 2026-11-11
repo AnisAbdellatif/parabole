@@ -52,6 +52,7 @@ impl App {
             categories: Vec::new(),
             streams: Vec::new(),
             selected: 0,
+            sort: Default::default(),
             scroll_to_selected: false,
             list_view: (0.0, 0.0),
             search: Default::default(),
