@@ -16,6 +16,7 @@ pub fn source(name: &str) -> Source {
         username: None,
         password: None,
         user_agent: None,
+        mirrors: Vec::new(),
         output_format: None,
         last_refresh: None,
         last_error: None,
@@ -79,6 +80,19 @@ fn migrations_are_idempotent_on_reopen() {
         .conn
         .query_row("PRAGMA user_version", [], |r| r.get(0))
         .unwrap();
-    assert_eq!(v, 1);
+    assert_eq!(v, 2);
     std::fs::remove_dir_all(dir).unwrap();
+}
+
+#[test]
+fn mirrors_roundtrip() {
+    let (db, p, _) = setup();
+    let mut s = source("M");
+    s.mirrors = vec!["http://a:1".into(), "http://b:2".into()];
+    let id = db.add_source(p, &s).unwrap();
+    assert_eq!(db.source(id).unwrap().mirrors, s.mirrors);
+    s.id = id;
+    s.mirrors.clear();
+    db.update_source(&s).unwrap();
+    assert!(db.source(id).unwrap().mirrors.is_empty());
 }

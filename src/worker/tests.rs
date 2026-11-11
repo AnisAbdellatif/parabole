@@ -26,6 +26,7 @@ fn m3u_source(path: &str) -> Source {
         username: None,
         password: None,
         user_agent: None,
+        mirrors: Vec::new(),
         output_format: None,
         last_refresh: None,
         last_error: None,

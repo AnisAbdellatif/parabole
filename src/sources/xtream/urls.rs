@@ -1,4 +1,4 @@
-use super::credentials;
+use super::{credentials, failover};
 use crate::model::{MediaKind, PlayInfo, Source};
 use anyhow::{Context, Result, anyhow, bail};
 use url::Url;
@@ -22,6 +22,7 @@ pub fn episode(source: &Source, episode_id: &str, container_ext: Option<&str>) -
 }
 
 fn build(source: &Source, kind: &str, key: &str, ext: &str) -> Result<String> {
+    let source = &failover::pick(source);
     let (user, pass) = credentials(source)?;
     let mut url = Url::parse(&source.url).context("invalid server URL")?;
     let file = format!("{key}.{ext}");

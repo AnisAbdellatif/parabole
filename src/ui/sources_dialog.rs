@@ -14,6 +14,7 @@ pub struct SourcesDialog {
     user: String,
     pass: String,
     ua: String,
+    mirrors: String,
     confirm_delete: Option<SourceId>,
 }
 
@@ -26,6 +27,7 @@ impl SourcesDialog {
             user: s.username.clone().unwrap_or_default(),
             pass: s.password.clone().unwrap_or_default(),
             ua: s.user_agent.clone().unwrap_or_default(),
+            mirrors: s.mirrors.join("\n"),
             ..Default::default()
         };
     }
@@ -52,6 +54,25 @@ impl SourcesDialog {
         }
     }
 
+    fn build_mirrors(&self, kind: SourceKind) -> Result<Vec<String>, String> {
+        let lines = self
+            .mirrors
+            .lines()
+            .map(str::trim)
+            .filter(|l| !l.is_empty());
+        if kind != SourceKind::Xtream {
+            return Ok(Vec::new());
+        }
+        lines
+            .map(
+                |l| match detect(&format!("{l}\n{}\n{}", self.user.trim(), self.pass)) {
+                    Ok(SourceInput::Xtream { base, .. }) => Ok(base),
+                    _ => Err(format!("Invalid backup URL: {l}")),
+                },
+            )
+            .collect()
+    }
+
     fn build(&self) -> Result<Source, String> {
         let input = if self.user.trim().is_empty() {
             self.url.trim().to_string()
@@ -67,6 +88,7 @@ impl SourcesDialog {
             SourceInput::M3uUrl(u) => (SourceKind::M3uUrl, u, None, None),
             SourceInput::M3uFile(p) => (SourceKind::M3uFile, p, None, None),
         };
+        let mirrors = self.build_mirrors(kind)?;
         let name = match self.name.trim() {
             "" => default_name(&url),
             n => n.to_string(),
@@ -77,6 +99,7 @@ impl SourcesDialog {
             name,
             kind,
             url,
+            mirrors,
             username,
             password,
             user_agent: (!ua.is_empty()).then(|| ua.to_string()),
@@ -232,6 +255,13 @@ fn source_form(
                     }
                 }
             });
+            ui.end_row();
+            ui.label("Backup URLs");
+            ui.add(
+                egui::TextEdit::multiline(&mut d.mirrors)
+                    .desired_rows(2)
+                    .hint_text("Xtream only, one per line"),
+            );
             ui.end_row();
             ui.label("Username");
             ui.text_edit_singleline(&mut d.user);
