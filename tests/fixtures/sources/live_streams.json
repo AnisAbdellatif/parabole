@@ -1,0 +1,7 @@
+[{"num":"1","name":"BBC","stream_id":101,"stream_icon":"http://i/b.png","epg_channel_id":"bbc.uk","category_id":"1","tv_archive":1,"tv_archive_duration":"3","extra":"ignored"},
+ {"num":2,"name":"ESPN","stream_id":"102","stream_icon":false,"epg_channel_id":null,"category_id":2,"tv_archive_duration":0},
+ {"num":3,"name":"Orphan","stream_id":103,"stream_icon":"","category_id":"999"},
+ {"name":"NoCategory","stream_id":104},
+ {"name":"No id"},
+ "garbage",
+ {"name":"Dup","stream_id":101,"category_id":"1"}]

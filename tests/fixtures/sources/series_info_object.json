@@ -1,0 +1,4 @@
+{"seasons":[{"season_number":1,"name":"First"},{"season_number":"3","name":""}],
+ "episodes":{"2":[{"id":"22","title":"B2","episode_num":"2","container_extension":"mkv","season":2},{"id":"21","title":"B1","episode_num":1,"season":2}],
+             "1":[{"id":"12","title":"A2","episode_num":2,"container_extension":"mp4"},{"id":13,"episode_num":null},{"title":"no id"}]},
+ "info":{}}
