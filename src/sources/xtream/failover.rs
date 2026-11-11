@@ -20,18 +20,37 @@ fn candidates(source: &Source) -> Vec<Source> {
 /// Runs `f` against the primary URL, then each mirror, until one succeeds.
 pub fn run<T>(source: &Source, f: impl Fn(&Source) -> Result<T>) -> Result<T> {
     let all = candidates(source);
-    let mut last = None;
+    let mut failures = Vec::new();
     for s in &all {
         match f(s) {
             Ok(v) => return Ok(v),
-            Err(e) => last = Some(e),
+            Err(e) if all.len() == 1 => return Err(e),
+            Err(e) => failures.push(format!("{}: {e:#}", host(&s.url))),
         }
     }
-    let last = last.unwrap_or_else(|| anyhow!("no server URL"));
-    if all.len() == 1 {
-        return Err(last);
-    }
-    Err(last.context(format!("all {} server URLs failed", all.len())))
+    let shown = failures
+        .iter()
+        .take(3)
+        .cloned()
+        .collect::<Vec<_>>()
+        .join("; ");
+    let more = failures.len().saturating_sub(3);
+    let more = if more > 0 {
+        format!(" (+{more} more)")
+    } else {
+        String::new()
+    };
+    Err(anyhow!(
+        "all {} server URLs failed - {shown}{more}",
+        all.len()
+    ))
+}
+
+fn host(base: &str) -> String {
+    Url::parse(base)
+        .ok()
+        .and_then(|u| u.host_str().map(str::to_string))
+        .unwrap_or_else(|| "?".into())
 }
 
 fn reachable(base: &str) -> bool {
@@ -104,7 +123,8 @@ mod tests {
             Err(anyhow!("down"))
         })
         .unwrap_err();
-        assert!(format!("{err:#}").contains("all 2 server URLs failed"));
+        let msg = format!("{err:#}");
+        assert!(msg.contains("all 2 server URLs failed") && msg.contains("a: down"));
     }
 
     #[test]
