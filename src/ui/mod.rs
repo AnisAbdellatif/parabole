@@ -16,6 +16,7 @@ mod sources;
 mod state;
 mod stream_list;
 mod stream_row;
+mod theme;
 mod toasts;
 mod topbar;
 

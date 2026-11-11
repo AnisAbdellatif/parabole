@@ -1,6 +1,7 @@
 use super::App;
 use super::player::PlayerUi;
 use super::state::Persisted;
+use super::theme;
 use crate::db::Db;
 use crate::player::{PlayerKind, live};
 use crate::worker::{self, player_settings};
@@ -33,6 +34,7 @@ pub fn run() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
+            theme::install(&cc.egui_ctx);
             Ok(Box::new(App::new(cc)?))
         }),
     )

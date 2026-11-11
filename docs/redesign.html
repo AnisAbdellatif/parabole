@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<title>IPTV Player</title>
+<script src="721751d3-1081-484c-9f16-723ddf5fb8cb"></script>
+<meta name="hz:slide-selector" content="[data-canvas-width]"><meta name="hz:canvas-width" content="1440"><meta name="hz:canvas-height" content="900"></head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+/* cyrillic */
+/* greek-ext */
+/* greek */
+/* vietnamese */
+/* latin-ext */
+/* latin */
+/* cyrillic-ext */
+/* cyrillic */
+/* greek-ext */
+/* greek */
+/* vietnamese */
+/* latin-ext */
+/* latin */
+/* cyrillic-ext */
+/* cyrillic */
+/* greek-ext */
+/* greek */
+/* vietnamese */
+/* latin-ext */
+/* latin */
+/* cyrillic-ext */
+/* cyrillic */
+/* greek-ext */
+/* greek */
+/* vietnamese */
+/* latin-ext */
+/* latin */
+</style>
+<style>
+body{margin:0;background:#101216;font-family:'Inter',system-ui,sans-serif}
+button,select,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none;padding:0}
+.btn{height:36px;padding:0 14px;border-radius:8px;background:#1d2128;border:1px solid #2b303a;color:#e6e8ec;font-size:13px;font-weight:500;display:inline-flex;align-items:center;gap:6px}
+.btn:hover{background:#262b34}
+.btn:focus-visible,.icon:focus-visible,.row:focus-visible,input:focus-visible,select:focus-visible,.seg:focus-visible{outline:2px solid #5eead4;outline-offset:2px}
+.icon{width:36px;height:36px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;color:#9ba3b0}
+.icon:hover{background:#262b34;color:#fff}
+.row:hover{background:#1a1e25}
+.card:hover{border-color:#3a414d}
+</style>
+</helmet>
+<div style="position:relative;width:1440px;height:900px;box-sizing:border-box;display:flex;flex-direction:column;background:#101216;color:#e6e8ec;overflow:hidden" data-canvas-width="1440" data-canvas-height="900" data-document-role="page" data-label="Main window">
+<!-- TOP BAR -->
+<header style="height:64px;flex:none;box-sizing:border-box;padding:0 16px;display:flex;align-items:center;gap:16px;border-bottom:1px solid #232831;background:#14171c">
+  <div style="display:flex;align-items:center;gap:6px">
+    <label for="profile" style="position:absolute;width:1px;height:1px;overflow:hidden">Profile</label>
+    <sc-raw-select id="profile" value="{{profile}}" sc-camel-on-change="{{setProfile}}" style="height:36px;border-radius:8px;background:#1d2128;border:1px solid #2b303a;padding:0 10px;font-size:13px;font-weight:500">
+      <option value="Me">Profile: Me</option>
+      <option value="Kids">Profile: Kids</option>
+    </sc-raw-select>
+    <button class="btn" style="padding:0 10px;color:#9ba3b0">Profiles…</button>
+  </div>
+  <div style="width:1px;height:24px;background:#2b303a"></div>
+  <div>
+    <label for="source" style="position:absolute;width:1px;height:1px;overflow:hidden">Source</label>
+    <sc-raw-select id="source" value="{{src}}" sc-camel-on-change="{{setSrc}}" style="height:36px;border-radius:8px;background:#1d2128;border:1px solid #2b303a;padding:0 10px;font-size:13px;font-weight:500">
+      <option value="all">All sources</option>
+      <option value="Atlas TV">Atlas TV</option>
+      <option value="Nova">Nova</option>
+    </sc-raw-select>
+  </div>
+  <div role="tablist" aria-label="Media type" style="display:flex;padding:3px;border-radius:10px;background:#1d2128;border:1px solid #2b303a">
+    <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+      <button class="seg" role="tab" aria-selected="{{t.selected}}" sc-camel-on-click="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+    </sc-for>
+  </div>
+  <div style="flex:1;display:flex;justify-content:center">
+    <div style="width:100%;max-width:460px;height:38px;box-sizing:border-box;border-radius:10px;background:#0c0e11;border:1px solid #2b303a;display:flex;align-items:center;gap:8px;padding:0 12px;color:#9ba3b0">
+      <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+      <label for="q" style="position:absolute;width:1px;height:1px;overflow:hidden">Search</label>
+      <input id="q" value="{{q}}" sc-camel-on-change="{{setQ}}" placeholder="Search (Ctrl+F)" style="flex:1;min-width:0;background:none;border:0;outline-offset:6px;font-size:13px;color:#e6e8ec">
+      <span style="font-size:11px;border:1px solid #2b303a;border-radius:5px;padding:1px 6px">Esc</span>
+    </div>
+  </div>
+  <button class="btn">Sources…</button>
+  <button class="btn" style="width:auto">
+    <svg width="15" height="15" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 0 0-2-1.2L14 3h-4l-.6 2.7a7 7 0 0 0-2 1.2l-2.3-1-2 3.4 2 1.5a7 7 0 0 0 0 2.4l-2 1.5 2 3.4 2.3-1a7 7 0 0 0 2 1.2L10 21h4l.6-2.7a7 7 0 0 0 2-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z"></path></svg>
+    Settings…
+  </button>
+</header>
+<!-- BODY -->
+<div style="flex:1;min-height:0;display:flex">
+  <!-- SIDEBAR -->
+  <aside style="width:320px;flex:none;box-sizing:border-box;display:flex;flex-direction:column;border-right:1px solid #232831;background:#14171c">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px 18px">
+      <h2 style="margin:0;font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#9ba3b0">Categories</h2>
+      <button class="btn" aria-pressed="{{edit}}" sc-camel-on-click="{{toggleEdit}}" style="{{editBtnStyle}}">{{editLabel}}</button>
+    </div>
+    <sc-if value="{{notEdit}}" hint-placeholder-val="{{true}}">
+    <div style="padding:0 10px 8px;display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{virtuals}}" as="v" hint-placeholder-count="2">
+        <button class="row" sc-camel-on-click="{{v.pick}}" style="{{v.style}}">
+          <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="{{v.fill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="{{v.icon}}"></path></svg>
+          <span style="flex:1;text-align:left">{{v.name}}</span>
+          <span style="{{v.badge}}">{{v.count}}</span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="height:1px;background:#232831;margin:0 16px 8px"></div>
+    </sc-if>
+    <sc-if value="{{edit}}" hint-placeholder-val="{{false}}">
+    <div style="margin:0 12px 8px;padding:8px 10px;border-radius:8px;background:#1b2330;color:#a9c4ee;font-size:12px;line-height:1.4">{{editHint}}</div>
+    </sc-if>
+    <div style="flex:1;min-height:0;overflow:auto;padding:0 10px 10px;display:flex;flex-direction:column;gap:2px">
+      <sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+        <sc-if value="{{r.header}}" hint-placeholder-val="{{false}}">
+          <div style="padding:10px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#7d8594">{{r.headerText}}</div>
+        </sc-if>
+        <sc-if value="{{r.normal}}" hint-placeholder-val="{{true}}">
+          <div class="row" style="{{r.rowStyle}}">
+            <button sc-camel-on-click="{{r.pick}}" style="flex:1;min-width:0;height:38px;display:flex;align-items:center;gap:8px;text-align:left;color:inherit;padding-left:10px">
+              <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px">{{r.label}}</span>
+              <span style="{{r.badge}}">{{r.count}}</span>
+            </button>
+            <button class="icon" aria-label="{{r.pinLabel}}" aria-pressed="{{r.pinned}}" sc-camel-on-click="{{r.togglePin}}" style="{{r.pinStyle}}">
+              <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="{{r.starFill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg>
+            </button>
+          </div>
+        </sc-if>
+        <sc-if value="{{r.editing}}" hint-placeholder-val="{{false}}">
+          <div class="row" style="{{r.editStyle}}">
+            <span style="width:22px;display:flex;justify-content:center;color:#6b7381;cursor:grab" aria-hidden="true">
+              <svg width="14" height="14" sc-camel-view-box="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"></circle><circle cx="15" cy="6" r="1.6"></circle><circle cx="9" cy="12" r="1.6"></circle><circle cx="15" cy="12" r="1.6"></circle><circle cx="9" cy="18" r="1.6"></circle><circle cx="15" cy="18" r="1.6"></circle></svg>
+            </span>
+            <button class="icon" aria-label="{{r.eyeLabel}}" sc-camel-on-click="{{r.toggleHide}}" style="width:32px;height:32px">
+              <sc-if value="{{r.visible}}" hint-placeholder-val="{{true}}">
+                <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </sc-if>
+              <sc-if value="{{r.hiddenRow}}" hint-placeholder-val="{{false}}">
+                <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3l18 18"></path><path d="M10.6 5.1A10 10 0 0 1 12 5c6.4 0 10 7 10 7a17 17 0 0 1-3.2 4M6.6 6.6C3.7 8.4 2 12 2 12s3.6 7 10 7a10 10 0 0 0 4.4-1"></path></svg>
+              </sc-if>
+            </button>
+            <button class="icon" aria-label="{{r.pinLabel}}" aria-pressed="{{r.pinned}}" sc-camel-on-click="{{r.togglePin}}" style="{{r.pinStyle}}">
+              <svg width="16" height="16" sc-camel-view-box="0 0 24 24" fill="{{r.starFill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg>
+            </button>
+            <span style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px">{{r.label}}</span>
+            <span style="{{r.badge}}">{{r.count}}</span>
+          </div>
+        </sc-if>
+      </sc-for>
+    </div>
+    <sc-if value="{{edit}}" hint-placeholder-val="{{false}}">
+    <div style="flex:none;padding:12px;border-top:1px solid #232831;display:flex;flex-direction:column;gap:10px;background:#171a20">
+      <div style="display:flex;gap:6px">
+        <button class="btn" sc-camel-on-click="{{showAll}}" style="flex:1;justify-content:center">Show all</button>
+        <button class="btn" sc-camel-on-click="{{hideAll}}" style="flex:1;justify-content:center">Hide all</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button class="btn" sc-camel-on-click="{{resetOrder}}" disabled="{{noSingle}}" style="{{orderBtn}}">Reset order</button>
+        <button class="btn" sc-camel-on-click="{{sortAZ}}" disabled="{{noSingle}}" style="{{orderBtn}}">Sort A–Z</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <label for="filter" style="position:absolute;width:1px;height:1px;overflow:hidden">Filter categories</label>
+        <input id="filter" value="{{filter}}" sc-camel-on-change="{{setFilter}}" placeholder="Filter, e.g. FR |" style="flex:1;min-width:0;height:36px;box-sizing:border-box;border-radius:8px;background:#0c0e11;border:1px solid #2b303a;padding:0 10px;font-size:13px">
+        <button class="btn" sc-camel-on-click="{{hideMatching}}" style="background:#5eead4;color:#06201c;border-color:#5eead4">Hide matching</button>
+      </div>
+    </div>
+    </sc-if>
+  </aside>
+  <!-- CONTENT -->
+  <main style="flex:1;min-width:0;display:flex;flex-direction:column;background:#101216">
+    <div style="padding:18px 24px 12px;display:flex;align-items:baseline;gap:12px">
+      <h1 style="margin:0;font-size:20px;font-weight:600">{{title}}</h1>
+      <span style="font-size:13px;color:#9ba3b0">{{subtitle}}</span>
+    </div>
+    <div style="flex:1;min-height:0;overflow:auto;padding:0 24px 24px">
+      <sc-if value="{{isLive}}" hint-placeholder-val="{{true}}">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+            <div class="row" style="{{it.rowStyle}}">
+              <button sc-camel-on-click="{{it.play}}" style="flex:1;min-width:0;display:flex;align-items:center;gap:14px;text-align:left;color:inherit;padding:8px 10px">
+                <span style="{{it.logo}}">{{it.initials}}</span>
+                <span style="flex:1;min-width:0;display:flex;flex-direction:column;gap:2px">
+                  <span style="font-size:14px;font-weight:500">{{it.name}}</span>
+                  <span style="font-size:12px;color:#9ba3b0">{{it.meta}}</span>
+                </span>
+              </button>
+              <button class="icon" aria-label="{{it.favLabel}}" aria-pressed="{{it.fav}}" sc-camel-on-click="{{it.toggleFav}}" style="{{it.favStyle}}">
+                <svg width="18" height="18" sc-camel-view-box="0 0 24 24" fill="{{it.favFill}}" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{isPoster}}" hint-placeholder-val="{{false}}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px">
+          <sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+            <button class="card" sc-camel-on-click="{{it.play}}" style="{{it.cardStyle}}">
+              <span style="{{it.poster}}">{{it.initials}}</span>
+              <span style="display:block;padding:10px 12px 12px;text-align:left">
+                <span style="display:block;font-size:13px;font-weight:600">{{it.name}}</span>
+                <span style="display:block;font-size:12px;color:#9ba3b0;margin-top:2px">{{it.meta}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{empty}}" hint-placeholder-val="{{false}}">
+        <div style="padding:48px 0;text-align:center;color:#9ba3b0;font-size:14px">{{emptyText}}</div>
+      </sc-if>
+    </div>
+  </main>
+  <!-- PLAYER -->
+  <section aria-label="Player" style="width:420px;flex:none;box-sizing:border-box;border-left:1px solid #232831;background:#14171c;display:flex;flex-direction:column">
+    <div style="margin:16px;border-radius:12px;aspect-ratio:16/9;background:linear-gradient(160deg,#1c2430,#0a0c10);border:1px solid #232831;display:flex;align-items:center;justify-content:center;position:relative">
+      <span style="width:56px;height:56px;border-radius:50%;background:#5eead4;color:#06201c;display:flex;align-items:center;justify-content:center">
+        <svg width="24" height="24" sc-camel-view-box="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"></path></svg>
+      </span>
+      <span style="position:absolute;left:12px;top:10px;font-size:11px;font-weight:600;letter-spacing:.06em;padding:3px 8px;border-radius:6px;background:#2a1d1f;color:#ff9aa0">{{liveTag}}</span>
+    </div>
+    <div style="padding:0 16px">
+      <div style="font-size:16px;font-weight:600">{{nowTitle}}</div>
+      <div style="font-size:12px;color:#9ba3b0;margin-top:4px">{{nowMeta}}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:4px;padding:16px">
+      <button class="icon" aria-label="Play or pause"><svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 5h4v14H6zM14 5h4v14h-4z"></path></svg></button>
+      <button class="icon" aria-label="Volume"><svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" aria-hidden="true"><path d="M4 9v6h4l5 4V5L8 9z"></path><path d="M16 9a4 4 0 0 1 0 6"></path></svg></button>
+      <div style="flex:1;height:4px;border-radius:2px;background:#2b303a;margin:0 8px"><div style="width:60%;height:4px;border-radius:2px;background:#5eead4"></div></div>
+      <button class="icon" aria-label="Full screen"><svg width="20" height="20" sc-camel-view-box="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"></path></svg></button>
+    </div>
+    <div style="margin:0 16px;height:1px;background:#232831"></div>
+    <div style="padding:14px 16px;font-size:12px;color:#9ba3b0;line-height:1.5">Pick a channel, movie or episode to start playback. The player can dock right or at the bottom.</div>
+  </section>
+</div>
+<!-- STATUS BAR -->
+<footer style="height:30px;flex:none;box-sizing:border-box;padding:0 16px;display:flex;align-items:center;gap:16px;border-top:1px solid #232831;background:#14171c;font-size:12px;color:#9ba3b0">
+  <span style="display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:#4ade80"></span>2 sources synced</span>
+  <span>{{statusCount}}</span>
+  <span style="flex:1"></span>
+  <span>Profile: {{profile}}</span>
+</footer>
+<!-- TOAST -->
+<div role="status" style="position:absolute;right:16px;bottom:46px;width:300px;box-sizing:border-box;padding:12px 14px;border-radius:10px;background:#232831;border:1px solid #343b47;box-shadow:0 8px 24px rgba(0,0,0,.4);font-size:13px">
+  <div style="font-weight:600">Nova updated</div>
+  <div style="color:#9ba3b0;margin-top:2px">412 channels, 38 new</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:1440,&quot;height&quot;:900}}">
+class Component extends DCLogic {
+  renderVals() {
+    const s = Object.assign({ tab:'live', edit:false, src:'all', cat:'all', pinned:{ 'live:fr-news':true }, hidden:{}, filter:'', q:'', profile:'Me', sorted:false, favs:{ 'Arte HD':true, 'BBC News':true }, playing:null }, this.state);
+    const set = (o) => this.setState(o);
+    const CATS = {
+      live: [['fr-cin','FR | Cinéma',84,'Atlas TV'],['fr-news','FR | Actualités',46,'Atlas TV'],['uk-sport','UK: Sports',212,'Atlas TV'],['uk-ent','UK: Entertainment',131,'Nova'],['ar-gen','[AR] General',97,'Nova'],['de-doc','DE | Dokumentation',58,'Atlas TV'],['es-mus','ES | Música',39,'Nova'],['us-kids','US: Kids',73,'Nova']],
+      movies: [['fr-new','FR | Nouveautés',320,'Atlas TV'],['uk-act','UK: Action',410,'Nova'],['de-kom','DE | Komödie',188,'Atlas TV'],['ar-dr','[AR] Drama',142,'Nova'],['es-cine','ES | Cine clásico',96,'Nova']],
+      series: [['fr-ser','FR | Séries',210,'Atlas TV'],['uk-crime','UK: Crime',134,'Nova'],['de-ser','DE | Serien',87,'Atlas TV'],['us-anim','US: Animation',65,'Nova']]
+    };
+    const ITEMS = {
+      live: [['Arte HD','Documentary'],['France 24','News'],['BBC News','News'],['Sky Sports Main Event','Sports'],['Eurosport 1','Sports'],['Das Erste HD','General'],['TVE La 1','General'],['Cartoon Network','Kids'],['Al Jazeera','News'],['Euronews','News']],
+      movies: [['The Long Harbour','2024 · Drama'],['Midnight Ledger','2023 · Thriller'],['Paper Kites','2022 · Comedy'],['Salt Road','2024 · Action'],['A Quiet Orbit','2021 · Sci-fi'],['Winter Inventory','2023 · Drama']],
+      series: [['Northern Lines','4 seasons'],['The Archivists','2 seasons'],['Harbour Lights','6 seasons'],['Cold Signal','1 season'],['Brass & Glass','3 seasons'],['Tidewater','5 seasons']]
+    };
+    const tab = s.tab, one = s.src !== 'all';
+    const tabName = { live:'Live', movies:'Movies', series:'Series' };
+    const key = (id) => tab + ':' + id;
+    let cats = CATS[tab].filter(c => !one || c[3] === s.src).map(c => ({ id:c[0], name:c[1], count:c[2], src:c[3], pinned:!!s.pinned[key(c[0])], hidden:!!s.hidden[key(c[0])] }));
+    if (s.sorted) cats = cats.slice().sort((a,b) => a.name.localeCompare(b.name));
+    const sel = (a) => a.filter(c => s.edit || !c.hidden);
+    const pinnedCats = sel(cats.filter(c => c.pinned)), others = sel(cats.filter(c => !c.pinned));
+    const f = s.filter.trim().toLowerCase();
+    const badgeOn = 'font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:#0c0e11;color:#b6bcc7';
+    const mk = (c) => {
+      const on = s.cat === c.id, dim = c.hidden ? 'opacity:.45;' : '';
+      return {
+        header:false, normal:!s.edit, editing:s.edit, label:(!one && !s.edit ? c.src + ' · ' : '') + c.name, count:c.count, badge:badgeOn,
+        rowStyle:'display:flex;align-items:center;border-radius:8px;' + (on ? 'background:#16312f;color:#fff;' : 'color:#d4d8df;') + dim,
+        editStyle:'display:flex;align-items:center;gap:4px;min-height:40px;padding:0 8px 0 4px;border-radius:8px;color:#d4d8df;' + dim + (f && c.name.toLowerCase().includes(f) ? 'background:#2a2616;' : ''),
+        pinned:c.pinned, pinLabel:(c.pinned ? 'Unpin ' : 'Pin ') + c.name, starFill:c.pinned ? 'currentColor' : 'none',
+        pinStyle:'width:32px;height:32px;' + (c.pinned ? 'color:#f5c451' : ''),
+        visible:!c.hidden, hiddenRow:c.hidden, eyeLabel:(c.hidden ? 'Show ' : 'Hide ') + c.name,
+        pick:() => set({ cat:c.id }),
+        togglePin:() => set({ pinned:Object.assign({}, s.pinned, { [key(c.id)]:!c.pinned }) }),
+        toggleHide:() => set({ hidden:Object.assign({}, s.hidden, { [key(c.id)]:!c.hidden }) })
+      };
+    };
+    const hdr = (t) => ({ header:true, headerText:t, normal:false, editing:false });
+    const rows = [];
+    if (pinnedCats.length) { rows.push(hdr('Pinned')); pinnedCats.forEach(c => rows.push(mk(c))); }
+    if (others.length) { rows.push(hdr(pinnedCats.length ? 'All categories' : 'Categories')); others.forEach(c => rows.push(mk(c))); }
+    const favNames = ITEMS.live.map(i => i[0]).filter(n => s.favs[n]);
+    const recent = ITEMS[tab].slice(0, 3).map(i => i[0]);
+    const vOn = (id) => s.cat === id;
+    const vStyle = (id) => 'height:38px;display:flex;align-items:center;gap:10px;padding:0 10px;border-radius:8px;font-size:13px;color:#d4d8df;' + (vOn(id) ? 'background:#16312f;color:#fff;' : '');
+    const virtuals = [
+      { name:'Favorites', icon:'M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z', fill:'currentColor', count:favNames.length, id:'fav' },
+      { name:'Recent', icon:'M3 12a9 9 0 1 0 3-6.7M3 4v5h5M12 8v4l3 2', fill:'none', count:recent.length, id:'recent' }
+    ].map(v => ({ name:v.name, icon:v.icon, fill:v.fill, count:v.count, badge:badgeOn, style:vStyle(v.id) , pick:() => set({ cat:v.id }) }));
+    let list = ITEMS[tab];
+    if (s.cat === 'fav') list = list.filter(i => s.favs[i[0]]);
+    else if (s.cat === 'recent') list = list.slice(0, 3);
+    const q = s.q.trim().toLowerCase();
+    if (q) list = list.filter(i => i[0].toLowerCase().includes(q));
+    const ini = (n) => n.split(/\s+/).slice(0, 2).map(w => w[0]).join('').toUpperCase();
+    const items = list.map(i => {
+      const playing = s.playing === i[0];
+      return {
+        name:i[0], meta:i[1], initials:ini(i[0]), play:() => set({ playing:i[0] }),
+        rowStyle:'display:flex;align-items:center;border-radius:10px;border:1px solid ' + (playing ? '#2f7f77' : 'transparent') + ';' + (playing ? 'background:#16312f;' : ''),
+        logo:'width:44px;height:44px;border-radius:10px;background:#1d2128;border:1px solid #2b303a;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#9ba3b0',
+        fav:!!s.favs[i[0]], favFill:s.favs[i[0]] ? 'currentColor' : 'none', favLabel:(s.favs[i[0]] ? 'Remove favorite ' : 'Add favorite ') + i[0],
+        favStyle:'margin-right:6px;' + (s.favs[i[0]] ? 'color:#f5c451' : ''),
+        toggleFav:() => set({ favs:Object.assign({}, s.favs, { [i[0]]:!s.favs[i[0]] }) }),
+        cardStyle:'display:block;padding:0;overflow:hidden;border-radius:12px;background:#171a20;border:1px solid ' + (playing ? '#5eead4' : '#262b34') + ';color:#e6e8ec;text-align:left',
+        poster:'display:flex;align-items:center;justify-content:center;aspect-ratio:2/3;background:linear-gradient(160deg,#243040,#12161c);font-size:28px;font-weight:600;color:#6b7686'
+      };
+    });
+    const cur = [...cats, { id:'fav', name:'Favorites' }, { id:'recent', name:'Recent' }].find(c => c.id === s.cat);
+    const title = q ? 'Results for “' + s.q.trim() + '”' : s.cat === 'all' ? 'All ' + tabName[tab].toLowerCase() : cur ? cur.name : 'All ' + tabName[tab].toLowerCase();
+    const seg = (t) => ({ label:tabName[t], selected:tab === t, pick:() => set({ tab:t, cat:'all', q:'' }),
+      style:'height:30px;padding:0 16px;border-radius:7px;font-size:13px;font-weight:600;' + (tab === t ? 'background:#5eead4;color:#06201c' : 'color:#9ba3b0') });
+    const total = cats.reduce((n, c) => n + c.count, 0);
+    const empty = items.length === 0;
+    return {
+      profile:s.profile, src:s.src, q:s.q, filter:s.filter, edit:s.edit, notEdit:!s.edit,
+      setProfile:(e) => set({ profile:e.target.value }), setSrc:(e) => set({ src:e.target.value, sorted:s.sorted }),
+      setQ:(e) => set({ q:e.target.value }), setFilter:(e) => set({ filter:e.target.value }),
+      tabs:['live','movies','series'].map(seg),
+      toggleEdit:() => set({ edit:!s.edit }), editLabel:s.edit ? 'Done' : 'Edit',
+      editBtnStyle:'height:30px;padding:0 12px;' + (s.edit ? 'background:#5eead4;color:#06201c;border-color:#5eead4' : ''),
+      editHint:one ? 'Drag rows to reorder. Order is saved for ' + s.src + '.' : 'Select one source to reorder categories.',
+      noSingle:!one, orderBtn:'flex:1;justify-content:center;' + (one ? '' : 'opacity:.4;cursor:not-allowed'),
+      showAll:() => set({ hidden:Object.assign({}, s.hidden, ...cats.map(c => ({ [key(c.id)]:false }))) }),
+      hideAll:() => set({ hidden:Object.assign({}, s.hidden, ...cats.map(c => ({ [key(c.id)]:true }))) }),
+      resetOrder:() => set({ sorted:false }), sortAZ:() => set({ sorted:true }),
+      hideMatching:() => { if (f) set({ hidden:Object.assign({}, s.hidden, ...cats.filter(c => c.name.toLowerCase().includes(f)).map(c => ({ [key(c.id)]:true }))) }); },
+      virtuals, rows, items, title, subtitle:empty ? '' : items.length + (items.length === 1 ? ' item' : ' items'),
+      isLive:tab === 'live' && !empty, isPoster:tab !== 'live' && !empty, empty, emptyText:q ? 'No matches in ' + tabName[tab] + '. Press Esc to clear.' : 'Nothing here yet. Star a channel to add it to Favorites.',
+      liveTag:s.playing ? (tab === 'live' ? 'LIVE' : 'VOD') : 'IDLE', nowTitle:s.playing || 'Nothing playing', nowMeta:s.playing ? tabName[tab] + ' · ' + (one ? s.src : 'All sources') : 'Select an item from the list',
+      statusCount:total.toLocaleString() + ' ' + tabName[tab].toLowerCase() + ' items in ' + cats.length + ' categories'
+    };
+  }
+}
+</script>
+</body></html>
