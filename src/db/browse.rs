@@ -5,7 +5,7 @@ use rusqlite::Row;
 
 /// Stream columns plus the overlay join; `?1` must be the profile id.
 pub(super) const STREAM_SELECT: &str = "SELECT s.id, s.source_id, s.ext_key, s.name, s.num, s.logo,
-    COALESCE(sp.fav_position IS NOT NULL, 0), COALESCE(sp.hidden, 0)
+    COALESCE(sp.fav_position IS NOT NULL, 0), COALESCE(sp.hidden, 0), 0
     FROM streams s
     LEFT JOIN stream_prefs sp ON sp.profile_id = ?1 AND sp.source_id = s.source_id
       AND sp.media = s.media AND sp.stream_key = s.ext_key";
@@ -22,6 +22,7 @@ pub(super) fn stream_row(media: MediaKind) -> impl Fn(&Row) -> rusqlite::Result<
             logo: r.get(5)?,
             favorite: r.get(6)?,
             hidden: r.get(7)?,
+            missing: r.get(8)?,
         })
     }
 }
@@ -93,14 +94,19 @@ impl Db {
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
 
-    /// Favorites across all linked sources, by favorite position.
+    /// Favorites across all linked sources, by favorite position; vanished streams come back with `missing`.
     pub fn favorites(&self, profile: ProfileId, media: MediaKind) -> Result<Vec<StreamRow>> {
-        let mut stmt = self.conn.prepare(&format!(
-            "{STREAM_SELECT}
-             JOIN profile_sources ps ON ps.profile_id = ?1 AND ps.source_id = s.source_id
-             WHERE s.media = ?2 AND sp.fav_position IS NOT NULL
-             ORDER BY sp.fav_position"
-        ))?;
+        let mut stmt = self.conn.prepare(
+            "SELECT COALESCE(s.id, 0), sp.source_id, sp.stream_key,
+               COALESCE(s.name, sp.last_name, sp.stream_key), s.num, COALESCE(s.logo, sp.last_logo),
+               1, sp.hidden, s.id IS NULL
+             FROM stream_prefs sp
+             JOIN profile_sources ps ON ps.profile_id = ?1 AND ps.source_id = sp.source_id
+             LEFT JOIN streams s ON s.source_id = sp.source_id AND s.media = sp.media
+               AND s.ext_key = sp.stream_key
+             WHERE sp.profile_id = ?1 AND sp.media = ?2 AND sp.fav_position IS NOT NULL
+             ORDER BY sp.fav_position",
+        )?;
         let rows = stmt.query_map((profile, media.as_str()), stream_row(media))?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }

@@ -151,6 +151,8 @@ pub struct StreamRow {
     pub logo: Option<String>,
     pub favorite: bool,
     pub hidden: bool,
+    /// A favorite whose stream the provider no longer lists; not playable.
+    pub missing: bool,
 }
 
 /// What the player layer needs to resolve a stream URL.

@@ -17,6 +17,7 @@ impl Db {
     /// Atomically replaces the source's categories/streams. Overlay untouched.
     pub fn replace_source_data(&mut self, source: SourceId, data: &ParsedPlaylist) -> Result<()> {
         let tx = self.conn.transaction()?;
+        let old_cats = super::new_categories::keys(&tx, source)?;
         tx.execute("DELETE FROM categories WHERE source_id = ?1", [source])?;
         tx.execute("DELETE FROM streams WHERE source_id = ?1", [source])?;
         {
@@ -55,6 +56,16 @@ impl Db {
                 ])?;
             }
         }
+        super::new_categories::hide_new(&tx, source, &old_cats, data)?;
+        tx.execute(
+            "UPDATE stream_prefs SET
+               last_name = COALESCE((SELECT s.name FROM streams s WHERE s.source_id = stream_prefs.source_id
+                 AND s.media = stream_prefs.media AND s.ext_key = stream_prefs.stream_key), last_name),
+               last_logo = COALESCE((SELECT s.logo FROM streams s WHERE s.source_id = stream_prefs.source_id
+                 AND s.media = stream_prefs.media AND s.ext_key = stream_prefs.stream_key), last_logo)
+             WHERE source_id = ?1 AND fav_position IS NOT NULL",
+            [source],
+        )?;
         tx.execute(
             "UPDATE sources SET epg_url = COALESCE(?2, epg_url), account_json = COALESCE(?3, account_json)
              WHERE id = ?1",

@@ -4,10 +4,12 @@ mod boot;
 mod data;
 mod edit_mode;
 mod events;
+mod hide_new;
 mod profiles_view;
 mod series_view;
 mod settings_view;
 mod sidebar;
+mod sort;
 mod sources_dialog;
 mod state;
 mod stream_list;
@@ -33,6 +35,7 @@ pub struct App {
     categories: Vec<CategoryRow>,
     streams: Vec<StreamRow>,
     selected: usize,
+    sort: sort::SortMode,
     scroll_to_selected: bool,
     list_view: (f32, f32),
     search: SearchState,

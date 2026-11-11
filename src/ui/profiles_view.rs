@@ -11,7 +11,19 @@ pub struct ProfilesDialog {
 enum Op {
     Create(String),
     Rename(ProfileId, String),
+    Duplicate(ProfileId, String),
     Delete(ProfileId),
+}
+
+fn copy_name(profiles: &[crate::model::Profile], base: &str) -> String {
+    let taken = |n: &str| profiles.iter().any(|p| p.name == n);
+    let mut name = format!("{base} copy");
+    let mut i = 2;
+    while taken(&name) {
+        name = format!("{base} copy {i}");
+        i += 1;
+    }
+    name
 }
 
 impl App {
@@ -44,6 +56,9 @@ impl App {
                             ui.label(&p.name);
                             if ui.button("Rename").clicked() {
                                 d.renaming = Some((p.id, p.name.clone()));
+                            }
+                            if ui.button("Duplicate").clicked() {
+                                op = Some(Op::Duplicate(p.id, copy_name(&self.profiles, &p.name)));
                             }
                             if d.confirm_delete == Some(p.id) {
                                 if ui.button("Really delete").clicked() {
@@ -87,6 +102,7 @@ impl App {
                 d.renaming = None;
                 self.db.rename_profile(id, name.trim())
             }
+            Op::Duplicate(id, name) => self.db.duplicate_profile(id, &name).map(|_| ()),
             Op::Delete(id) => {
                 d.confirm_delete = None;
                 if self.state.profile == Some(id) {

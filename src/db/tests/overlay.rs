@@ -59,7 +59,9 @@ fn overlay_survives_reimport() {
     let cats = db.categories(p, None, m, true).unwrap();
     assert!(cats.iter().find(|c| c.key == "d").unwrap().hidden);
     assert!(cats.iter().find(|c| c.key == "c").unwrap().pinned);
-    assert_eq!(names(&db.favorites(p, m).unwrap()), ["1"]);
+    let favs = db.favorites(p, m).unwrap();
+    assert_eq!(names(&favs), ["4", "1"]);
+    assert!(favs[0].missing && !favs[1].missing);
     let in_a = db.streams_in_category(p, s, m, "a", false).unwrap();
     assert_eq!(names(&in_a), ["1"]);
     let in_a = db.streams_in_category(p, s, m, "a", true).unwrap();
@@ -72,6 +74,17 @@ fn overlay_survives_reimport() {
     )
     .unwrap();
     assert_eq!(names(&db.favorites(p, m).unwrap()), ["4", "1"]);
+    assert!(db.favorites(p, m).unwrap().iter().all(|f| !f.missing));
+
+    // "4" vanishes: favorite stays in order, flagged missing, with its last name
+    db.replace_source_data(s, &playlist(&["c"], &[("1", "c", "One")]))
+        .unwrap();
+    let favs = db.favorites(p, m).unwrap();
+    assert_eq!(names(&favs), ["4", "1"]);
+    assert!(favs[0].missing && !favs[1].missing);
+    assert_eq!(favs[0].name, "Four");
+    db.set_favorite(p, s, m, "4", false).unwrap();
+    assert_eq!(names(&db.favorites(p, m).unwrap()), ["1"]);
 }
 
 #[test]

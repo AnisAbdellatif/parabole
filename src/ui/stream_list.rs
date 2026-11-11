@@ -36,7 +36,12 @@ impl App {
             self.series_ui(ui);
             return;
         }
-        ui.heading(self.list_title());
+        ui.horizontal(|ui| {
+            ui.heading(self.list_title());
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                self.sort_selector(ui);
+            });
+        });
         let mut actions = self.key_actions(ui);
         let favorites = self.state.sel == Some(Sel::Favorites)
             && self.search.applied.is_empty()
@@ -93,6 +98,7 @@ impl App {
     }
 
     fn virtual_list(&mut self, ui: &mut egui::Ui, actions: &mut Vec<(usize, RowAction)>) {
+        let edit = self.edit.on;
         let spacing = ui.spacing().item_spacing.y;
         let mut area = egui::ScrollArea::vertical().auto_shrink(false);
         if std::mem::take(&mut self.scroll_to_selected) {
@@ -106,7 +112,7 @@ impl App {
         }
         let out = area.show_rows(ui, ROW_H, self.streams.len(), |ui, range| {
             for i in range {
-                for a in stream_row::show(ui, &self.streams[i], i == self.selected) {
+                for a in stream_row::show(ui, &self.streams[i], i == self.selected, edit) {
                     actions.push((i, a));
                 }
             }
@@ -117,6 +123,7 @@ impl App {
     // shortcut: favorites are not virtualized (drag reorder needs every row); above MAX_DRAG_FAVORITES the plain virtual list is used and reordering is off
     fn favorites_list(&mut self, ui: &mut egui::Ui, actions: &mut Vec<(usize, RowAction)>) {
         let mut finished = false;
+        let edit = self.edit.on;
         egui::ScrollArea::vertical()
             .auto_shrink(false)
             .show(ui, |ui| {
@@ -127,7 +134,9 @@ impl App {
                             handle.ui(ui, |ui| {
                                 ui.label("☰");
                             });
-                            for a in stream_row::show(ui, item.0, state.index == self.selected) {
+                            for a in
+                                stream_row::show(ui, item.0, state.index == self.selected, edit)
+                            {
                                 actions.push((state.index, a));
                             }
                         });
@@ -154,6 +163,9 @@ impl App {
             return;
         };
         let profile = self.profile();
+        if row.missing && !matches!(action, RowAction::ToggleFavorite | RowAction::Select) {
+            return;
+        }
         match action {
             RowAction::Select => self.selected = idx,
             RowAction::Activate if self.state.tab == MediaKind::Series => self.open_series(&row),
@@ -171,10 +183,14 @@ impl App {
                 self.report(res);
                 self.reload_streams();
             }
-            RowAction::Hide => {
-                let res =
-                    self.db
-                        .set_stream_hidden(profile, row.source_id, row.media, &row.key, true);
+            RowAction::ToggleHidden => {
+                let res = self.db.set_stream_hidden(
+                    profile,
+                    row.source_id,
+                    row.media,
+                    &row.key,
+                    !row.hidden,
+                );
                 self.report(res);
                 self.reload_streams();
             }

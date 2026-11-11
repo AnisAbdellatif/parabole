@@ -38,6 +38,38 @@ impl Db {
         Ok(())
     }
 
+    /// Copies sources, category/stream prefs and settings (not history) into a new profile.
+    pub fn duplicate_profile(&self, id: ProfileId, new_name: &str) -> Result<ProfileId> {
+        let tx = self.conn.unchecked_transaction()?;
+        tx.execute("INSERT INTO profiles(name) VALUES (?1)", [new_name])
+            .context("duplicate profile")?;
+        let new = tx.last_insert_rowid();
+        tx.execute(
+            "INSERT INTO profile_sources(profile_id, source_id, position)
+             SELECT ?2, source_id, position FROM profile_sources WHERE profile_id = ?1",
+            (id, new),
+        )?;
+        tx.execute(
+            "INSERT INTO category_prefs(profile_id, source_id, media, cat_key, hidden, position, fav_position)
+             SELECT ?2, source_id, media, cat_key, hidden, position, fav_position
+             FROM category_prefs WHERE profile_id = ?1",
+            (id, new),
+        )?;
+        tx.execute(
+            "INSERT INTO stream_prefs(profile_id, source_id, media, stream_key, hidden, fav_position, last_name, last_logo)
+             SELECT ?2, source_id, media, stream_key, hidden, fav_position, last_name, last_logo
+             FROM stream_prefs WHERE profile_id = ?1",
+            (id, new),
+        )?;
+        tx.execute(
+            "INSERT INTO settings(profile_id, key, value)
+             SELECT ?2, key, value FROM settings WHERE profile_id = ?1",
+            (id, new),
+        )?;
+        tx.commit()?;
+        Ok(new)
+    }
+
     /// Deletes the profile and its overlay. Sources stay (they may be shared).
     pub fn delete_profile(&self, id: ProfileId) -> Result<()> {
         let tx = self.conn.unchecked_transaction()?;

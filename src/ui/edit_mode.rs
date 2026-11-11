@@ -133,6 +133,7 @@ impl App {
                 self.bulk_hidden(|name| !name.to_lowercase().contains(&needle));
             }
         });
+        self.hide_new_toggle(ui);
         ui.separator();
     }
 

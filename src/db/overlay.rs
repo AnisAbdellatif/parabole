@@ -109,11 +109,16 @@ impl Db {
     ) -> Result<()> {
         if favorite {
             self.conn.execute(
-                "INSERT INTO stream_prefs(profile_id, source_id, media, stream_key, fav_position)
-                 VALUES (?1, ?2, ?3, ?4, (SELECT COALESCE(MAX(fav_position), -1) + 1 FROM stream_prefs
-                                          WHERE profile_id = ?1 AND media = ?3))
+                "INSERT INTO stream_prefs(profile_id, source_id, media, stream_key, fav_position, last_name, last_logo)
+                 SELECT ?1, ?2, ?3, ?4, (SELECT COALESCE(MAX(fav_position), -1) + 1 FROM stream_prefs
+                                         WHERE profile_id = ?1 AND media = ?3),
+                        (SELECT name FROM streams WHERE source_id = ?2 AND media = ?3 AND ext_key = ?4),
+                        (SELECT logo FROM streams WHERE source_id = ?2 AND media = ?3 AND ext_key = ?4)
+                 WHERE true
                  ON CONFLICT(profile_id, source_id, media, stream_key)
-                 DO UPDATE SET fav_position = COALESCE(stream_prefs.fav_position, excluded.fav_position)",
+                 DO UPDATE SET fav_position = COALESCE(stream_prefs.fav_position, excluded.fav_position),
+                               last_name = COALESCE(excluded.last_name, stream_prefs.last_name),
+                               last_logo = COALESCE(excluded.last_logo, stream_prefs.last_logo)",
                 (profile, source, media.as_str(), key),
             )?;
         } else {

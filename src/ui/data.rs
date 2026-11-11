@@ -75,6 +75,8 @@ impl App {
 
     pub fn reload_streams(&mut self) {
         let (profile, tab) = (self.profile(), self.state.tab);
+        self.sort = self.load_sort();
+        let sort = self.sort;
         let res = if !self.search.applied.is_empty() {
             self.db.search(
                 profile,
@@ -87,9 +89,13 @@ impl App {
             match &self.state.sel {
                 Some(Sel::Favorites) => self.db.favorites(profile, tab),
                 Some(Sel::Recent) => self.db.recent(profile, tab, RECENT_LIMIT),
-                Some(Sel::Category(s, k)) => {
-                    self.db.streams_in_category(profile, *s, tab, k, false)
-                }
+                Some(Sel::Category(s, k)) => self
+                    .db
+                    .streams_in_category(profile, *s, tab, k, self.edit.on)
+                    .map(|mut rows| {
+                        sort.apply(&mut rows);
+                        rows
+                    }),
                 None => Ok(Vec::new()),
             }
         };
