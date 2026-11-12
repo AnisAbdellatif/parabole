@@ -1,9 +1,8 @@
-//! Content-area chrome: title/subtitle header and the empty states.
+//! Content-area chrome: title/subtitle header.
 use super::App;
 use super::state::Sel;
 use super::theme;
-use crate::model::MediaKind;
-use egui::{Align, Frame, Layout, Margin, RichText, Ui, vec2};
+use egui::{Align, Frame, Layout, Margin, RichText, Ui};
 
 impl App {
     pub(super) fn list_header(&mut self, ui: &mut Ui) {
@@ -66,55 +65,5 @@ impl App {
                 .map_or(String::new(), |c| c.name.clone()),
             None => "Select a category".into(),
         }
-    }
-
-    pub(super) fn empty_list(&self, ui: &mut Ui) {
-        let text = if !self.search.applied.is_empty() {
-            format!(
-                "No matches in {}. Press Esc to clear.",
-                tab_name(self.state.tab)
-            )
-        } else if self.state.sel == Some(Sel::Favorites) {
-            "Nothing here yet. Star a channel to add it to Favorites.".to_string()
-        } else if self.state.sel == Some(Sel::Continue) {
-            "Nothing in progress. Started movies and episodes show up here.".to_string()
-        } else if matches!(self.state.sel, Some(Sel::Group(_))) {
-            "Empty group. Right-click an item and pick Add to group.".to_string()
-        } else {
-            "Nothing here yet.".to_string()
-        };
-        ui.add_space(48.0);
-        ui.vertical_centered(|ui| {
-            ui.label(
-                RichText::new(text)
-                    .font(theme::regular(14.0))
-                    .color(theme::TEXT_MUTED),
-            );
-        });
-    }
-
-    pub(super) fn no_sources(&mut self, ui: &mut Ui) {
-        ui.add_space(ui.available_height() / 3.0);
-        ui.vertical_centered(|ui| {
-            ui.label(RichText::new("Add a source").font(theme::semibold(20.0)));
-            ui.add_space(4.0);
-            ui.label(
-                RichText::new("Paste an M3U link, an Xtream login or pick a playlist file.")
-                    .color(theme::TEXT_MUTED),
-            );
-            ui.add_space(12.0);
-            let size = vec2(super::kit::pill_width(ui, "Add a source"), theme::CONTROL_H);
-            if super::kit::pill(ui, "Add a source", size, true, true).clicked() {
-                self.open_sources();
-            }
-        });
-    }
-}
-
-fn tab_name(tab: MediaKind) -> &'static str {
-    match tab {
-        MediaKind::Live => "Live",
-        MediaKind::Movie => "Movies",
-        MediaKind::Series => "Series",
     }
 }

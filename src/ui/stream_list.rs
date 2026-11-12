@@ -93,6 +93,11 @@ impl App {
             self.selected = self.selected.saturating_add_signed(step).min(last);
             self.scroll_to_selected = true;
         }
+        let (home, end) = ui.input(|i| (i.key_pressed(Key::Home), i.key_pressed(Key::End)));
+        if home || end {
+            self.selected = if home { 0 } else { last };
+            self.scroll_to_selected = true;
+        }
         if ui.input(|i| i.key_pressed(Key::Enter)) {
             out.push((self.selected, RowAction::Activate));
         }

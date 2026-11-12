@@ -2,7 +2,7 @@
 //! Owner: sources agent. Public API below is a contract used by the worker/UI.
 
 pub mod detect;
-mod http;
+pub(crate) mod http;
 pub mod m3u;
 pub mod probe;
 pub mod xtream;

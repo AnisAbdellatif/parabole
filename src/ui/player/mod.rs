@@ -41,6 +41,8 @@ pub struct PlayerUi {
     switched_to: Option<i64>,
     /// Media of the stream an external player is playing.
     ext_media: Option<MediaKind>,
+    /// Why the last play attempt failed to start; shown in the idle pane.
+    pub(in crate::ui) last_error: Option<String>,
 }
 
 impl PlayerUi {
@@ -63,6 +65,7 @@ impl PlayerUi {
             prev_stream: None,
             switched_to: None,
             ext_media: None,
+            last_error: None,
         }
     }
 
