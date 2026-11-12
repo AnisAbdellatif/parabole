@@ -63,7 +63,7 @@ if [ -n "${APPLE_CERTIFICATE:-}" ]; then
   security set-key-partition-list -S apple-tool:,apple: -s -k "$KCPASS" "$KC" >/dev/null
   security list-keychains -d user -s "$KC" login.keychain
   IDENTITY=$(security find-identity -v -p codesigning "$KC" | sed -n 's/.*"\(Developer ID Application.*\)"/\1/p' | head -1)
-  codesign --force --deep --options runtime --timestamp --sign "$IDENTITY" "$APP"
+  codesign --force --deep --options runtime --timestamp --entitlements packaging/entitlements.plist --sign "$IDENTITY" "$APP"
 else
   codesign --force --deep --sign - "$APP"
 fi
