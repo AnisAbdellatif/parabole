@@ -19,6 +19,7 @@ struct Open {
 pub struct InfoStore {
     cache: HashMap<Key, MediaInfo>,
     loading: HashSet<Key>,
+    failed: HashSet<Key>,
     open: Option<Open>,
 }
 
@@ -64,10 +65,15 @@ impl App {
             }
             Err(e) => {
                 // cache an empty entry so the window stops waiting and no retry loop starts
+                self.info.failed.insert(key.clone());
                 self.info.cache.insert(key, MediaInfo::default());
                 self.toast(format!("Could not load details: {e}"));
             }
         }
+    }
+
+    pub(super) fn close_details(&mut self) -> bool {
+        self.info.open.take().is_some()
     }
 
     pub(super) fn details_window(&mut self, ctx: &egui::Context) {
@@ -75,10 +81,21 @@ impl App {
             return;
         };
         let mut shown = true;
+        let mut retry = false;
         egui::Window::new(&open.title)
             .open(&mut shown)
             .default_width(520.0)
             .show(ctx, |ui| match self.info.cache.get(&open.key) {
+                Some(_) if self.info.failed.contains(&open.key) => {
+                    let body = "The provider did not answer. Check the connection and try again.";
+                    retry = super::empty_state::message(
+                        ui,
+                        "Could not load details",
+                        body,
+                        false,
+                        Some("Retry"),
+                    );
+                }
                 Some(info) => info_body(ui, info, open.logo.as_deref()),
                 None if self.info.loading.contains(&open.key) => {
                     ui.horizontal(|ui| {
@@ -88,6 +105,14 @@ impl App {
                 }
                 None => info_body(ui, &MediaInfo::default(), open.logo.as_deref()),
             });
+        if retry {
+            let (source, media, key) = open.key.clone();
+            self.info.cache.remove(&open.key);
+            self.info.failed.remove(&open.key);
+            if self.info.loading.insert(open.key.clone()) {
+                self.worker.send(Command::LoadInfo { source, media, key });
+            }
+        }
         if !shown {
             self.info.open = None;
         }

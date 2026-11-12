@@ -6,6 +6,7 @@ mod details_view;
 mod edit_groups;
 mod edit_mode;
 mod edit_toolbar;
+mod empty_state;
 mod events;
 mod group_actions;
 mod group_dialog;
@@ -13,6 +14,7 @@ mod hide_new;
 mod kit;
 mod list_header;
 mod menu_data;
+mod nav_keys;
 mod player;
 mod poster_grid;
 mod profiles_view;
@@ -58,6 +60,7 @@ pub struct App {
     alts: Option<(i64, Vec<Alternate>)>,
     group_dialog: Option<group_dialog::GroupDialog>,
     selected: usize,
+    nav: nav_keys::Nav,
     sort: sort::SortMode,
     scroll_to_selected: bool,
     list_view: (f32, f32),
@@ -82,6 +85,7 @@ impl eframe::App for App {
         self.pump_events(&ctx);
         self.apply_search_if_due(&ctx);
         self.embed_tick(&ctx);
+        self.nav_keys(&ctx);
         if !self.embed_fullscreen(ui, frame) {
             self.topbar(ui);
             self.status_bar(ui);

@@ -23,6 +23,13 @@ fn install_mpv_script(db: &std::path::Path) {
     }
 }
 
+/// Without a cache dir the egui_extras http loader still works, just uncached.
+fn install_image_cache(ctx: &egui::Context) {
+    if let Some(dirs) = ProjectDirs::from("dev", "iptv-player", "IPTV Player") {
+        let _ = crate::imgcache::install(ctx, dirs.cache_dir().join("images"));
+    }
+}
+
 pub fn run() -> eframe::Result {
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default().with_inner_size([1280.0, 800.0]),
@@ -34,6 +41,7 @@ pub fn run() -> eframe::Result {
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
+            install_image_cache(&cc.egui_ctx);
             theme::install(&cc.egui_ctx);
             Ok(Box::new(App::new(cc)?))
         }),
@@ -65,6 +73,7 @@ impl App {
             alts: None,
             group_dialog: None,
             selected: 0,
+            nav: Default::default(),
             sort: Default::default(),
             scroll_to_selected: false,
             list_view: (0.0, 0.0),

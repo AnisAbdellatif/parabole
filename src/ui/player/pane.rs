@@ -97,9 +97,10 @@ impl App {
                 acts
             }
             _ => {
-                let (title, meta) = match &self.playing {
-                    Some((title, _)) => (title.as_str(), "Playing in an external player"),
-                    None => ("Nothing playing", "Idle"),
+                let (title, meta) = match (&self.playing, &self.player_ui.last_error) {
+                    (Some((title, _)), _) => (title.as_str(), "Playing in an external player"),
+                    (None, Some(err)) => ("Could not start playback", err.as_str()),
+                    (None, None) => ("Nothing playing", "Idle"),
                 };
                 dock::title_meta(ui, title, meta);
                 ui.add_space(16.0);

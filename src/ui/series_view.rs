@@ -202,7 +202,13 @@ impl App {
                     ui.label(RichText::new("Loading episodes…").color(theme::TEXT_MUTED));
                 });
             } else if s.seasons.is_empty() {
-                ui.label(RichText::new("No episodes found.").color(theme::TEXT_MUTED));
+                back |= super::empty_state::message(
+                    ui,
+                    "No episodes found",
+                    "This series has no episodes from the provider yet.",
+                    false,
+                    Some("Back"),
+                );
             } else {
                 s.season = s.season.min(s.seasons.len() - 1);
                 let name = |se: &Season| {

@@ -46,42 +46,58 @@ impl App {
                 ui.add_space(8.0);
 
                 let lines = self.lines();
-                egui::ScrollArea::vertical().auto_shrink(false).show_rows(
-                    ui,
-                    theme::SIDEBAR_ROW_H,
-                    lines.len(),
-                    |ui, range| {
-                        for (n, line) in lines[range.clone()].iter().enumerate() {
-                            match line {
-                                Line::Header(text) => header_row(ui, text),
-                                Line::GroupsHeader => new_group |= groups_header(ui),
-                                Line::Group(i) => {
-                                    let g = &self.groups[*i];
-                                    let sel = Sel::Group(g.id);
-                                    let on = self.state.sel.as_ref() == Some(&sel);
-                                    let id = ui.scope_id().with(("group", g.id));
-                                    if group_row(ui, id, &g.name, g.count, on) {
-                                        picked = Some(sel);
-                                    }
+                let mut area = egui::ScrollArea::vertical().auto_shrink(false);
+                if std::mem::take(&mut self.nav.scroll_sidebar) {
+                    let at = lines.iter().position(|l| match (l, &self.state.sel) {
+                        (Line::Cat(i), Some(Sel::Category(s, k))) => {
+                            self.categories[*i].source_id == *s && self.categories[*i].key == *k
+                        }
+                        (Line::Group(i), Some(Sel::Group(g))) => self.groups[*i].id == *g,
+                        _ => false,
+                    });
+                    let (offset, height) = self.nav.sidebar_view;
+                    if let Some(at) = at {
+                        let step = theme::SIDEBAR_ROW_H + ROW_GAP;
+                        let top = at as f32 * step;
+                        if top < offset {
+                            area = area.vertical_scroll_offset(top);
+                        } else if top + step > offset + height {
+                            area = area.vertical_scroll_offset(top + step - height);
+                        }
+                    }
+                }
+                let out = area.show_rows(ui, theme::SIDEBAR_ROW_H, lines.len(), |ui, range| {
+                    for (n, line) in lines[range.clone()].iter().enumerate() {
+                        match line {
+                            Line::Header(text) => header_row(ui, text),
+                            Line::GroupsHeader => new_group |= groups_header(ui),
+                            Line::Group(i) => {
+                                let g = &self.groups[*i];
+                                let sel = Sel::Group(g.id);
+                                let on = self.state.sel.as_ref() == Some(&sel);
+                                let id = ui.scope_id().with(("group", g.id));
+                                if group_row(ui, id, &g.name, g.count, on) {
+                                    picked = Some(sel);
                                 }
-                                Line::Cat(i) => {
-                                    let c = &self.categories[*i];
-                                    let sel = Sel::Category(c.source_id, c.key.clone());
-                                    let on = self.state.sel.as_ref() == Some(&sel);
-                                    let id = ui.scope_id().with(("cat", range.start + n));
-                                    let (pick, pin_click) =
-                                        cat_row(ui, id, &self.cat_label(c), c.count, on, c.pinned);
-                                    if pick {
-                                        picked = Some(sel);
-                                    }
-                                    if pin_click {
-                                        pin = Some((c.source_id, c.key.clone(), !c.pinned));
-                                    }
+                            }
+                            Line::Cat(i) => {
+                                let c = &self.categories[*i];
+                                let sel = Sel::Category(c.source_id, c.key.clone());
+                                let on = self.state.sel.as_ref() == Some(&sel);
+                                let id = ui.scope_id().with(("cat", range.start + n));
+                                let (pick, pin_click) =
+                                    cat_row(ui, id, &self.cat_label(c), c.count, on, c.pinned);
+                                if pick {
+                                    picked = Some(sel);
+                                }
+                                if pin_click {
+                                    pin = Some((c.source_id, c.key.clone(), !c.pinned));
                                 }
                             }
                         }
-                    },
-                );
+                    }
+                });
+                self.nav.sidebar_view = (out.state.clamped_offset().y, out.inner_rect.height());
             });
         if let Some((source, key, pinned)) = pin {
             let res =

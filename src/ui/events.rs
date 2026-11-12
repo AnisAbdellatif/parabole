@@ -42,6 +42,7 @@ impl App {
                     result,
                 } => self.series_loaded(source, &key, result),
                 Event::Playing { title, kind, media } => {
+                    self.player_ui.last_error = None;
                     self.external_started(ctx, media);
                     self.playing = Some((title, kind));
                 }
@@ -51,7 +52,10 @@ impl App {
                         self.playing = None;
                     }
                 }
-                Event::PlayFailed(msg) => self.toast(msg),
+                Event::PlayFailed(msg) => {
+                    self.player_ui.last_error = Some(msg.clone());
+                    self.toast(msg);
+                }
                 Event::UrlReady(url) => {
                     ctx.copy_text(url);
                     self.toast("Stream URL copied");
