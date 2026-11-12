@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=IPTV Player
+Comment=Browse and play IPTV playlists and Xtream sources
+Exec=iptv-player
+Icon=iptv-player
+Categories=AudioVideo;Video;Player;
+Terminal=false

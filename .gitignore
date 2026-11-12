@@ -1,3 +1,4 @@
 target/
 .tokenade/
 .fastembed_cache/
+dist/
