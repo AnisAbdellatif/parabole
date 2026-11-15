@@ -40,7 +40,26 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - browse: posters look blurry (`images.rs` THUMB=96, not browse-owned). Cmd+Left sidebar focus not verified via automation (Cmd+D verified).
 
 ## Comparison
-(filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
+Measured 2026-11-15 on an M-series Mac, macOS, both builds with embedded mpv. The runtime numbers come from a copy of the real DB (290,693 streams, 906 categories, auto-refresh off). The script is `/tmp/cmp/measure.sh` (not committed).
+
+| | egui | Slint |
+|---|---|---|
+| UI code | 6,673 lines Rust (60 files) | 4,570 Rust (33) + 2,681 `.slint` (38) = 7,251 |
+| Clean release build | 83 s | 145 s |
+| Incremental debug build, one UI file touched | 1 s | 4 s (`.slint`), 3 s (Rust glue) |
+| Crates in the dependency graph | 350 | 497 |
+| Release binary, stripped | 20.8 MB | 23.8 MB |
+| RSS, idle, after 10 s and after 40 s | 155 MB / 155 MB | 134 MB / 134 MB |
+| CPU time, idle, 10 s to 40 s | 0.00 s | 0.10 s |
+
+Notes:
+- **Feature coverage:** the Slint port is not at parity yet (see Gaps). In particular, the Slint "items" status counts the whole tab, and egui counts the current category.
+- **Text:**
+  - Slint shapes Arabic RTL correctly (word order is right). egui renders Arabic words in reversed order, because it has no bidi.
+  - Slint shows tofu boxes for superscript letters (`ᵁᴴᴰ`). The bundled DejaVu fallback that egui uses isn't registered with Slint yet.
+- **Idle cost:** egui is fully idle when nothing changes. The Slint port wakes up a little, probably from the toast timer, which repeats even with no toasts.
+- **Scrolling:** smoothness wasn't measured, because synthetic input doesn't reach the app on this machine.
+- **Screenshots:** `/tmp/cmp/iptv-player.png` (egui) and `/tmp/cmp/iptv-player-slint.png` (Slint), same DB, same first category.
 
 ## Dev-experience notes
 (each agent appends 2–5 terse bullets: what was easier or harder than egui, and any Slint pitfalls hit)
