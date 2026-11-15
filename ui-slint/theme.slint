@@ -1,0 +1,55 @@
+// Design tokens: mirrors src/ui/theme/mod.rs (keep the two in sync by hand).
+import "../assets/fonts/Inter-Regular.ttf";
+import "../assets/fonts/Inter-Medium.ttf";
+import "../assets/fonts/Inter-SemiBold.ttf";
+
+export global Theme {
+    out property <string> font: "Inter";
+    out property <int> regular: 400;
+    out property <int> medium: 500;
+    out property <int> semibold: 600;
+
+    out property <color> bg: #101216;
+    out property <color> panel: #14171c;
+    out property <color> toolbar: #171a20;
+    out property <color> card: #171a20;
+    out property <color> surface: #1d2128;
+    out property <color> surface-hover: #262b34;
+    out property <color> row-hover: #1a1e25;
+    out property <color> input-bg: #0c0e11;
+    out property <color> border: #2b303a;
+    out property <color> divider: #232831;
+    out property <color> card-border: #262b34;
+    out property <color> card-border-hover: #3a414d;
+
+    out property <color> text: #e6e8ec;
+    out property <color> text-row: #d4d8df;
+    out property <color> text-muted: #9ba3b0;
+    out property <color> text-dim: #7d8594;
+    out property <color> text-faint: #6b7381;
+    out property <color> badge-text: #b6bcc7;
+
+    out property <color> accent: #5eead4;
+    out property <color> on-accent: #06201c;
+    out property <color> selected-bg: #16312f;
+    out property <color> selected-border: #2f7f77;
+
+    out property <color> star: #f5c451;
+    out property <color> ok: #4ade80;
+    out property <color> warn: #fb923c;
+    out property <color> error: #f87171;
+    out property <color> toast-bg: #232831;
+    out property <color> toast-border: #343b47;
+
+    out property <length> topbar-h: 64px;
+    out property <length> statusbar-h: 30px;
+    out property <length> sidebar-w: 320px;
+    out property <length> sidebar-row-h: 38px;
+    out property <length> sidebar-row-step: 40px;
+    out property <length> channel-row-h: 62px;
+    out property <length> channel-row-step: 66px;
+    out property <length> logo: 44px;
+    out property <length> radius: 8px;
+    out property <length> radius-l: 10px;
+    out property <length> radius-card: 12px;
+}

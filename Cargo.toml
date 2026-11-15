@@ -18,8 +18,18 @@ rusqlite = { version = "0.42.0", features = ["bundled"] }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = "1.0.154"
 shlex = "2.0.1"
+slint = { version = "1.18", default-features = false, features = ["std", "backend-winit", "renderer-femtovg", "compat-1-2"], optional = true }
 url = "2.5.8"
 
 [features]
 default = ["embedded-mpv"]
 embedded-mpv = ["dep:libmpv2"]
+slint-ui = ["dep:slint", "dep:slint-build"]
+
+[build-dependencies]
+slint-build = { version = "1.18", optional = true }
+
+[[bin]]
+name = "iptv-player-slint"
+path = "src/bin/iptv-player-slint.rs"
+required-features = ["slint-ui"]

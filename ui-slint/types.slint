@@ -1,0 +1,27 @@
+// Row structs shared by Rust models and components.
+export struct StreamItem {
+    name: string,
+    meta: string,
+    initials: string,
+    logo: image,
+    has-logo: bool,
+    favorite: bool,
+    progress: float,
+    watched: bool,
+    missing: bool,
+    hidden: bool,
+}
+
+// kind: 0 section header, 1 special entry, 2 group, 3 category. icon: 0 none, 1 star, 2 recent, 3 resume.
+export struct SidebarItem {
+    id: string,
+    kind: int,
+    label: string,
+    count: int,
+    icon: int,
+}
+
+export struct ToastItem {
+    id: int,
+    text: string,
+}

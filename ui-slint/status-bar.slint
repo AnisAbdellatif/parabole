@@ -1,0 +1,40 @@
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+
+export component StatusBar inherits Rectangle {
+    height: Theme.statusbar-h;
+    background: Theme.panel;
+    Rectangle { height: 1px; background: Theme.divider; }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 16px;
+        Rectangle {
+            width: 7px;
+            Rectangle {
+                width: 7px;
+                height: 7px;
+                border-radius: 3.5px;
+                background: Core.syncing ? Theme.warn : Theme.ok;
+            }
+        }
+        Text { text: Core.status-sources; color: Theme.text-muted; font-size: 12px; vertical-alignment: center; }
+        Text { text: Core.status-items; color: Theme.text-muted; font-size: 12px; vertical-alignment: center; }
+        if Core.playing-title != "": Text {
+            text: "Playing: " + Core.playing-title + " in " + Core.playing-kind;
+            color: Theme.text;
+            font-size: 12px;
+            vertical-alignment: center;
+            overflow: elide;
+        }
+        if Core.playing-title != "": Rectangle {
+            width: 56px;
+            border-radius: 6px;
+            background: stop.has-hover ? Theme.surface-hover : Theme.surface;
+            stop := TouchArea { clicked => { Core.stop-playback(); } }
+            Text { text: "■ Stop"; color: Theme.text; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        Text { text: "Profile: " + Core.profile-name; color: Theme.text-muted; font-size: 12px; vertical-alignment: center; }
+    }
+}

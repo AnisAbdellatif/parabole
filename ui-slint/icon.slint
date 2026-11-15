@@ -1,0 +1,11 @@
+import { Theme } from "theme.slint";
+
+// White SVG tinted with `tint`.
+export component Icon inherits Image {
+    in property <color> tint: Theme.text;
+    in property <length> size: 16px;
+    width: size;
+    height: size;
+    colorize: tint;
+    image-fit: contain;
+}

@@ -1,0 +1,76 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+
+export component Sidebar inherits Rectangle {
+    width: Theme.sidebar-w;
+    background: Theme.panel;
+    Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
+    Text {
+        x: 18px;
+        y: 14px;
+        text: "CATEGORIES";
+        color: Theme.text-muted;
+        font-size: 12px;
+        font-weight: Theme.semibold;
+    }
+    ListView {
+        x: 10px;
+        y: 44px;
+        width: parent.width - 20px - 1px;
+        height: parent.height - 44px;
+        for item in Core.sidebar: Rectangle {
+            height: Theme.sidebar-row-step;
+            if item.kind == 0: Text {
+                x: 10px;
+                y: 18px;
+                text: item.label;
+                color: Theme.text-dim;
+                font-size: 11px;
+                font-weight: Theme.semibold;
+            }
+            if item.kind != 0: Rectangle {
+                height: Theme.sidebar-row-h;
+                border-radius: Theme.radius;
+                border-width: 1px;
+                property <bool> on: item.id == Core.selected-id;
+                background: on ? Theme.selected-bg : (ta.has-hover ? Theme.row-hover : transparent);
+                border-color: on ? Theme.selected-border : transparent;
+                ta := TouchArea { clicked => { Core.sidebar-selected(item.id); } }
+                if item.icon != 0: Icon {
+                    x: 10px;
+                    y: (parent.height - self.height) / 2;
+                    source: item.icon == 1 ? Icons.star-filled : item.icon == 2 ? Icons.recent : Icons.resume;
+                    tint: on ? #ffffff : Theme.text-row;
+                }
+                Text {
+                    x: item.icon != 0 ? 36px : 10px;
+                    width: parent.width - self.x - (item.count >= 0 ? 60px : 10px);
+                    text: item.label;
+                    color: on ? #ffffff : Theme.text-row;
+                    font-size: 13px;
+                    vertical-alignment: center;
+                    height: parent.height;
+                    overflow: elide;
+                }
+                if item.count >= 0: Rectangle {
+                    x: parent.width - self.width - 8px;
+                    y: (parent.height - self.height) / 2;
+                    width: badge.preferred-width + 14px;
+                    height: 20px;
+                    border-radius: 6px;
+                    background: Theme.surface;
+                    badge := Text {
+                        text: item.count;
+                        color: Theme.badge-text;
+                        font-size: 11px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+    }
+}

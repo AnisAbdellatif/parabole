@@ -1,0 +1,30 @@
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+
+export component Toasts inherits VerticalLayout {
+    spacing: 8px;
+    alignment: end;
+    width: 340px;
+    for t in Core.toasts: Rectangle {
+        background: Theme.toast-bg;
+        border-radius: Theme.radius-l;
+        border-width: 1px;
+        border-color: Theme.toast-border;
+        drop-shadow-blur: 24px;
+        drop-shadow-offset-y: 8px;
+        drop-shadow-color: #00000064;
+        HorizontalLayout {
+            padding: 12px;
+            padding-left: 14px;
+            spacing: 8px;
+            Text { text: t.text; color: Theme.text; font-size: 13px; wrap: word-wrap; horizontal-stretch: 1; }
+            TouchArea {
+                width: 20px;
+                clicked => { Core.toast-dismissed(t.id); }
+                Icon { source: Icons.close; tint: Theme.text-muted; size: 14px; }
+            }
+        }
+    }
+}

@@ -10,14 +10,15 @@ use directories::ProjectDirs;
 use std::path::PathBuf;
 use std::sync::Arc;
 
-fn db_path() -> Result<PathBuf> {
+/// Shared with the Slint binary.
+pub fn db_path() -> Result<PathBuf> {
     let dirs =
         ProjectDirs::from("dev", "iptv-player", "IPTV Player").context("no home directory")?;
     std::fs::create_dir_all(dirs.data_dir()).context("create data dir")?;
     Ok(dirs.data_dir().join("iptv.db"))
 }
 
-fn install_mpv_script(db: &std::path::Path) {
+pub fn install_mpv_script(db: &std::path::Path) {
     if let Some(dir) = db.parent() {
         let _ = live::install_script(dir);
     }

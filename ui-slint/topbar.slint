@@ -1,0 +1,33 @@
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { ComboBox } from "std-widgets.slint";
+import { Tabs } from "tabs.slint";
+import { SearchBox } from "search-box.slint";
+
+export component TopBar inherits Rectangle {
+    callback escaped();
+    public function focus-search() { search.focus-search(); }
+    height: Theme.topbar-h;
+    background: Theme.panel;
+    Rectangle { y: parent.height - 1px; height: 1px; background: Theme.divider; }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 16px;
+        alignment: stretch;
+        ComboBox {
+            width: 150px;
+            y: (parent.height - self.height) / 2;
+            model: Core.profiles;
+            current-index: Core.profile-index;
+            selected(_) => { Core.profile-selected(self.current-index); }
+        }
+        Tabs { y: (parent.height - self.height) / 2; }
+        search := SearchBox {
+            y: (parent.height - self.height) / 2;
+            max-width: 460px;
+            min-width: 146px;
+            escaped => { root.escaped(); }
+        }
+    }
+}

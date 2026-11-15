@@ -3,6 +3,8 @@ pub mod episodes;
 pub mod imgcache;
 pub mod model;
 pub mod player;
+#[cfg(feature = "slint-ui")]
+pub mod slint_ui;
 pub mod sources;
 pub mod ui;
 pub mod worker;

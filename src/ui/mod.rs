@@ -38,7 +38,7 @@ mod tile;
 mod toasts;
 mod topbar;
 
-pub use boot::run;
+pub use boot::{db_path, install_mpv_script, run};
 
 use crate::db::Db;
 use crate::model::{Alternate, CategoryRow, Profile, Source, SourceId, StreamGroup, StreamRow};

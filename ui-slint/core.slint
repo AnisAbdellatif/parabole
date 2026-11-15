@@ -1,0 +1,35 @@
+// Core app state/callbacks shared by main-window components. Rust: win.global::<Core>().
+// Area-specific state lives in its own global (PlayerApi, BrowseApi, DialogApi).
+import { StreamItem, SidebarItem, ToastItem } from "types.slint";
+
+export global Core {
+    in-out property <int> tab: 0;
+    in property <[string]> profiles;
+    in-out property <int> profile-index: 0;
+    in property <string> profile-name;
+    in-out property <string> search-text;
+    in property <[SidebarItem]> sidebar;
+    in property <string> selected-id;
+    in property <[StreamItem]> streams;
+    in property <string> list-title;
+    in property <string> list-subtitle;
+    in-out property <int> cursor: 0;
+    in property <string> playing-title;
+    in property <string> playing-kind;
+    in property <bool> has-sources: false;
+    in property <bool> syncing: false;
+    in property <string> status-sources;
+    in property <string> status-items;
+    in property <string> empty-text;
+    in property <[ToastItem]> toasts;
+
+    callback tab-selected(int);
+    callback profile-selected(int);
+    callback search-edited(string);
+    callback search-cleared();
+    callback sidebar-selected(string);
+    callback stream-activated(int);
+    callback favorite-toggled(int);
+    callback toast-dismissed(int);
+    callback stop-playback();
+}

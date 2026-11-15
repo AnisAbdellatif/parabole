@@ -9,4 +9,11 @@ fn main() {
             }
         }
     }
+    #[cfg(feature = "slint-ui")]
+    if std::env::var_os("CARGO_FEATURE_SLINT_UI").is_some() {
+        println!("cargo:rerun-if-changed=ui-slint");
+        println!("cargo:rerun-if-changed=assets/icons");
+        println!("cargo:rerun-if-changed=assets/fonts");
+        slint_build::compile("ui-slint/app.slint").expect("compile ui-slint/app.slint");
+    }
 }

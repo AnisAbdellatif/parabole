@@ -1,0 +1,73 @@
+// Main window. One file per component; extension points are marked EXTENSION.
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { TopBar } from "topbar.slint";
+import { Sidebar } from "sidebar.slint";
+import { ListHeader } from "list-header.slint";
+import { StreamList } from "stream-list.slint";
+import { StatusBar } from "status-bar.slint";
+import { Toasts } from "toasts.slint";
+import { PlayerPane } from "slots.slint";
+import { DialogHost } from "slots.slint";
+
+export { Core, Theme }
+export { StreamItem, SidebarItem, ToastItem } from "types.slint";
+
+export component AppWindow inherits Window {
+    title: "IPTV Player";
+    preferred-width: 1280px;
+    preferred-height: 800px;
+    min-width: 800px;
+    min-height: 500px;
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    default-font-size: 13px;
+
+    function move-cursor(d: int) { Core.cursor = max(0, min(Core.streams.length - 1, Core.cursor + d)); }
+    init => { keys.focus(); }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (e.modifiers.meta || e.modifiers.control) {
+                if (e.text == "1") { Core.tab-selected(0); return accept; }
+                if (e.text == "2") { Core.tab-selected(1); return accept; }
+                if (e.text == "3") { Core.tab-selected(2); return accept; }
+                if (e.text == "f") { top.focus-search(); return accept; }
+            }
+            if (e.text == Key.Escape) { Core.search-cleared(); keys.focus(); return accept; }
+            if (e.text == Key.DownArrow) { root.move-cursor(1); return accept; }
+            if (e.text == Key.UpArrow) { root.move-cursor(-1); return accept; }
+            if (e.text == Key.PageDown) { root.move-cursor(12); return accept; }
+            if (e.text == Key.PageUp) { root.move-cursor(-12); return accept; }
+            if (e.text == Key.Home) { Core.cursor = 0; return accept; }
+            if (e.text == Key.End) { Core.cursor = max(0, Core.streams.length - 1); return accept; }
+            if (e.text == Key.Return) { Core.stream-activated(Core.cursor); return accept; }
+            reject
+        }
+        VerticalLayout {
+            top := TopBar { escaped => { keys.focus(); } }
+            HorizontalLayout {
+                Sidebar { }
+                VerticalLayout {
+                    ListHeader { }
+                    StreamList { interacted => { keys.focus(); } }
+                }
+                // EXTENSION (player): docked embedded-player pane. Owned by the player area.
+                PlayerPane { }
+            }
+            StatusBar { }
+        }
+    }
+
+    // EXTENSION (browse): alternate center views (poster grid, series page, details) replace
+    // the StreamList/ListHeader pair above; add them as siblings and switch on a BrowseApi global.
+
+    // EXTENSION (dialogs): modal dialogs overlay the whole window.
+    DialogHost { }
+
+    Toasts {
+        x: parent.width - self.width - 16px;
+        y: 0px;
+        height: parent.height - Theme.statusbar-h - 16px;
+    }
+}
