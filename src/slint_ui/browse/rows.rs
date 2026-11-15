@@ -1,5 +1,5 @@
 //! What the list does with a row action (ports `ui/row_actions.rs`).
-use super::{groups, series};
+use super::{details, groups, series};
 use crate::model::{MediaKind, StreamRow};
 use crate::player::PlayerKind;
 use crate::slint_ui::state::SlintApp;
@@ -34,7 +34,7 @@ pub fn run(a: &mut SlintApp, idx: usize, action: RowAction) {
         RowAction::Activate if row.media == MediaKind::Series => series::open(a, &row),
         RowAction::Activate => play(a, &row, None),
         RowAction::Play(kind) => play(a, &row, Some(kind)),
-        RowAction::Info => series::open_details(a, &row),
+        RowAction::Info => details::open(a, &row),
         RowAction::CopyUrl => a.worker.send(Command::CopyUrl { stream_id: row.id }),
         RowAction::ToggleFavorite => {
             let res =

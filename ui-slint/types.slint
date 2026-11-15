@@ -63,3 +63,42 @@ export struct EditGroup {
     name: string,
     confirm: bool,
 }
+
+export struct TileItem {
+    index: int,
+    name: string,
+    sub: string,
+    initials: string,
+    poster: image,
+    has-poster: bool,
+    favorite: bool,
+    progress: float,
+    watched: bool,
+    hidden: bool,
+    missing: bool,
+}
+
+export struct GridRow {
+    tiles: [TileItem],
+}
+
+export struct EpisodeItem {
+    id: string,
+    num: string,
+    title: string,
+    progress: float,
+    watched: bool,
+}
+
+export struct FieldItem {
+    label: string,
+    value: string,
+}
+
+// state: 0 nothing, 1 loading, 2 loaded, 3 failed.
+export struct InfoView {
+    state: int,
+    poster: image,
+    has-poster: bool,
+    fields: [FieldItem],
+}

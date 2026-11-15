@@ -58,12 +58,12 @@ export component EditPanel inherits Rectangle {
                 width: parent.width - 24px;
                 height: 44px;
                 border-radius: Theme.radius;
-                background: #16202e;
+                background: Theme.info-bg;
                 Text {
                     x: 10px;
                     width: parent.width - 20px;
                     text: BrowseApi.edit-hint;
-                    color: #9cc3f0;
+                    color: Theme.info-fg;
                     font-size: 12px;
                     wrap: word-wrap;
                     vertical-alignment: center;
@@ -92,7 +92,7 @@ export component EditPanel inherits Rectangle {
             for c[i] in BrowseApi.edit-cats: Rectangle {
                 height: 40px;
                 opacity: c.hidden ? 0.45 : 1;
-                Rectangle { x: 10px; width: parent.width - 20px; border-radius: Theme.radius; background: c.matched ? #2a3b1f : (row-ta.has-hover ? Theme.row-hover : transparent); }
+                Rectangle { x: 10px; width: parent.width - 20px; border-radius: Theme.radius; background: c.matched ? Theme.match-bg : (row-ta.has-hover ? Theme.row-hover : transparent); }
                 row-ta := TouchArea { }
                 if BrowseApi.edit-can-reorder: Glyph { x: 12px; y: 7px; text: "▲"; enabled: i > 0; clicked => { BrowseApi.edit-move(i, -1); } }
                 if BrowseApi.edit-can-reorder: Glyph { x: 38px; y: 7px; text: "▼"; enabled: i < BrowseApi.edit-cats.length - 1; clicked => { BrowseApi.edit-move(i, 1); } }

@@ -1,9 +1,43 @@
 // Browse area state and callbacks (poster grid, series, details, menus, edit mode). Owned by the browse area.
-import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup } from "types.slint";
+import { Core } from "core.slint";
+import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup, GridRow, EpisodeItem, InfoView } from "types.slint";
 
 export global BrowseApi {
     // Tried after DialogApi and PlayerApi; return true when handled.
     callback key(KeyEvent) -> bool;
+    key(e) => {
+        if (e.modifiers.meta || e.modifiers.control) {
+            if (e.text == "d" && !root.series-open && Core.streams.length > 0) {
+                Core.favorite-toggled(Core.cursor);
+                return true;
+            }
+            if (e.text == Key.LeftArrow && Core.has-sources) { root.sidebar-focus = true; return true; }
+            if (e.text == Key.RightArrow) { root.sidebar-focus = false; return true; }
+            return false;
+        }
+        if (root.details-open) {
+            if (e.text == Key.Escape) { root.details-closed(); }
+            return e.text == Key.Escape || e.text == Key.Return || e.text == Key.UpArrow || e.text == Key.DownArrow;
+        }
+        if (root.sidebar-focus && !root.edit-on) {
+            if (e.text == Key.DownArrow) { root.sidebar-step(1); return true; }
+            if (e.text == Key.UpArrow) { root.sidebar-step(-1); return true; }
+            if (e.text == Key.Return || e.text == Key.RightArrow) { root.sidebar-focus = false; return true; }
+        }
+        if (root.series-open) {
+            if (e.text == Key.Escape) { root.series-back(); return true; }
+            return e.text == Key.Return || e.text == Key.UpArrow || e.text == Key.DownArrow || e.text == Key.PageUp || e.text == Key.PageDown || e.text == Key.Home || e.text == Key.End;
+        }
+        if (root.grid-view && Core.streams.length > 0) {
+            if (e.text == Key.LeftArrow) { Core.cursor = max(0, Core.cursor - 1); return true; }
+            if (e.text == Key.RightArrow) { Core.cursor = min(Core.streams.length - 1, Core.cursor + 1); return true; }
+            if (e.text == Key.UpArrow) { Core.cursor = max(0, Core.cursor - root.grid-cols); return true; }
+            if (e.text == Key.DownArrow) { Core.cursor = min(Core.streams.length - 1, Core.cursor + root.grid-cols); return true; }
+            if (e.text == Key.PageUp) { Core.cursor = max(0, Core.cursor - 3 * root.grid-cols); return true; }
+            if (e.text == Key.PageDown) { Core.cursor = min(Core.streams.length - 1, Core.cursor + 3 * root.grid-cols); return true; }
+        }
+        return false;
+    }
     // Asks the orchestrator-wired dialog layer to open "sources" or "group".
     callback request-dialog(string);
 
@@ -56,4 +90,38 @@ export global BrowseApi {
     callback edit-group-move(int, int);
     callback edit-group-rename(int);
     callback edit-group-delete(int);
+
+    // Poster grid.
+    in property <[GridRow]> grid-rows;
+    in-out property <int> grid-cols: 1;
+    callback grid-cols-changed(int);
+    callback tile-hide-toggled(int);
+
+    // Empty / error state shown instead of an empty list.
+    in property <string> empty-title;
+    in property <string> empty-body;
+    in property <string> empty-cta;
+    in property <bool> empty-busy: false;
+    callback empty-cta-clicked();
+
+    // Series page.
+    in property <bool> series-open: false;
+    in property <string> series-title;
+    in property <bool> series-loading: false;
+    in property <bool> series-empty: false;
+    in property <string> season-label;
+    in property <[MenuEntry]> season-items;
+    in property <[EpisodeItem]> episodes;
+    in property <InfoView> series-info;
+    callback series-back();
+    callback season-picked(string);
+    callback episode-activated(int);
+    callback episode-watched-toggled(int);
+
+    // Details window ("Info…" in the row menu).
+    in property <bool> details-open: false;
+    in property <string> details-title;
+    in property <InfoView> details;
+    callback details-closed();
+    callback details-retry();
 }

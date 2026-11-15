@@ -1,10 +1,22 @@
-// Center area: list header + stream list today; poster grid, series page and details switch in here.
+// Center area: list header + list / poster grid / empty state, or the series page; details overlay on top.
 // Owned by the browse area.
+import { Core } from "core.slint";
+import { BrowseApi } from "browse-api.slint";
 import { ListHeader } from "list-header.slint";
 import { StreamList } from "stream-list.slint";
+import { PosterGrid } from "browse-grid.slint";
+import { EmptyState } from "browse-empty.slint";
+import { SeriesPage } from "browse-series.slint";
+import { DetailsPanel } from "browse-details.slint";
 
-export component BrowseHost inherits VerticalLayout {
+export component BrowseHost inherits Rectangle {
     callback interacted();
-    ListHeader { }
-    StreamList { interacted => { root.interacted(); } }
+    VerticalLayout {
+        if BrowseApi.series-open: SeriesPage { }
+        if !BrowseApi.series-open: ListHeader { }
+        if !BrowseApi.series-open && Core.streams.length > 0 && !BrowseApi.grid-view: StreamList { interacted => { root.interacted(); } }
+        if !BrowseApi.series-open && Core.streams.length > 0 && BrowseApi.grid-view: PosterGrid { interacted => { root.interacted(); } }
+        if !BrowseApi.series-open && Core.streams.length == 0: EmptyState { }
+    }
+    if BrowseApi.details-open: DetailsPanel { }
 }

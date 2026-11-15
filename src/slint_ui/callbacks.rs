@@ -14,7 +14,7 @@ fn reset_cursor(a: &SlintApp) {
     }
 }
 
-fn clear_search(a: &mut SlintApp) {
+pub(crate) fn clear_search(a: &mut SlintApp) {
     a.search_text.clear();
     a.search_applied.clear();
     a.browse.filter = Default::default();
@@ -44,6 +44,11 @@ pub fn connect(win: &AppWindow) {
             };
             a.state.sel = None;
             reset_cursor(a);
+            super::browse::close_series(a);
+            if let Some(w) = a.win.upgrade() {
+                w.global::<Core>().set_tab(i);
+                w.global::<super::BrowseApi>().set_sidebar_focus(false);
+            }
             a.reload_categories();
         });
     });
@@ -53,6 +58,7 @@ pub fn connect(win: &AppWindow) {
             a.state.source = None;
             a.state.sel = None;
             clear_search(a);
+            super::browse::close_series(a);
             a.push_profiles();
             a.reload_sources();
         });
@@ -64,6 +70,7 @@ pub fn connect(win: &AppWindow) {
                 .start(slint::TimerMode::SingleShot, SEARCH_DELAY, || {
                     with_app(|a| {
                         a.search_applied = a.search_text.trim().to_owned();
+                        super::browse::close_series(a);
                         reset_cursor(a);
                         a.reload_streams();
                     });

@@ -25,6 +25,12 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `UrlReady` (copy URL) ignored: no clipboard crate in deps. `PlayEmbedded` falls back to external mpv with a toast.
 - Phase 1: `InfoLoaded`/`SeriesLoaded`/`TestResult`/`AccountChecked` ignored (phase 2).
 - Phase 1: persisted state is saved only on window close.
+- browse: context-menu submenus (Play with / Add to group / Play from) are flattened into section headers; menu can overflow the window edge.
+- browse: no connection-full warning (needs accounts from the dialogs area); list rows lack the edit-mode eye (tiles have it).
+- browse: drag reorder is ▲▼ buttons; sidebar "Hide matching…" prefills the edit filter with the name prefix; filter chips don't wrap.
+- browse: group dialog is `BrowseApi.request-dialog("group")` + `group-ctx-*` + `group-submit`; orchestrator must wire it to the dialogs area.
+- browse: series page also fetches info on open (egui doesn't); verified only with fake data (no Xtream offline).
+- browse: posters look blurry (`images.rs` THUMB=96, not browse-owned). Cmd+Left sidebar focus not verified via automation (Cmd+D verified).
 
 ## Comparison
 (filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
@@ -36,3 +42,7 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `ListView.viewport-y` is deprecated in 1.18; use `content-y`.
 - Phase 1: images decode off-thread into `SharedPixelBuffer` (Send); `slint::Image` is not Send, so it is built on the UI thread.
 - Phase 1: setting `HOME` breaks rustup; build first, then run the binary with `HOME=/tmp/...`.
+
+- browse: Slint maps Cmd to `modifiers.control` on macOS; a `meta||control` check covers both.
+- browse: a child without x/y inside a Rectangle is centered; PopupWindow x/y can't be set from a function (bind to root properties).
+- browse: osascript can't send modifier combos; a small CGEvent swift helper can.

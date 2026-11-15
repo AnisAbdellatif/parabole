@@ -72,6 +72,7 @@ impl SlintApp {
         core.set_empty_text(empty.into());
         core.set_cursor(core.get_cursor().min(n.saturating_sub(1) as i32));
         self.push_browse_header();
+        self.push_empty();
     }
 
     pub fn push_status(&self) {
@@ -92,5 +93,6 @@ impl SlintApp {
         core.set_status_items(
             format!("{items} items in {} categories", self.categories.len()).into(),
         );
+        self.push_empty();
     }
 }

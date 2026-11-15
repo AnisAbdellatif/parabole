@@ -38,17 +38,8 @@ export component StreamList inherits Rectangle {
             }
         }
     }
-    if Core.streams.length == 0: Text {
-        text: Core.empty-text;
-        color: Theme.text-muted;
-        font-size: 14px;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-        wrap: word-wrap;
-        width: parent.width - 48px;
-    }
     menu := ContextMenu {
         items: BrowseApi.row-menu;
-        picked(id) => { BrowseApi.row-menu-picked(id); }
+        picked(id) => { BrowseApi.row-menu-picked(id); root.interacted(); }
     }
 }
