@@ -280,6 +280,10 @@ fn snapshots() {
     let p = SwPlatform::install();
     fonts::install_fallback();
     let win = build(&db).expect("build window");
+    #[cfg(target_os = "macos")]
+    assert_eq!(win.global::<Theme>().get_font(), "Avenir Next");
+    // Keep goldens portable rather than dependent on macOS system fonts.
+    win.global::<Theme>().set_font("Inter".into());
     win.show().expect("show window");
     p.resize();
     win.window()

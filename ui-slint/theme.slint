@@ -19,7 +19,7 @@ export global Theme {
         mode == 1 ? oled : mode == 2 ? light : dark
     }
 
-    out property <string> font: "Inter";
+    in-out property <string> font: "Inter";
     out property <int> regular: 400;
     out property <int> medium: 500;
     out property <int> semibold: 600;

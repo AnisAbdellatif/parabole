@@ -57,6 +57,8 @@ impl Appearance {
         let a = self.clamped();
         let (c1, c2) = ACCENTS[a.accent as usize];
         let t = win.global::<Theme>();
+        #[cfg(target_os = "macos")]
+        t.set_font("Avenir Next".into());
         t.set_accent(rgb(c1));
         t.set_accent_2(rgb(c2));
         t.set_mode(a.mode as i32);
