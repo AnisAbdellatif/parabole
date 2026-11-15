@@ -167,8 +167,17 @@ What it does (`scripts/vm/guest-e2e.sh`, in the guest):
 Limits:
 - Linux/X11 + llvmpipe only: no macOS PiP, Spaces or Metal, and no real audio (`--ao=null`).
 - llvmpipe renders mpv's default scaler as black lines (stock `mpv --vo=gpu` too), hence `--scale=bilinear --cscale=bilinear --dither=no`.
-- Colours are checked on solid test channels; real provider streams are out of scope here.
+- Colours are checked on solid test channels; real provider streams only get the opt-in `E2E_REAL=1` run below.
 - Needs no sudo in the guest. Only one build at a time (`-j3`, one bin): the guest has 3.4 GB RAM.
+
+### Real source
+`E2E_REAL=1 scripts/vm/e2e.sh test` plays the guest's own provider instead of the local media. Needs `~/.config/iptv-e2e/source.url` in the guest: one line, an Xtream `get.php?username=...&password=...&type=m3u_plus` URL, mode 0600. Optional `E2E_REAL_LIVE` / `E2E_REAL_VOD` (name substrings, searched with Ctrl+F; default: the first live row, the first movie). Pick the live name yourself: a provider's first row is often a separator or a stream that ends after 2 s, and the next one may burst faster than real time. Scenarios: `play-live`, `zap-down` (the frame changes), `pause`, `fullscreen`, `vod-seek`, `stop`, with only "not black" and "changes over time" checks (`zap-down` can't tell channels apart on moving video, so it waits 6 s and needs a lit, moving picture; `vod-seek` compares the seek bar and time text because movies often open on a still card); one stream at a time, about 3 min of playback.
+
+Safety rules:
+- The URL file is read only by the scripts: `vm_seed --real <file>` parses it and adds the source through `sources::detect` and `db.add_source`; the guest script keeps the username, password and host in shell variables (builtins only, never argv or env of a child).
+- The DB lives in the per-run scratch `HOME`, which the exit trap removes, even on failure. mpv runs at its default log level with no log file; `app.log` is only counted for `panicked|ERROR`, never printed.
+- Before anything is fetched, `redact.py` rewrites every text file in `~/e2e-out` with `***` for those values (also percent-encoded) and scans the screenshots; any leftover match deletes the output and fails with "credential leak in output".
+- Nothing prints stream URLs, channel URL lists or playlist content; channel names are fine. If the ssh session itself dies mid-run, the guest may skip the redaction: do not fetch then.
 
 ### Watching a run
 `E2E_DISPLAY=:0 scripts/vm/e2e.sh test` runs the same scenarios on the guest's own logged-in Xfce desktop (seat 0, `:0`) so you can watch them in the UTM window. It starts no Xvfb or WM and never kills the desktop's xfwm4; it only stops the app, the encoders and the http servers it started. It looks for the session's `XAUTHORITY` (`~/.Xauthority`, then `/run/user/<uid>/...`) and fails with a clear message if `xdpyinfo -display :0` cannot connect. Screen size is read from `xdpyinfo`, so fullscreen is checked against the real display (1280x800 here; xfwm4 maximizes the window into the 775 px work area).

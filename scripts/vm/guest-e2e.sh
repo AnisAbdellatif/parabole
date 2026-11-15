@@ -9,10 +9,30 @@ PORT=8765
 DISP=${E2E_DISPLAY:-:99}
 export DISPLAY=$DISP LIBGL_ALWAYS_SOFTWARE=1
 IM=convert; command -v magick >/dev/null && IM=magick
+REAL=${E2E_REAL:-} # 1 = play the guest's own source (~/.config/iptv-e2e/source.url) instead of the local test media
 rm -rf "$OUT"; mkdir -p "$OUT" "$MEDIA"
 PIDS=()
 HLS=
-trap 'kill "${PIDS[@]}" 2>/dev/null || true; [ -z "$HLS" ] || rm -rf -- "$HLS"' EXIT
+SCRATCH=
+cleanup() { # always runs; in real mode the redaction runs before anything can fetch $OUT
+    kill "${PIDS[@]}" 2>/dev/null || true
+    [ -z "$HLS" ] || rm -rf -- "$HLS"
+    [ -z "$SCRATCH" ] || rm -rf -- "$SCRATCH"
+    if [ -n "$REAL" ]; then printf '%s\n%s\n%s\n' "$RU" "$RP" "$RHOST" | python3 -I "$REPO/scripts/vm/redact.py" "$OUT" || exit 1; fi
+}
+trap cleanup EXIT
+RU= RP= RHOST=
+if [ -n "$REAL" ]; then # credentials live only in these shell variables (builtins only: never in argv or env of a child)
+    set +x
+    URLFILE=$HOME/.config/iptv-e2e/source.url
+    [ -r "$URLFILE" ] || { echo "FAIL setup: $URLFILE missing"; exit 1; }
+    u=$(<"$URLFILE"); u=${u%%[[:space:]]*}
+    RHOST=${u#*://}; RHOST=${RHOST%%/*}
+    IFS='&' read -ra kv <<<"${u#*\?}"
+    for kvp in "${kv[@]}"; do case $kvp in username=*) RU=${kvp#username=} ;; password=*) RP=${kvp#password=} ;; esac; done
+    unset u kv kvp
+    [ -n "$RU" ] && [ -n "$RP" ] && [ -n "$RHOST" ] || { echo "FAIL setup: url file has no username/password"; exit 1; }
+fi
 
 # --- display (only what is started here goes into PIDS; the :0 desktop and its xfwm4 are never touched) ----
 if [ "$DISP" = :99 ]; then
@@ -39,6 +59,7 @@ gen() { # file lavfi-source seconds
     [ -s "$MEDIA/$1" ] || ffmpeg -loglevel error -y -f lavfi -i "$2" -f lavfi -i "sine=frequency=440:duration=$3" \
         -t "$3" -r 25 -c:v libx264 -pix_fmt yuv420p -c:a aac "${FS[@]}" -f mp4 "$MEDIA/$1"
 }
+if [ -z "$REAL" ]; then
 gen ch1.mp4 "testsrc2=$S" 120; gen ep1.mp4 "color=c=0xff0000:$S" 6; gen ep2.mp4 "color=c=0xffff00:$S" 6
 python3 "$REPO/scripts/vm/range_server.py" "$MEDIA" $PORT >"$OUT/http.log" 2>&1 & PIDS+=($!)
 HLS=$(mktemp -d)
@@ -55,10 +76,14 @@ for n in 1 2 3; do
     for _ in $(seq 60); do [ "$(grep -c '\.ts' "$HLS/ch$n/index.m3u8" 2>/dev/null || true)" -ge 3 ] && continue 2; sleep 0.5; done
     echo "FAIL setup: ch$n HLS playlist never reached 3 segments"; exit 1
 done
+fi
 
 # --- data: scratch HOME, M3U file source, embedded player on ---------------
 unset XDG_DATA_HOME XDG_CACHE_HOME XDG_CONFIG_HOME
-export HOME; HOME=$(mktemp -d)
+export HOME; HOME=$(mktemp -d); SCRATCH=$HOME
+if [ -n "$REAL" ]; then
+    "$REPO/target/debug/examples/vm_seed" --real "${URLFILE}"
+else
 {
     echo '#EXTM3U'
     for n in 1 2 3; do
@@ -69,6 +94,7 @@ export HOME; HOME=$(mktemp -d)
     echo "http://127.0.0.1:$PORT/ch1.mp4"
 } >"$HOME/e2e.m3u"
 "$REPO/target/debug/examples/vm_seed" "$HOME/e2e.m3u" "$OUT/mpv.log"
+fi
 
 # --- app ----------------------------------------------------------------
 "$REPO/target/debug/iptv-player-slint" >"$OUT/app.log" 2>&1 & APP=$!; PIDS+=($APP)
@@ -77,9 +103,13 @@ for _ in $(seq 60); do
     WIN=$(xdotool search --onlyvisible --pid "$APP" 2>/dev/null | head -1 || true)
     [ -n "$WIN" ] && break; sleep 0.5
 done
-[ -n "$WIN" ] || { echo "FAIL setup: app window never appeared"; tail -20 "$OUT/app.log"; exit 1; }
+[ -n "$WIN" ] || { echo "FAIL setup: app window never appeared"; [ -n "$REAL" ] || tail -20 "$OUT/app.log"; exit 1; }
 xdotool windowfocus "$WIN" || true
 sleep 3
+if [ -n "$REAL" ]; then # the app's startup refresh fetches the new source; vm_seed prints only a fixed status word
+    echo "real source: $("$REPO/target/debug/examples/vm_seed" --wait 300 || true)"
+    sleep 5
+fi
 
 # --- helpers --------------------------------------------------------------
 shot() { import -display "$DISP" -window root "$OUT/$1.png"; }
@@ -139,6 +169,7 @@ s_pause() {
     hover_video; key space; sleep 1.5; probe pause-a >/dev/null; sleep 1; probe pause-b >/dev/null
     crop_probe pause-a pa; crop_probe pause-b pb
     [ "$(same pa pb)" -eq 0 ] || bad "video moves while paused" || return 1
+    is_bright || bad "paused frame is black" || return 1
     key space; sleep 1; probe res-a >/dev/null; sleep 1; probe res-b >/dev/null
     crop_probe res-a pa; crop_probe res-b pb
     [ "$(same pa pb)" -gt 0 ] || bad "video did not resume" || return 1
@@ -189,10 +220,17 @@ run() { # scenario-name function
     echo "${RESULTS[-1]}"
 }
 shot start
+if [ -n "$REAL" ]; then
+. "$REPO/scripts/vm/real-scenarios.sh"
+run_real
+else
 run play-live s_play_live; run zap-down s_zap_down; run zap-up s_zap_up; run pause s_pause
 run fullscreen s_fullscreen; run mini s_mini; run vod-seek s_vod_seek; run stop s_stop; run mpv-args s_mpv_args
+fi
 
-echo "--- app.log: panicked/ERROR lines"; grep -E 'panicked|ERROR' "$OUT/app.log" | head -10 || true
+echo "--- app.log: panicked/ERROR lines"
+if [ -n "$REAL" ]; then echo "$(grep -cE 'panicked|ERROR' "$OUT/app.log" || true) (count only: lines can hold URLs)"
+else grep -E 'panicked|ERROR' "$OUT/app.log" | head -10 || true; fi
 echo "--- shots"; ls "$OUT"/*.png
 echo "--- summary"; printf '%s\n' "${RESULTS[@]}"
 exit "$FAILED"

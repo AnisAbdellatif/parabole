@@ -42,7 +42,11 @@ build() {
 
 test_run() {
     case "${E2E_DISPLAY:-:99}" in :[0-9]*) ;; *) echo "E2E_DISPLAY must look like :0 or :99" >&2; exit 2 ;; esac
-    guest "cd $GUEST_DIR && E2E_DISPLAY='${E2E_DISPLAY:-:99}' bash scripts/vm/guest-e2e.sh"
+    case "${E2E_REAL:-}" in ""|1) ;; *) echo "E2E_REAL must be 1 or unset" >&2; exit 2 ;; esac
+    for v in "${E2E_REAL_LIVE:-}" "${E2E_REAL_VOD:-}"; do
+        case "$v" in *[!A-Za-z0-9\ ._-]*) echo "E2E_REAL_LIVE/E2E_REAL_VOD: letters, digits, space . _ - only" >&2; exit 2 ;; esac
+    done
+    guest "cd $GUEST_DIR && E2E_DISPLAY='${E2E_DISPLAY:-:99}' E2E_REAL='${E2E_REAL:-}' E2E_REAL_LIVE='${E2E_REAL_LIVE:-}' E2E_REAL_VOD='${E2E_REAL_VOD:-}' bash scripts/vm/guest-e2e.sh"
 }
 
 fetch() {
