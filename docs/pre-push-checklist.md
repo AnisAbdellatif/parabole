@@ -1,38 +1,32 @@
-# Pre-push checklist (agents: run this before every `git push` to `main` or a tag)
+# Pre-push checklist (agents: go through this before every `git push` to `main` or a tag)
 
-CI runs macOS, Linux and Windows. Anything you can fail locally, fail locally. Run top to bottom, fix, re-run from the failing step. Do not push on a red step.
+CI runs macOS, Linux and Windows. Anything you can fail locally, fail locally. Do not push on a red step.
 
-## 1. Same commands as CI (`.github/workflows/ci.yml`)
-Run all five; the first four run in seconds.
-1. `cargo fmt --all --check` (fix with `cargo fmt`, then re-check; it also reorders `mod` lines)
-2. `cargo clippy --all-targets -- -D warnings`
-3. `cargo clippy --all-targets --no-default-features -- -D warnings`
-4. `cargo test`
-5. `cargo test --no-default-features`
+## 1. Run the script
+`./scripts/preflight.sh` (add the tag, e.g. `./scripts/preflight.sh v0.1.2`, when about to tag). Commit first: it requires a clean tree. It runs, in order:
+- the five CI cargo commands (fmt, clippy and test, each with default features and `--no-default-features`);
+- `scripts/check-packaging.sh` (release scripts: syntax under their shebang shell, shellcheck, executable bits, referenced files exist) and `actionlint`;
+- `Cargo.toml` vs `Cargo.lock` version, clean working tree, secrets grep on the diff;
+- with a tag: tag == `Cargo.toml` version, HEAD message has no `[skip ci]`, tag not already on origin, green CI on HEAD.
 
-If `ci.yml` gained or changed a step since this list was written, run that step too.
+If `ci.yml` gained a step the script doesn't run, add it to the script, not just here.
 
-Also run `./scripts/check-packaging.sh` (syntax of release scripts with their shebang shell, shellcheck, executable bits, referenced files exist). CI runs it too, because the release workflow only runs on a tag.
-
-## 2. Cross-platform risk (cannot be run on the dev Mac; review by reading)
+## 2. What the script cannot check: read the diff for these
+Windows and Linux can't be built from the dev Mac (C dependencies such as aws-lc fail to cross-compile), so CI is the first real test of anything platform-specific.
 - Every `#[cfg(target_os = ...)]` / `#[cfg(windows)]` block: does the other-platform build still compile (no unused imports/vars, no missing fallback fn)? Windows- and Linux-only clippy warnings have broken CI before.
-- Tests touching files, paths or URLs must pass on Windows: no hardcoded `/tmp/...` or `/` separators in expectations (use `cfg(windows)` variants or `Path`), and drop every open DB/file handle before deleting its directory (Windows can't delete open files).
-- New dependency: is it gated to the right target in `Cargo.toml`? Is `Cargo.lock` committed?
-- New build-time tool or file (build.rs, icons, scripts): does the CI runner have it? Paths exist in git (`git ls-files <path>`), not only on disk?
-- Release scripts in `packaging/` are only exercised on a tag: `check-packaging.sh` covers them statically (`/bin/sh` is dash on Linux runners: no arrays or `[[`). Anything it can't see (new tool installed in the script, new runner dependency) needs a read-through against `release.yml`.
+- Tests touching files, paths or URLs must pass on Windows: no hardcoded `/tmp/...` or `/` separators in expectations (use `cfg(windows)` variants or `Path`), and drop every open DB/file handle before deleting its directory.
+- New dependency: gated to the right target in `Cargo.toml`?
+- New build-time tool or file (build.rs, icons, scripts): does the CI runner have it, and is it in git (`git ls-files <path>`), not only on disk?
+- Release scripts and `release.yml` only run on a tag: `check-packaging.sh` is static only. A new tool installed by a script, a new runner dependency, or a changed `linuxdeploy`/`iconutil` argument needs a read-through against `release.yml`.
+- `/bin/sh` is dash on Linux runners: no arrays, `[[`, or `local` surprises in `#!/bin/sh` scripts.
 
-## 3. Repo hygiene
-- `git status` clean after the checks (no generated file left uncommitted, e.g. `Cargo.lock`).
-- No secrets, credentials or Xtream URLs in the diff (`git diff origin/main | grep -iE "password|token|username="`).
-- Workflow files changed? Run `actionlint` if installed; CI has an `actionlint` job.
-- Version bump: `Cargo.toml` and `Cargo.lock` agree; packaging scripts and README don't hardcode the old version.
+## 3. Pushing and tagging rules
+- Never put `[skip ci]` on a commit that will be tagged: it also skips the release run. `ci.yml` already ignores docs-only pushes via `paths-ignore`.
+- Tag only a commit whose CI run is green (the script checks). A tag whose release run failed before publishing may be moved (delete the remote tag, retag a fixed commit). Never move a tag once its release is published.
+- `TAP_TOKEN` (secret) lets the `tap` job in `release.yml` bump `Casks/parabole.rb` in AnisAbdellatif/homebrew-tap; it needs contents:write there.
+- Changing `Cargo.toml` profiles or `Cargo.lock` invalidates the cargo cache: the first CI run after is slow (~2x). That is not a regression; compare the second run.
 
-## 4. Release (only when pushing a `v*` tag)
-- CI on the commit being tagged is green first. Never tag a red or unverified commit.
-- The tag matches `Cargo.toml` version (`v0.1.1` ⇔ `version = "0.1.1"`).
-- The `tap` job in `release.yml` bumps `Casks/parabole.rb` in AnisAbdellatif/homebrew-tap using the `TAP_TOKEN` secret (needs contents:write on the tap). After the release run, confirm the tap got a `parabole <version>` commit.
-- Packaging inputs exist: `packaging/icons/`, `packaging/icon.ico`, `packaging/entitlements.plist`.
-
-## 5. After pushing
-- `gh run list -L 3`, then `gh run watch <id> --exit-status` for the new run. Do not report "done" until every job is green.
-- On failure: `gh run view <id> --log-failed`, fix the root cause, add the missed check to this list, push again.
+## 4. After pushing
+- Wait for the run to finish, then read the result: `until [ "$(gh run view <id> --json status -q .status)" = completed ]; do sleep 15; done; gh run view <id> --json conclusion,jobs -q '.conclusion,(.jobs[]|[.name,.conclusion]|join(" "))'`. Don't pipe `gh run watch` into `tail`: that hides its exit code.
+- Do not report "done" until every job is green. After a release run, also confirm the release has its four assets and the tap got a `parabole <version>` commit.
+- On failure: `gh run view <id> --log-failed`, fix the root cause, then add the missed check to `scripts/preflight.sh` (preferred) or this list, and push again.
