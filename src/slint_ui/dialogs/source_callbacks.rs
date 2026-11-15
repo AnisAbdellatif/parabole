@@ -47,8 +47,9 @@ pub fn connect(win: &AppWindow) {
         with_app(|a| {
             let Some(w) = a.win.upgrade() else { return };
             let api = w.global::<DialogApi>();
-            let (msg, fill) = detect_paste(&paste);
+            let (msg, xtream, fill) = detect_paste(&paste);
             api.set_form_detected(msg.into());
+            api.set_form_is_xtream(xtream);
             if let Some((url, user, pass)) = fill {
                 api.set_form_url(url.into());
                 api.set_form_user(user.into());
@@ -96,9 +97,13 @@ pub fn connect(win: &AppWindow) {
             let hours = text.trim().parse::<u32>().unwrap_or(0).min(720);
             let res = auto_refresh::set_hours(&a.db, hours);
             a.report(res);
-            if let Some(w) = a.win.upgrade() {
-                w.global::<DialogApi>()
-                    .set_auto_hours(hours.to_string().into());
+            // committed on every edit: leave an empty field alone while the user retypes it
+            let shown = hours.to_string();
+            if let Some(w) = a.win.upgrade()
+                && !text.trim().is_empty()
+                && text.trim() != shown
+            {
+                w.global::<DialogApi>().set_auto_hours(shown.into());
             }
         });
     });

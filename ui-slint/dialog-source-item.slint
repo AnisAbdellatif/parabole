@@ -1,0 +1,59 @@
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton } from "dialog-kit.slint";
+
+export component SourceItem inherits Rectangle {
+    in property <int> id;
+    in property <string> name;
+    in property <string> kind;
+    in property <string> refreshed;
+    in property <bool> refreshing;
+    in property <string> error;
+    in property <string> account;
+    in property <int> account-level;
+    in property <bool> xtream;
+    in property <bool> checking;
+    in property <bool> confirm;
+    property <string> status: root.refreshing ? "refreshing…" : root.refreshed;
+    height: col.preferred-height;
+    background: Theme.surface;
+    border-radius: Theme.radius;
+    col := VerticalLayout {
+        padding: 8px;
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 6px;
+        HorizontalLayout {
+            spacing: 8px;
+            cross-axis-alignment: center;
+            VerticalLayout {
+                horizontal-stretch: 1;
+                spacing: 2px;
+                Text { text: root.name; color: Theme.text; font-size: Theme.fs-md; font-weight: Theme.semibold; overflow: elide; }
+                Text {
+                    text: root.status == "" ? root.kind : root.kind + " · " + root.status;
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-sm;
+                    overflow: elide;
+                }
+            }
+            DButton { text: "Refresh"; enabled: !root.refreshing; clicked => { DialogApi.sources-refresh(root.id); } }
+            if root.xtream: DButton {
+                text: root.checking ? "Checking…" : "Check account";
+                enabled: !root.checking;
+                clicked => { DialogApi.sources-check(root.id); }
+            }
+            DButton { text: "Edit"; clicked => { DialogApi.sources-edit(root.id); } }
+            if root.confirm: DButton { text: "Really delete"; kind: 2; clicked => { DialogApi.sources-delete(root.id); } }
+            if root.confirm: DButton { text: "Cancel"; clicked => { DialogApi.sources-cancel-delete(); } }
+            if !root.confirm: DButton { text: "Delete"; clicked => { DialogApi.sources-delete(root.id); } }
+        }
+        if root.account != "": Text {
+            text: root.account;
+            wrap: word-wrap;
+            font-size: Theme.fs-sm;
+            color: root.account-level == 2 ? Theme.error : root.account-level == 1 ? Theme.warn : Theme.text-muted;
+        }
+        if root.error != "": Text { text: root.error; wrap: word-wrap; font-size: Theme.fs-sm; color: Theme.error; }
+    }
+}

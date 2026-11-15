@@ -118,6 +118,18 @@ async fn sources_dialog(win: &AppWindow) {
         1,
         "sources: list filled on open"
     );
+    assert!(!api.get_form_open(), "sources: list view first");
+    settle(350).await;
+    click(win, "SourcesDialog::add", 0).await;
+    wait_until("sources: Add source opens the form", || api.get_form_open()).await;
+    settle(50).await;
+    press(win, Key::Escape);
+    wait_until("sources: Esc returns to the list", || !api.get_form_open()).await;
+    assert_eq!(
+        api.get_open(),
+        "sources",
+        "sources: Esc keeps the dialog open"
+    );
     api.invoke_close();
     wait_until("sources: closed", || api.get_open().is_empty()).await;
 }
@@ -185,21 +197,22 @@ async fn palette(win: &AppWindow) {
 async fn appearance(win: &AppWindow, dir: &std::path::Path) {
     win.global::<DialogApi>()
         .invoke_open_dialog("appearance".into());
-    wait_until("appearance: dialog open", || {
-        win.global::<DialogApi>().get_open() == "appearance"
+    wait_until("appearance: settings open on its tab", || {
+        let api = win.global::<DialogApi>();
+        api.get_open() == "settings" && api.get_settings_tab() == 2
     })
     .await;
     settle(350).await;
     let theme = win.global::<Theme>();
     let accent = theme.get_accent();
     assert_eq!(theme.get_motion(), 180, "appearance: motion starts on");
-    click(win, "AppearanceDialog::swatch", 1).await;
+    click(win, "AppearancePane::swatch", 1).await;
     assert_ne!(
         theme.get_accent(),
         accent,
         "appearance: accent swatch applies"
     );
-    click(win, "AppearanceDialog::motion-switch", 0).await;
+    click(win, "AppearancePane::motion-switch", 0).await;
     assert_eq!(theme.get_motion(), 0, "appearance: reduce motion applies");
     let saved = state_json(dir);
     assert_eq!(
@@ -219,7 +232,7 @@ async fn appearance(win: &AppWindow, dir: &std::path::Path) {
 }
 
 async fn slider_drag(win: &AppWindow, dir: &std::path::Path) {
-    let el = ElementHandle::find_by_element_id(win, "AppearanceDialog::radius-slider")
+    let el = ElementHandle::find_by_element_id(win, "AppearancePane::radius-slider")
         .next()
         .expect("radius slider");
     let (pos, size) = (el.absolute_position(), el.size());
@@ -308,6 +321,29 @@ async fn profile_switch(win: &AppWindow) {
     .await;
 }
 
+async fn profile_switch_dialog(win: &AppWindow) {
+    let api = win.global::<DialogApi>();
+    let before = win.global::<Core>().get_profile_name();
+    api.invoke_open_dialog("profiles".into());
+    wait_until("profiles dialog: open", || api.get_open() == "profiles").await;
+    settle(50).await;
+    click(win, "ProfileItem::switch", 0).await;
+    wait_until("profiles dialog: Switch changes the profile", || {
+        win.global::<Core>().get_profile_name() != before
+    })
+    .await;
+    let name = win.global::<Core>().get_profile_name();
+    wait_until("profiles dialog: Active badge moves", || {
+        api.get_profile_rows()
+            .iter()
+            .any(|r| r.active && r.name == name)
+    })
+    .await;
+    assert_eq!(api.get_open(), "profiles", "profiles dialog: stays open");
+    api.invoke_close();
+    wait_until("profiles dialog: closed", || api.get_open().is_empty()).await;
+}
+
 fn scratch() -> PathBuf {
     let dir = slint_seed::scratch_dir("behaviour");
     slint_seed::isolate_home(&dir);
@@ -335,6 +371,7 @@ fn behaviour() {
             appearance(&win, &dir).await;
             dialog_focus(&win).await;
             profile_switch(&win).await;
+            profile_switch_dialog(&win).await;
             slint::quit_event_loop().ok();
         }
     };

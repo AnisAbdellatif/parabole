@@ -41,11 +41,17 @@ impl Shots {
     }
 
     fn open_dialog(&mut self, name: &str) {
+        self.dialog_view(name, name, |_| {});
+    }
+
+    /// Opens dialog `name`, applies `set` (for example a tab), then shoots it as `shot`.
+    fn dialog_view(&mut self, name: &str, shot: &str, set: impl Fn(&DialogApi)) {
         self.win
             .global::<DialogApi>()
             .invoke_open_dialog(name.into());
         self.p.pump(2);
-        self.shot(name);
+        set(&self.win.global::<DialogApi>());
+        self.shot(shot);
         self.win.global::<DialogApi>().invoke_close();
         self.p.pump(2);
     }
@@ -246,6 +252,8 @@ fn snapshots() {
     for name in ["appearance", "settings", "sources", "profiles"] {
         s.open_dialog(name);
     }
+    s.dialog_view("sources", "sources-form", |d| d.set_form_open(true));
+    s.dialog_view("settings", "settings-players", |d| d.set_settings_tab(1));
     s.player_screens();
     s.toast_screen();
     let failures = std::mem::take(&mut s.failures);

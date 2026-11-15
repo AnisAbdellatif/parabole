@@ -13,8 +13,8 @@ pub struct Fields {
     pub ua: String,
 }
 
-/// Returns the status line and, when recognised, the (url, user, pass) to fill in.
-pub fn detect_paste(paste: &str) -> (String, Option<(String, String, String)>) {
+/// Status line, whether the Xtream-only fields apply (true when unknown), and the (url, user, pass) to fill in.
+pub fn detect_paste(paste: &str) -> (String, bool, Option<(String, String, String)>) {
     match detect(paste) {
         Ok(SourceInput::Xtream {
             base,
@@ -22,17 +22,20 @@ pub fn detect_paste(paste: &str) -> (String, Option<(String, String, String)>) {
             password,
         }) => (
             format!("Detected: Xtream account “{username}” on {base}"),
+            true,
             Some((base, username, password)),
         ),
         Ok(SourceInput::M3uUrl(u)) => (
             "Detected: M3U playlist URL".into(),
+            false,
             Some((u, String::new(), String::new())),
         ),
         Ok(SourceInput::M3uFile(p)) => (
             "Detected: M3U file".into(),
+            false,
             Some((p, String::new(), String::new())),
         ),
-        Err(e) => (format!("Not recognized: {e}"), None),
+        Err(e) => (format!("Not recognized: {e}"), true, None),
     }
 }
 

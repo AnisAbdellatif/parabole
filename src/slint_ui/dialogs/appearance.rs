@@ -1,5 +1,5 @@
-//! Appearance dialog: edits apply live to `Theme` and are saved to the UI state file.
-use super::{AppWindow, DialogApi};
+//! Appearance settings tab: edits apply live to `Theme` and are saved to the UI state file.
+use super::AppWindow;
 use crate::slint_ui::AppearanceApi;
 use crate::slint_ui::appearance::{ACCENTS, Appearance};
 use crate::slint_ui::state::{SlintApp, with_app};
@@ -66,6 +66,5 @@ impl SlintApp {
         api.set_radius(ap.radius_scale);
         api.set_font(ap.font_scale);
         api.set_reduce_motion(ap.reduce_motion);
-        let _ = w.global::<DialogApi>();
     }
 }

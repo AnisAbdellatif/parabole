@@ -45,15 +45,18 @@ impl SlintApp {
         ) {
             return;
         }
+        let (open, tab) = match name {
+            "appearance" => ("settings", 2),
+            n => (n, 0),
+        };
         // open first: push_sources skips unless DialogApi.open is "sources"
         if let Some(w) = self.win.upgrade() {
-            w.global::<DialogApi>().set_open(name.into());
+            w.global::<DialogApi>().set_open(open.into());
         }
-        match name {
+        match open {
             "sources" => self.load_sources_dialog(),
-            "settings" => self.load_settings_dialog(),
+            "settings" => self.load_settings_dialog(tab),
             "profiles" => self.load_profiles_dialog(),
-            "appearance" => self.load_appearance_dialog(),
             _ => {}
         }
     }
