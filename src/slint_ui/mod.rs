@@ -5,7 +5,7 @@ mod callbacks;
 mod data;
 mod dialogs;
 mod events;
-mod fonts;
+pub mod fonts;
 mod images;
 mod palette;
 mod player;
@@ -29,7 +29,14 @@ slint::include_modules!();
 
 pub fn run() -> Result<()> {
     fonts::install_fallback();
-    let path = db_path()?;
+    let win = build(&db_path()?)?;
+    win.run().context("run event loop")?;
+    Ok(())
+}
+
+/// Builds the fully wired window on the current thread without showing it or starting the event loop.
+pub fn build(path: &std::path::Path) -> Result<AppWindow> {
+    let path = path.to_path_buf();
     install_mpv_script(&path);
     let db = Db::open(&path).context("open database")?;
     let default_profile = db.ensure_default_profile()?;
@@ -108,6 +115,5 @@ pub fn run() -> Result<()> {
         });
         slint::CloseRequestResponse::HideWindow
     });
-    win.run().context("run event loop")?;
-    Ok(())
+    Ok(win)
 }
