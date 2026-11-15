@@ -9,6 +9,14 @@ fn main() {
             }
         }
     }
+    #[cfg(windows)]
+    {
+        println!("cargo:rerun-if-changed=packaging/icon.ico");
+        winresource::WindowsResource::new()
+            .set_icon("packaging/icon.ico")
+            .compile()
+            .expect("embed packaging/icon.ico");
+    }
     #[cfg(feature = "slint-ui")]
     if std::env::var_os("CARGO_FEATURE_SLINT_UI").is_some() {
         println!("cargo:rerun-if-changed=ui-slint");

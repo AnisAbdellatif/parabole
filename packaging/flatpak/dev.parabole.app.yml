@@ -60,7 +60,8 @@ modules:
       - cargo build --release
       - install -Dm755 target/release/parabole /app/bin/parabole
       - install -Dm644 packaging/parabole.desktop /app/share/applications/dev.parabole.app.desktop
-      - install -Dm644 packaging/icon.png /app/share/icons/hicolor/1024x1024/apps/dev.parabole.app.png
+      - for s in 16 22 24 32 48 64 128 256 512; do install -Dm644 packaging/icons/linux/${s}x${s}.png /app/share/icons/hicolor/${s}x${s}/apps/dev.parabole.app.png; done
+      - install -Dm644 packaging/icon.svg /app/share/icons/hicolor/scalable/apps/dev.parabole.app.svg
     sources:
       - type: dir
         path: ../..

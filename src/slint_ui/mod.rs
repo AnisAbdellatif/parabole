@@ -2,6 +2,7 @@
 mod appearance;
 mod browse;
 mod callbacks;
+mod dock_icon;
 mod data;
 mod dialogs;
 mod events;
@@ -30,6 +31,8 @@ slint::include_modules!();
 
 pub fn run() -> Result<()> {
     fonts::install_fallback();
+    // winit finishes launching the app after this; set the icon once the loop runs so it sticks.
+    slint::Timer::single_shot(std::time::Duration::ZERO, dock_icon::set);
     let win = build(&db_path()?)?;
     win.run().context("run event loop")?;
     Ok(())

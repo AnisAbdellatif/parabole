@@ -51,6 +51,13 @@ pub struct PlayerArea {
     shown_tracks: Vec<TrackInfo>,
 }
 
+impl Drop for PlayerArea {
+    fn drop(&mut self) {
+        // Cmd+Q exits before GL teardown frees the render context; mpv_destroy would abort. The OS reclaims it.
+        std::mem::forget(self.core.take());
+    }
+}
+
 /// Registers this area's `PlayerApi` callbacks and the GL notifier. Called once from `run()`.
 pub fn connect(win: &AppWindow) {
     controls::connect(win);

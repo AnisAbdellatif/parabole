@@ -43,22 +43,4 @@ Builds mpv (libass + ffmpeg) from source against `org.freedesktop.Platform//24.0
 
 ## Icon
 
-`packaging/icon.png` is a generated placeholder (`python3 packaging/make_icon.py packaging/icon.png`). Replace it with real artwork; the scripts pick it up.
-
-## CI and releases
-
-- `.github/workflows/ci.yml`: fmt, clippy (default and `--no-default-features`) and tests on macOS, Linux, Windows.
-- `.github/workflows/release.yml`: on tag `v*`, builds the three packages, attests their build provenance and publishes them with `SHA256SUMS` as a GitHub release. The tag must equal `v` + the `Cargo.toml` version.
-- Actions are pinned by commit SHA; `.github/dependabot.yml` bumps them weekly.
-
-Cut a release: bump `version` in `Cargo.toml`, commit, then `git tag v0.1.0 && git push origin v0.1.0`.
-
-Release secrets (all optional; macOS signing/notarization is skipped without them, ad-hoc signed instead):
-
-| Secret | Value |
-|---|---|
-| `APPLE_CERTIFICATE` | base64 of the Developer ID Application `.p12` |
-| `APPLE_CERTIFICATE_PASSWORD` | password of that `.p12` |
-| `APPLE_ID` | Apple ID email used for notarization |
-| `APPLE_TEAM_ID` | 10-character team ID |
-| `APPLE_APP_PASSWORD` | app-specific password for the Apple ID |
+`packaging/icon.svg` is the only source. `packaging/make_icons.sh` (needs inkscape) regenerates every derived file, which are committed: `packaging/icons/macos.iconset` (16–1024px with 1x/2x, art inset like other macOS icons; `macos.sh` builds the .icns), `packaging/icons/linux/` (16–512px; AppImage and Flatpak, plus the svg as the Flatpak scalable icon), `packaging/icons/windows/` + `packaging/icon.ico` (16–256px, embedded in the exe by `build.rs`), `packaging/icon.png` (1024px) and `assets/icon.png` (256px window icon).

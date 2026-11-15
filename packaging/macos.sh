@@ -13,12 +13,7 @@ cargo build --release ${CARGO_FLAGS:-}
 rm -rf dist && mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Frameworks" "$APP/Contents/Resources"
 cp "target/release/$BIN" "$APP/Contents/MacOS/$BIN"
 
-ICONSET=$(mktemp -d)/icon.iconset && mkdir -p "$ICONSET"
-for s in 16 32 128 256 512; do
-  sips -z $s $s packaging/icon.png --out "$ICONSET/icon_${s}x${s}.png" >/dev/null
-  sips -z $((s * 2)) $((s * 2)) packaging/icon.png --out "$ICONSET/icon_${s}x${s}@2x.png" >/dev/null
-done
-iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/icon.icns"
+iconutil -c icns packaging/icons/macos.iconset -o "$APP/Contents/Resources/icon.icns"
 
 cat > "$APP/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
