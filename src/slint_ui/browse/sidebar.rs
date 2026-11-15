@@ -23,11 +23,17 @@ fn header(label: &str) -> SideRow {
     row(String::new(), 0, label.into(), -1, 0, false)
 }
 
+/// Case-insensitive substring match; an empty filter keeps everything.
+fn matches(label: &str, filter: &str) -> bool {
+    filter.is_empty() || label.to_lowercase().contains(&filter.to_lowercase())
+}
+
 impl SlintApp {
     pub fn push_sidebar(&self) {
         let Some(win) = self.win.upgrade() else {
             return;
         };
+        let filter = win.global::<BrowseApi>().get_side_filter();
         let mut v = vec![
             row(Sel::Favorites.to_id(), 1, "Favorites".into(), -1, 1, false),
             row(Sel::Recent.to_id(), 1, "Recent".into(), -1, 2, false),
@@ -36,15 +42,28 @@ impl SlintApp {
             let id = Sel::Continue.to_id();
             v.push(row(id, 1, "Continue watching".into(), -1, 3, false));
         }
-        v.push(row(String::new(), 4, "MY GROUPS".into(), -1, 0, false));
-        for g in &self.groups {
+        let groups: Vec<_> = self
+            .groups
+            .iter()
+            .filter(|g| matches(&g.name, &filter))
+            .collect();
+        if filter.is_empty() || !groups.is_empty() {
+            v.push(row(String::new(), 4, "MY GROUPS".into(), -1, 0, false));
+        }
+        for g in &groups {
             let id = Sel::Group(g.id).to_id();
             v.push(row(id, 2, g.name.clone(), g.count as i32, 0, false));
         }
-        let cats: Vec<_> = self.categories.iter().filter(|c| !c.hidden).collect();
-        let pinned = cats.iter().filter(|c| c.pinned).count();
+        let cats: Vec<_> = self
+            .categories
+            .iter()
+            .filter(|c| !c.hidden)
+            .map(|c| (c, self.cat_label(c)))
+            .filter(|(_, label)| matches(label, &filter))
+            .collect();
+        let pinned = cats.iter().filter(|(c, _)| c.pinned).count();
         for (title, want) in [("PINNED", true), ("", false)] {
-            let mut part = cats.iter().filter(|c| c.pinned == want).peekable();
+            let mut part = cats.iter().filter(|(c, _)| c.pinned == want).peekable();
             if part.peek().is_none() {
                 continue;
             }
@@ -54,10 +73,13 @@ impl SlintApp {
                 _ => title,
             };
             v.push(header(title));
-            for c in part {
+            for (c, label) in part {
                 let id = Sel::Category(c.source_id, c.key.clone()).to_id();
-                v.push(row(id, 3, self.cat_label(c), c.count as i32, 0, c.pinned));
+                v.push(row(id, 3, label.clone(), c.count as i32, 0, c.pinned));
             }
+        }
+        if groups.is_empty() && cats.is_empty() && !filter.is_empty() {
+            v.push(header("No categories match"));
         }
         let sel_id = self.state.sel.as_ref().map(Sel::to_id).unwrap_or_default();
         let at = v
@@ -82,21 +104,13 @@ impl SlintApp {
         }
     }
 
-    /// Selectable sidebar entries top to bottom, matching the normal-mode layout.
+    /// Selectable sidebar entries top to bottom, as currently shown (filter applied).
     fn sidebar_order(&self) -> Vec<Sel> {
-        let mut out = vec![Sel::Favorites, Sel::Recent];
-        if self.state.tab != MediaKind::Live {
-            out.push(Sel::Continue);
-        }
-        out.extend(self.groups.iter().map(|g| Sel::Group(g.id)));
-        for pinned in [true, false] {
-            let cats = self
-                .categories
-                .iter()
-                .filter(|c| c.pinned == pinned && !c.hidden);
-            out.extend(cats.map(|c| Sel::Category(c.source_id, c.key.clone())));
-        }
-        out
+        self.browse
+            .side_rows
+            .iter()
+            .filter_map(|r| Sel::from_id(&r.id))
+            .collect()
     }
 
     fn scroll_sidebar_to_selection(&self) {
@@ -251,6 +265,22 @@ pub fn connect(win: &AppWindow) {
             }
         });
     });
+    api.on_side_filter_edited(|_| {
+        with_app(|a| a.push_sidebar());
+    });
+    api.on_side_filter_accepted(|| {
+        with_app(|a| {
+            let first = a
+                .browse
+                .side_rows
+                .iter()
+                .find(|r| r.kind == 2 || r.kind == 3);
+            if let Some(sel) = first.and_then(|r| Sel::from_id(&r.id)) {
+                select(a, sel);
+                a.scroll_sidebar_to_selection();
+            }
+        });
+    });
     api.on_sidebar_step(|step| {
         with_app(|a| {
             let order = a.sidebar_order();
@@ -267,4 +297,17 @@ pub fn connect(win: &AppWindow) {
             }
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn filter_matches_case_insensitive_substring() {
+        assert!(matches("AR| BEIN SPORTS ⁸ᴷ", ""));
+        assert!(matches("AR| BEIN SPORTS ⁸ᴷ", "bein"));
+        assert!(matches("FR | Cinéma", "CINÉ"));
+        assert!(!matches("FR | Cinema", "sport"));
+    }
 }

@@ -25,7 +25,7 @@ component Equalizer inherits Rectangle {
     EqBar { x: 12px; y: 12px - self.height; lo: 5px; hi: 11px; }
 }
 
-// One 62px Live channel row (see src/ui/stream_row.rs).
+// One 48px Live channel row (see src/ui/stream_row.rs).
 export component StreamRow inherits Rectangle {
     in property <StreamItem> item;
     in property <bool> cursor;
@@ -35,17 +35,17 @@ export component StreamRow inherits Rectangle {
     callback favorite-clicked();
     callback right-clicked(length, length);
 
+    property <bool> show-progress: root.item.progress > 0 && !root.item.watched;
+    // trailing slots below, each plus 10px spacing; the star slot is always reserved
+    property <length> trail: 32px + (root.playing ? 25px : 0px) + (root.show-progress ? 70px : 0px) + (root.item.watched ? 28px : 0px);
+    property <length> text-x: Theme.logo + 20px;
+
     height: Theme.channel-row-h;
-    x: row-area.has-hover ? 3px : 0px;
-    animate x { duration: Theme.motion; easing: ease-out; }
     border-radius: Theme.radius-l;
     border-width: 1px;
     background: root.playing ? Theme.selected-bg : row-area.has-hover ? Theme.surface : root.cursor ? Theme.row-hover : transparent;
     border-color: root.playing ? Theme.selected-border : root.cursor ? Theme.border : transparent;
-    drop-shadow-color: row-area.has-hover ? #00000070 : transparent;
-    drop-shadow-blur: row-area.has-hover ? 18px : 0px;
-    drop-shadow-offset-y: 6px;
-    animate background, drop-shadow-blur { duration: Theme.motion; }
+    animate background { duration: Theme.motion; }
     opacity: (root.item.missing || root.item.hidden) ? 0.5 : 1;
 
     row-area := TouchArea {
@@ -59,39 +59,39 @@ export component StreamRow inherits Rectangle {
     }
 
     LogoTile {
-        x: 10px;
+        x: 8px;
         y: (parent.height - self.height) / 2;
         initials: root.item.initials;
         logo: root.item.logo;
         has-logo: root.item.has-logo;
     }
-    Text {
-        x: Theme.logo + 24px;
-        y: root.item.meta == "" ? (parent.height - self.height) / 2 : parent.height * 0.19;
-        width: parent.width - (Theme.logo + 24px) - 190px;
-        text: root.item.name;
-        color: Theme.text;
-        font-size: Theme.fs-md;
-        font-weight: Theme.medium;
-        overflow: elide;
-    }
-    if root.item.meta != "": Text {
-        x: Theme.logo + 24px;
-        y: parent.height * 0.53;
-        width: parent.width - (Theme.logo + 24px) - 190px;
-        text: root.item.meta;
-        color: Theme.text-muted;
-        font-size: Theme.fs-sm;
-        overflow: elide;
+    VerticalLayout {
+        x: root.text-x;
+        width: parent.width - root.text-x - root.trail - 16px;
+        height: parent.height;
+        alignment: center;
+        Text {
+            text: root.item.name;
+            color: Theme.text;
+            font-size: Theme.fs-md;
+            font-weight: Theme.medium;
+            overflow: elide;
+        }
+        if root.item.meta != "": Text {
+            text: root.item.meta;
+            color: Theme.text-muted;
+            font-size: Theme.fs-sm;
+            overflow: elide;
+        }
     }
     HorizontalLayout {
         x: parent.width - self.width - 8px;
-        width: 180px;
+        width: root.trail;
         height: parent.height;
         spacing: 10px;
         alignment: end;
         if root.playing: Rectangle { width: 15px; Equalizer { y: (parent.height - self.height) / 2; } }
-        if root.item.progress > 0 && !root.item.watched: Rectangle {
+        if root.show-progress: Rectangle {
             width: 60px;
             Rectangle {
                 y: (parent.height - self.height) / 2;
@@ -120,6 +120,7 @@ export component StreamRow inherits Rectangle {
             width: 32px;
             clicked => { root.favorite-clicked(); }
             Icon {
+                visible: root.item.favorite || row-area.has-hover || star.has-hover;
                 source: root.item.favorite ? Icons.star-filled : Icons.star;
                 tint: root.item.favorite ? Theme.star : Theme.text-muted;
                 size: 18px;

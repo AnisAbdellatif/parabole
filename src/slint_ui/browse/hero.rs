@@ -67,12 +67,6 @@ fn build(a: &SlintApp, idx: usize, row: &StreamRow) -> HeroExtra {
         index: idx as i32,
         ..Default::default()
     };
-    if row.media == MediaKind::Live {
-        let color = row.logo.as_deref().and_then(|u| a.images.color(u));
-        h.has_color = color.is_some();
-        h.color = color.unwrap_or_default();
-        return h;
-    }
     let key = (row.source_id, row.media, row.key.clone());
     let info = details::cached(a, &key);
     let url = info
@@ -99,7 +93,9 @@ pub fn push(a: &SlintApp) {
         .browse
         .hero
         .focus
-        .and_then(|i| a.streams.row(i).map(|r| build(a, i, &r)))
+        .and_then(|i| a.streams.row(i).map(|r| (i, r)))
+        .filter(|(_, r)| r.media != MediaKind::Live)
+        .map(|(i, r)| build(a, i, &r))
         .unwrap_or(HeroExtra {
             index: -1,
             ..Default::default()

@@ -1,4 +1,4 @@
-//! Pure pixel work for the image loader: backdrop blur/darken and dominant colour.
+//! Pure pixel work for the image loader: backdrop blur/darken.
 use image::RgbaImage;
 
 const BLUR_SIGMA: f32 = 14.0;
@@ -15,24 +15,6 @@ pub fn backdrop(img: &RgbaImage) -> RgbaImage {
     out
 }
 
-/// Saturation-weighted mean colour, skipping near-black and near-white pixels.
-pub fn dominant(img: &RgbaImage) -> Option<[u8; 3]> {
-    let (mut sum, mut total) = ([0f64; 3], 0f64);
-    for p in img.pixels() {
-        let [r, g, b, a] = p.0;
-        let (max, min) = (r.max(g).max(b), r.min(g).min(b));
-        if a < 128 || max < 30 || min > 225 || max == min {
-            continue;
-        }
-        let w = f64::from(max - min) / f64::from(max);
-        for (s, c) in sum.iter_mut().zip([r, g, b]) {
-            *s += w * f64::from(c);
-        }
-        total += w;
-    }
-    (total > 0.0).then(|| sum.map(|s| (s / total).round() as u8))
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -46,22 +28,6 @@ mod tests {
                 Rgba([20, 20, 200, 255])
             }
         })
-    }
-
-    #[test]
-    fn dominant_is_mean_of_equally_saturated_colours() {
-        let [r, g, b] = dominant(&two_colour()).unwrap();
-        assert_eq!((r, g, b), (110, 20, 110));
-    }
-
-    #[test]
-    fn dominant_skips_black_white_and_grey() {
-        let mut img = RgbaImage::from_pixel(8, 8, Rgba([0, 0, 0, 255]));
-        img.put_pixel(0, 0, Rgba([255, 255, 255, 255]));
-        img.put_pixel(1, 0, Rgba([128, 128, 128, 255]));
-        assert_eq!(dominant(&img), None);
-        img.put_pixel(2, 0, Rgba([10, 200, 10, 255]));
-        assert_eq!(dominant(&img), Some([10, 200, 10]));
     }
 
     #[test]

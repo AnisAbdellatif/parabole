@@ -11,11 +11,18 @@ import { EmptyState } from "browse-empty.slint";
 import { SeriesPage } from "browse-series.slint";
 import { DetailsPanel } from "browse-details.slint";
 import { Hero } from "browse-hero.slint";
+import { HeroExtra } from "types.slint";
 
 export component BrowseHost inherits Rectangle {
     callback interacted();
-    property <length> full-h: max(190px, root.height * 0.42);
-    property <bool> hero-on: !BrowseApi.series-open && Core.streams.length > 0;
+    property <length> full-h: clamp(root.height * 0.34, 180px, 320px);
+    // the Hero must exist to report focus, but only takes height once this list produced a backdrop
+    property <bool> hero-live: Core.tab != 0 && !BrowseApi.series-open && Core.streams.length > 0;
+    property <string> list-key: Core.tab + ":" + Core.list-title;
+    property <string> latched-key: "";
+    property <HeroExtra> hero: BrowseApi.hero;
+    changed hero => { if (root.hero.has-backdrop) { root.latched-key = root.list-key; } }
+    property <bool> hero-on: root.hero-live && root.latched-key == root.list-key;
     property <bool> collapsed: false;
     property <length> sy: BrowseApi.scroll-y;
     // collapse only when the list is long enough that the freed space can't clamp the scroll back to 0
@@ -26,7 +33,7 @@ export component BrowseHost inherits Rectangle {
     // animated; the hero sits outside the layout so its height can follow root.height without a binding loop
     property <length> hero-h: (root.hero-on && !root.collapsed) ? root.full-h : 0px;
     animate hero-h { duration: Theme.motion * 1.5; easing: ease-in-out; }
-    if root.hero-on: Hero { x: 0px; y: 0px; width: root.width; height: root.hero-h; }
+    if root.hero-live: Hero { x: 0px; y: 0px; width: root.width; height: root.hero-h; }
     VerticalLayout {
         y: root.hero-h;
         height: root.height - root.hero-h;

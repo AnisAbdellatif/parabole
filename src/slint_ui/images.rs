@@ -3,7 +3,7 @@ mod fx;
 
 use crate::imgcache;
 use image::RgbaImage;
-use slint::{Color, Image, Rgba8Pixel, SharedPixelBuffer};
+use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
@@ -78,14 +78,12 @@ impl Size {
 
 pub struct Decoded {
     pub buf: SharedPixelBuffer<Rgba8Pixel>,
-    pub color: Option<[u8; 3]>,
 }
 
 type Key = (Size, String);
 
 pub struct Images {
     lru: RefCell<[Lru<Image>; 3]>,
-    colors: RefCell<Lru<Color>>,
     pending: RefCell<HashSet<Key>>,
     failed: RefCell<HashSet<Key>>,
     tx: Option<Sender<Key>>,
@@ -103,14 +101,13 @@ fn decode(bytes: &[u8], size: Size) -> Option<Decoded> {
         Size::Backdrop => src.thumbnail(480, 480),
     }
     .to_rgba8();
-    let color = fx::dominant(&small);
     let out = if size == Size::Backdrop {
         fx::backdrop(&small)
     } else {
         small
     };
     let buf = SharedPixelBuffer::clone_from_slice(out.as_raw(), out.width(), out.height());
-    Some(Decoded { buf, color })
+    Some(Decoded { buf })
 }
 
 impl Images {
@@ -145,7 +142,6 @@ impl Images {
             });
         Rc::new(Self {
             lru: RefCell::new(SIZES.map(|s| Lru::new(s.cap()))),
-            colors: RefCell::new(Lru::new(1000)),
             pending: Default::default(),
             failed: Default::default(),
             tx,
@@ -172,18 +168,8 @@ impl Images {
         None
     }
 
-    /// Dominant colour of any decoded size of this URL.
-    pub fn color(&self, url: &str) -> Option<Color> {
-        self.colors.borrow_mut().get(url)
-    }
-
     pub fn insert(&self, url: String, size: Size, d: Decoded) {
         self.pending.borrow_mut().remove(&(size, url.clone()));
-        if let Some([r, g, b]) = d.color {
-            self.colors
-                .borrow_mut()
-                .insert(url.clone(), Color::from_rgb_u8(r, g, b));
-        }
         self.lru.borrow_mut()[size.idx()].insert(url, Image::from_rgba8(d.buf));
     }
 
@@ -209,20 +195,14 @@ mod tests {
     }
 
     #[test]
-    fn cache_keys_separate_sizes_and_color_is_exposed() {
+    fn cache_keys_separate_sizes() {
         let imgs = Images::new(|_, _, _| {});
         let d = || Decoded {
             buf: SharedPixelBuffer::new(2, 2),
-            color: Some([10, 20, 30]),
         };
         imgs.insert("http://x/a".into(), Size::Poster, d());
         assert!(imgs.cached("http://x/a", Size::Poster).is_some());
         assert!(imgs.cached("http://x/a", Size::Logo).is_none());
         assert!(imgs.cached("http://x/a", Size::Backdrop).is_none());
-        assert_eq!(
-            imgs.color("http://x/a"),
-            Some(Color::from_rgb_u8(10, 20, 30))
-        );
-        assert_eq!(imgs.color("http://x/b"), None);
     }
 }

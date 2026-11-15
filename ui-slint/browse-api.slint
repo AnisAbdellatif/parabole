@@ -63,11 +63,16 @@ export global BrowseApi {
     in property <int> side-scroll-index;
     in property <int> side-scroll-tick;
     in-out property <bool> sidebar-focus: false;
+    in-out property <string> side-filter;
+    in-out property <length> sidebar-w: 260px;
     callback side-menu-requested(string);
     callback side-menu-picked(string);
     callback pin-toggled(string);
     callback group-new();
     callback sidebar-step(int);
+    callback side-filter-edited(string);
+    // Enter in the filter field: select the first matching row.
+    callback side-filter-accepted();
 
     // Edit mode.
     in property <bool> edit-on: false;

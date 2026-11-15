@@ -59,7 +59,7 @@ export component AppWindow inherits Window {
         VerticalLayout {
             main := HorizontalLayout {
                 Rectangle { width: Theme.rail-w; }
-                Sidebar { }
+                Sidebar { escaped => { keys.focus(); } }
                 VerticalLayout {
                     header := ShellHeader { escaped => { keys.focus(); } }
                     BrowseHost { interacted => { keys.focus(); } }

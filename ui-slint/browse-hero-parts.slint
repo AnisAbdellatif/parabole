@@ -32,12 +32,3 @@ export component HeroBtn inherits Rectangle {
         }
     }
 }
-
-export component LiveChip inherits Rectangle {
-    in property <string> text: "LIVE";
-    width: t.preferred-width + 16px;
-    height: 20px;
-    border-radius: 10px;
-    background: Theme.live-bg;
-    t := Text { text: root.text; color: Theme.live-fg; font-size: Theme.fs-xs; font-weight: Theme.semibold; horizontal-alignment: center; vertical-alignment: center; }
-}
