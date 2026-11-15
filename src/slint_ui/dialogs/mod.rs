@@ -39,16 +39,22 @@ pub fn connect(win: &AppWindow) {
 
 impl SlintApp {
     fn open_dialog(&mut self, name: &str) {
+        if !matches!(
+            name,
+            "sources" | "settings" | "profiles" | "appearance" | "group"
+        ) {
+            return;
+        }
+        // open first: push_sources skips unless DialogApi.open is "sources"
+        if let Some(w) = self.win.upgrade() {
+            w.global::<DialogApi>().set_open(name.into());
+        }
         match name {
             "sources" => self.load_sources_dialog(),
             "settings" => self.load_settings_dialog(),
             "profiles" => self.load_profiles_dialog(),
             "appearance" => self.load_appearance_dialog(),
-            "group" => {}
-            _ => return,
-        }
-        if let Some(w) = self.win.upgrade() {
-            w.global::<DialogApi>().set_open(name.into());
+            _ => {}
         }
     }
 

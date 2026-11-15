@@ -5,10 +5,10 @@ mod slint_seed;
 
 use i_slint_backend_testing::ElementHandle;
 use iptv_player::slint_ui::{
-    AppWindow, BrowseApi, Core, DialogApi, PaletteApi, Theme, build, fonts,
+    AppWindow, AppearanceApi, BrowseApi, Core, DialogApi, PaletteApi, Theme, build, fonts,
 };
 use slint::platform::{Key, PointerEventButton, WindowEvent};
-use slint::{ComponentHandle, Model, SharedString};
+use slint::{ComponentHandle, LogicalPosition, Model, SharedString};
 use std::cell::{Cell, RefCell};
 use std::future::poll_fn;
 use std::path::PathBuf;
@@ -109,6 +109,19 @@ async fn startup(win: &AppWindow) {
     );
 }
 
+async fn sources_dialog(win: &AppWindow) {
+    let api = win.global::<DialogApi>();
+    api.invoke_open_dialog("sources".into());
+    wait_until("sources: dialog open", || api.get_open() == "sources").await;
+    assert_eq!(
+        api.get_sources().row_count(),
+        1,
+        "sources: list filled on open"
+    );
+    api.invoke_close();
+    wait_until("sources: closed", || api.get_open().is_empty()).await;
+}
+
 async fn sidebar(win: &AppWindow) {
     let core = win.global::<Core>();
     let first = core.get_selected_id();
@@ -197,11 +210,56 @@ async fn appearance(win: &AppWindow, dir: &std::path::Path) {
         saved["appearance"]["reduce_motion"], true,
         "appearance: reduce_motion persisted"
     );
+    slider_drag(win, dir).await;
     press(win, Key::Escape);
     wait_until("appearance: Esc closes", || {
         win.global::<DialogApi>().get_open().is_empty()
     })
     .await;
+}
+
+async fn slider_drag(win: &AppWindow, dir: &std::path::Path) {
+    let el = ElementHandle::find_by_element_id(win, "AppearanceDialog::radius-slider")
+        .next()
+        .expect("radius slider");
+    let (pos, size) = (el.absolute_position(), el.size());
+    let at = |f: f32| {
+        LogicalPosition::new(
+            pos.x + 7.0 + (size.width - 14.0) * f,
+            pos.y + size.height / 2.0,
+        )
+    };
+    let before = std::fs::read(dir.join("slint-ui.json")).expect("state file");
+    let w = win.window();
+    w.dispatch_event(WindowEvent::PointerMoved { position: at(0.2) });
+    w.dispatch_event(WindowEvent::PointerPressed {
+        position: at(0.2),
+        button: PointerEventButton::Left,
+    });
+    for f in [0.4, 0.6, 0.8] {
+        w.dispatch_event(WindowEvent::PointerMoved { position: at(f) });
+        settle(10).await;
+    }
+    let radius = win.global::<AppearanceApi>().get_radius();
+    assert!((radius - 1.3).abs() < 0.02, "slider: live value {radius}");
+    assert!(
+        (win.global::<Theme>().get_radius_scale() - radius).abs() < 1e-3,
+        "slider: applied live"
+    );
+    let during = std::fs::read(dir.join("slint-ui.json")).expect("state file");
+    assert_eq!(before, during, "slider: no save while dragging");
+    w.dispatch_event(WindowEvent::PointerReleased {
+        position: at(0.8),
+        button: PointerEventButton::Left,
+    });
+    settle(30).await;
+    let saved = state_json(dir)["appearance"]["radius_scale"]
+        .as_f64()
+        .expect("radius saved");
+    assert!(
+        (saved - f64::from(radius)).abs() < 1e-3,
+        "slider: saved final value {saved}"
+    );
 }
 
 async fn dialog_focus(win: &AppWindow) {
@@ -271,6 +329,7 @@ fn behaviour() {
         let (win, dir) = (win.clone_strong(), dir.clone());
         async move {
             startup(&win).await;
+            sources_dialog(&win).await;
             sidebar(&win).await;
             palette(&win).await;
             appearance(&win, &dir).await;
