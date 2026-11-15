@@ -148,7 +148,7 @@ impl Video {
             self.size = used;
         }
         if let Some(r) = &self.render {
-            let _ = r.render::<()>(self.fbo.0.get() as i32, used.0, used.1, false);
+            let _ = r.render::<()>(self.fbo.0.get() as i32, used.0, used.1, true);
         }
         saved.restore(&self.gl);
         if self.image_size == used {

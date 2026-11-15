@@ -1,6 +1,7 @@
 //! Mirrors the session and mpv state into `PlayerApi` properties.
 use super::super::state::SlintApp;
 use super::super::{AppWindow, PlayerApi, TrackItem};
+use super::chrome;
 use crate::model::MediaKind;
 use crate::player::{TrackInfo, TrackKind};
 use crate::ui::player::controls::fmt_time;
@@ -11,6 +12,7 @@ pub fn init_models(a: &SlintApp, win: &AppWindow) {
     let api = win.global::<PlayerApi>();
     api.set_audio_tracks(ModelRc::from(a.player.audio.clone()));
     api.set_sub_tracks(ModelRc::from(a.player.subs.clone()));
+    api.set_zap_items(ModelRc::from(a.player.zap_items.clone()));
 }
 
 fn items(tracks: &[TrackInfo], kind: TrackKind, off: bool) -> Vec<TrackItem> {
@@ -58,6 +60,7 @@ pub fn push(a: &mut SlintApp) {
         api.set_active(false);
         api.set_fullscreen(false);
         api.set_mini(false);
+        api.set_pip(false);
         api.set_next_label(SharedString::new());
         api.set_zap_text(SharedString::new());
         return;
@@ -66,6 +69,7 @@ pub fn push(a: &mut SlintApp) {
     api.set_active(true);
     api.set_fullscreen(ar.fullscreen);
     api.set_mini(ar.mini);
+    api.set_pip(ar.mini);
     api.set_paused(st.paused);
     api.set_buffering(st.buffering || s.retry_at.is_some() || st.time_pos.is_none());
     api.set_is_live(s.is_live());
@@ -75,6 +79,8 @@ pub fn push(a: &mut SlintApp) {
     api.set_duration(st.duration.unwrap_or(0.0) as f32);
     api.set_pos_text(fmt_time(st.time_pos.unwrap_or(0.0)).into());
     api.set_dur_text(st.duration.map(fmt_time).unwrap_or_default().into());
+    api.set_tech(chrome::tech_line(core).into());
+    api.set_behind(chrome::behind_s(core));
     api.set_tag(if s.is_live() { "LIVE" } else { "VOD" }.into());
     api.set_title(s.req.title.as_str().into());
     api.set_meta(meta_line(s.req.media, st.duration).into());

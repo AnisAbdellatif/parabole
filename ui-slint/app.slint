@@ -24,8 +24,10 @@ export component AppWindow inherits Window {
     title: "IPTV Player";
     preferred-width: 1280px;
     preferred-height: 800px;
-    min-width: 800px;
-    min-height: 500px;
+    min-width: PlayerApi.pip ? 0px : 800px;
+    min-height: PlayerApi.pip ? 0px : 500px;
+    always-on-top: PlayerApi.pip;
+    no-frame: PlayerApi.pip;
     background: Theme.bg;
     default-font-family: Theme.font;
     default-font-size: Theme.fs-md;

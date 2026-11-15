@@ -1,0 +1,55 @@
+// Channel carousel on the left edge: 2 previous, the current (elevated) and 2 next channels.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { LogoTile } from "logo-tile.slint";
+
+export component ZapCarousel inherits Rectangle {
+    private property <bool> open: PlayerApi.zap-open || PlayerApi.zap-text != "";
+    width: 220px;
+    height: col.preferred-height;
+    x: -220px;
+    opacity: 0;
+    visible: self.opacity > 0.01;
+    states [
+        shown when root.open: {
+            x: 18px;
+            opacity: 1;
+            in { animate x, opacity { duration: Theme.motion * 1.5; easing: ease-out; } }
+            out { animate x, opacity { duration: Theme.motion * 1.5; easing: ease-in; } }
+        }
+    ]
+    col := VerticalLayout {
+        spacing: 6px;
+        for it in PlayerApi.zap-items: Rectangle {
+            height: it.playing ? 64px : 44px;
+            border-radius: Theme.radius-l;
+            background: it.playing ? #000000e0 : #000000a8;
+            border-width: it.playing ? 1px : 0px;
+            border-color: Theme.accent.with-alpha(0.7);
+            opacity: it.playing ? 1 : 0.8;
+            drop-shadow-color: #000000a0;
+            drop-shadow-blur: it.playing ? 16px : 0px;
+            drop-shadow-offset-y: 4px;
+            HorizontalLayout {
+                padding: 8px;
+                spacing: 10px;
+                cross-axis-alignment: center;
+                LogoTile {
+                    width: it.playing ? 46px : 28px;
+                    height: self.width;
+                    initials: it.initials;
+                    logo: it.logo;
+                    has-logo: it.has-logo;
+                }
+                Text {
+                    text: it.playing && PlayerApi.zap-text != "" ? PlayerApi.zap-text : (it.playing && it.meta != "" ? it.meta + " · " : "") + it.name;
+                    color: white;
+                    font-size: it.playing ? Theme.fs-md : Theme.fs-sm;
+                    font-weight: it.playing ? Theme.semibold : Theme.regular;
+                    vertical-alignment: center;
+                    overflow: elide;
+                }
+            }
+        }
+    }
+}

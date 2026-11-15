@@ -1,0 +1,72 @@
+// Seek bar with accent-gradient fill, glowing thumb and a time tooltip; plus the clock formatter.
+import { Theme } from "theme.slint";
+
+export global Clock {
+    // 75 -> "1:15", 3725 -> "1:02:05".
+    pure public function fmt(s: float) -> string {
+        let t = Math.max(0, Math.round(s));
+        let h = Math.floor(t / 3600);
+        let m = Math.floor(Math.mod(t, 3600) / 60);
+        let sec = Math.mod(t, 60);
+        return (h > 0 ? h + ":" + (m < 10 ? "0" : "") : "") + m + ":" + (sec < 10 ? "0" : "") + sec;
+    }
+}
+
+// `changed` gets the fraction under the pointer while pressed or dragged.
+export component SeekBar inherits Rectangle {
+    in property <float> frac;
+    // Seconds, for the tooltip.
+    in property <float> duration;
+    callback changed(float);
+    height: 20px;
+    min-width: 20px;
+    private property <bool> active: ta.has-hover || ta.pressed;
+    private property <float> f: clamp(root.frac, 0, 1);
+
+    Rectangle {
+        y: (parent.height - 4px) / 2;
+        height: 4px;
+        border-radius: 2px;
+        background: #ffffff33;
+        Rectangle {
+            width: parent.width * root.f;
+            border-radius: 2px;
+            background: @linear-gradient(90deg, Theme.accent 0%, Theme.accent-2 100%);
+        }
+    }
+    thumb := Rectangle {
+        width: root.active ? 14px : 10px;
+        height: self.width;
+        border-radius: self.width / 2;
+        background: white;
+        x: root.width * root.f - self.width / 2;
+        y: (root.height - self.height) / 2;
+        drop-shadow-color: Theme.accent.with-alpha(0.75);
+        drop-shadow-blur: root.active ? 10px : 0px;
+        animate width, drop-shadow-blur { duration: Theme.motion; }
+    }
+    Rectangle {
+        width: tip.preferred-width + 16px;
+        height: 22px;
+        x: clamp(ta.mouse-x - self.width / 2, 0px, root.width - self.width);
+        y: -self.height - 4px;
+        border-radius: 6px;
+        background: #000000d0;
+        opacity: root.active && root.duration > 0 ? 1 : 0;
+        animate opacity { duration: Theme.motion; }
+        tip := Text {
+            text: Clock.fmt(clamp(ta.mouse-x / root.width, 0, 1) * root.duration);
+            color: white;
+            font-size: Theme.fs-xs;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { root.changed(clamp(self.mouse-x / self.width, 0, 1)); }
+        }
+        moved => { if (self.pressed) { root.changed(clamp(self.mouse-x / self.width, 0, 1)); } }
+    }
+}

@@ -1,74 +1,92 @@
-// Control bar drawn over the video (pane, fullscreen and mini share it).
+// Bottom scrim over the video (pane and fullscreen share it): seek bar, transport, live offset.
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { PlayerApi } from "player-api.slint";
-import { IconBtn, Bar, TrackMenu } from "player-widgets.slint";
+import { IconBtn, Bar, Pill, TrackMenu } from "player-widgets.slint";
+import { SeekBar, Clock } from "player-seek.slint";
 
 export component PlayerControls inherits Rectangle {
-    in property <bool> compact: false;
     in property <bool> docked: false;
     out property <bool> hovered: bg.has-hover;
-    height: 44px;
-    background: #000000b8;
+    private property <bool> seekable: !PlayerApi.is-live && PlayerApi.duration > 0;
+    height: (root.seekable ? 20px : 0px) + 44px + 28px;
+    background: @linear-gradient(180deg, #00000000 0%, #000000c0 100%);
     bg := TouchArea { }
-    HorizontalLayout {
-        padding-left: 8px;
-        padding-right: 8px;
-        spacing: 4px;
-        alignment: start;
-        IconBtn {
-            icon: PlayerApi.paused ? Icons.play : Icons.pause;
-            clicked => { PlayerApi.toggle-pause(); }
-        }
-        IconBtn { icon: Icons.stop; clicked => { PlayerApi.stop(); } }
-        IconBtn {
-            icon: PlayerApi.muted ? Icons.volume-off : Icons.volume;
-            clicked => { PlayerApi.toggle-mute(); }
-        }
-        if !root.compact: Bar {
-            width: 80px;
-            frac: PlayerApi.volume / 130;
-            changed(f) => { PlayerApi.set-volume(f); }
-        }
-        if !root.compact && !PlayerApi.is-live && PlayerApi.duration > 0: Text {
-            text: PlayerApi.pos-text;
-            color: Theme.text-muted;
-            font-size: Theme.fs-sm;
-            vertical-alignment: center;
-        }
-        if !root.compact && !PlayerApi.is-live && PlayerApi.duration > 0: Bar {
-            horizontal-stretch: 1;
+    VerticalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-bottom: 6px;
+        alignment: end;
+        if root.seekable: SeekBar {
             frac: PlayerApi.position / PlayerApi.duration;
+            duration: PlayerApi.duration;
             changed(f) => { PlayerApi.seek(f); }
         }
-        if !root.compact && !PlayerApi.is-live && PlayerApi.duration > 0: Text {
-            text: PlayerApi.dur-text;
-            color: Theme.text-muted;
-            font-size: Theme.fs-sm;
-            vertical-alignment: center;
-        }
-        Rectangle { horizontal-stretch: 1; }
-        if !root.compact: TrackMenu {
-            icon: Icons.subtitles;
-            tracks: PlayerApi.sub-tracks;
-            off-marks-on: true;
-            picked(id) => { PlayerApi.select-sub(id); }
-        }
-        if !root.compact: TrackMenu {
-            icon: Icons.audio;
-            tracks: PlayerApi.audio-tracks;
-            picked(id) => { PlayerApi.select-audio(id); }
-        }
-        if !root.compact && PlayerApi.is-live: IconBtn { icon: Icons.live; clicked => { PlayerApi.go-live(); } }
-        if !root.compact: IconBtn { icon: Icons.info; on: PlayerApi.show-stats; clicked => { PlayerApi.toggle-stats(); } }
-        IconBtn { icon: Icons.mini; on: PlayerApi.mini; clicked => { PlayerApi.toggle-mini(); } }
-        if !PlayerApi.mini: IconBtn {
-            icon: PlayerApi.fullscreen ? Icons.fullscreen-exit : Icons.fullscreen;
-            clicked => { PlayerApi.toggle-fullscreen(); }
-        }
-        if root.docked: IconBtn {
-            icon: PlayerApi.dock-bottom ? Icons.dock-right : Icons.dock-bottom;
-            clicked => { PlayerApi.toggle-dock(); }
+        HorizontalLayout {
+            spacing: 4px;
+            alignment: start;
+            cross-axis-alignment: center;
+            height: 40px;
+            IconBtn {
+                icon: PlayerApi.paused ? Icons.play : Icons.pause;
+                clicked => { PlayerApi.toggle-pause(); }
+            }
+            IconBtn { icon: Icons.stop; clicked => { PlayerApi.stop(); } }
+            IconBtn {
+                icon: PlayerApi.muted ? Icons.volume-off : Icons.volume;
+                clicked => { PlayerApi.toggle-mute(); }
+            }
+            if !root.docked: Bar {
+                width: 80px;
+                frac: PlayerApi.volume / 130;
+                changed(f) => { PlayerApi.set-volume(f); }
+            }
+            if root.seekable: Text {
+                text: PlayerApi.pos-text + " / −" + Clock.fmt(PlayerApi.duration - PlayerApi.position);
+                color: #cbd5e1;
+                font-size: Theme.fs-sm;
+                vertical-alignment: center;
+            }
+            if PlayerApi.is-live: Text {
+                text: PlayerApi.behind >= 1 ? "−" + Clock.fmt(PlayerApi.behind) + " behind live" : "Live";
+                color: #cbd5e1;
+                font-size: Theme.fs-sm;
+                vertical-alignment: center;
+            }
+            if PlayerApi.is-live && PlayerApi.behind >= 3: Rectangle {
+                cross-axis-self-alignment: stretch;
+                width: 68px;
+                Pill {
+                    text: "Go live";
+                    primary: true;
+                    height: 26px;
+                    min-width: 68px;
+                    y: (parent.height - self.height) / 2;
+                    clicked => { PlayerApi.go-live(); }
+                }
+            }
+            Rectangle { horizontal-stretch: 1; }
+            TrackMenu {
+                icon: Icons.subtitles;
+                tracks: PlayerApi.sub-tracks;
+                off-marks-on: true;
+                picked(id) => { PlayerApi.select-sub(id); }
+            }
+            TrackMenu {
+                icon: Icons.audio;
+                tracks: PlayerApi.audio-tracks;
+                picked(id) => { PlayerApi.select-audio(id); }
+            }
+            IconBtn { icon: Icons.info; on: PlayerApi.show-stats; clicked => { PlayerApi.toggle-stats(); } }
+            IconBtn { icon: Icons.mini; clicked => { PlayerApi.toggle-mini(); } }
+            IconBtn {
+                icon: PlayerApi.fullscreen ? Icons.fullscreen-exit : Icons.fullscreen;
+                clicked => { PlayerApi.toggle-fullscreen(); }
+            }
+            if root.docked: IconBtn {
+                icon: PlayerApi.dock-bottom ? Icons.dock-right : Icons.dock-bottom;
+                clicked => { PlayerApi.toggle-dock(); }
+            }
         }
     }
 }
