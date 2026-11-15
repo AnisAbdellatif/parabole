@@ -114,3 +114,29 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" artifacts/* --repo "$GITHUB_REPOSITORY" --title "Parabole ${GITHUB_REF_NAME#v}" --generate-notes --verify-tag
+
+  tap:
+    # Bumps the Homebrew cask in AnisAbdellatif/homebrew-tap once the release exists.
+    if: startsWith(github.ref, 'refs/tags/v') && !contains(github.ref_name, '-')
+    needs: publish
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Update parabole cask
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAP_TOKEN: ${{ secrets.TAP_TOKEN }}
+          TAG: ${{ github.ref_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          version=${TAG#v}
+          sha=$(gh release download "$TAG" --repo "$REPO" -p SHA256SUMS -O - | awk -v f="Parabole-$version-macos-arm64.dmg" '$2 == f { print $1 }')
+          [ -n "$sha" ] || { echo "::error::no macOS DMG checksum in SHA256SUMS"; exit 1; }
+          git clone --depth 1 "https://x-access-token:${TAP_TOKEN}@github.com/AnisAbdellatif/homebrew-tap.git" tap
+          cd tap
+          sed -i -E "s/^  version \".*\"/  version \"$version\"/; s/^  sha256 \".*\"/  sha256 \"$sha\"/" Casks/parabole.rb
+          git diff --quiet && { echo "cask already at $version"; exit 0; }
+          git -c user.name=github-actions -c user.email=github-actions@users.noreply.github.com commit -am "parabole $version"
+          git push

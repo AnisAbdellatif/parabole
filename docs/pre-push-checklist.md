@@ -30,6 +30,7 @@ Also run `./scripts/check-packaging.sh` (syntax of release scripts with their sh
 ## 4. Release (only when pushing a `v*` tag)
 - CI on the commit being tagged is green first. Never tag a red or unverified commit.
 - The tag matches `Cargo.toml` version (`v0.1.1` ⇔ `version = "0.1.1"`).
+- The `tap` job in `release.yml` bumps `Casks/parabole.rb` in AnisAbdellatif/homebrew-tap using the `TAP_TOKEN` secret (needs contents:write on the tap). After the release run, confirm the tap got a `parabole <version>` commit.
 - Packaging inputs exist: `packaging/icons/`, `packaging/icon.ico`, `packaging/entitlements.plist`.
 
 ## 5. After pushing
