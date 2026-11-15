@@ -33,7 +33,7 @@ export component PlayerControls inherits Rectangle {
         if !root.compact && !PlayerApi.is-live && PlayerApi.duration > 0: Text {
             text: PlayerApi.pos-text;
             color: Theme.text-muted;
-            font-size: 12px;
+            font-size: Theme.fs-sm;
             vertical-alignment: center;
         }
         if !root.compact && !PlayerApi.is-live && PlayerApi.duration > 0: Bar {
@@ -44,7 +44,7 @@ export component PlayerControls inherits Rectangle {
         if !root.compact && !PlayerApi.is-live && PlayerApi.duration > 0: Text {
             text: PlayerApi.dur-text;
             color: Theme.text-muted;
-            font-size: 12px;
+            font-size: Theme.fs-sm;
             vertical-alignment: center;
         }
         Rectangle { horizontal-stretch: 1; }

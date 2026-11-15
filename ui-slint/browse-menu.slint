@@ -40,7 +40,7 @@ export component ContextMenu inherits Rectangle {
                             width: parent.width - 20px;
                             text: e.label;
                             color: Theme.text;
-                            font-size: 13px;
+                            font-size: Theme.fs-md;
                             vertical-alignment: center;
                             overflow: elide;
                         }
@@ -50,7 +50,7 @@ export component ContextMenu inherits Rectangle {
                         y: 8px;
                         text: e.label;
                         color: Theme.text-dim;
-                        font-size: 11px;
+                        font-size: Theme.fs-xs;
                         font-weight: Theme.semibold;
                     }
                     if e.kind == 2: Rectangle {

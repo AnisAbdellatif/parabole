@@ -71,7 +71,7 @@ export component Pill inherits Rectangle {
     Text {
         text: root.text;
         color: root.primary ? Theme.on-accent : Theme.text;
-        font-size: 12px;
+        font-size: Theme.fs-sm;
         font-weight: Theme.medium;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -108,7 +108,7 @@ export component TrackMenu inherits IconBtn {
                         width: parent.width - 20px;
                         text: (t.selected ? "✓ " : "   ") + t.label;
                         color: t.selected ? Theme.accent : Theme.text;
-                        font-size: 12px;
+                        font-size: Theme.fs-sm;
                         vertical-alignment: center;
                         overflow: elide;
                     }

@@ -14,7 +14,7 @@ export component LogoTile inherits Rectangle {
     if !root.has-logo: Text {
         text: root.initials;
         color: Theme.text-muted;
-        font-size: 13px;
+        font-size: Theme.fs-md;
         font-weight: Theme.semibold;
     }
     if root.has-logo: Image {

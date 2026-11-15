@@ -1,4 +1,5 @@
 //! App state held on the UI thread, plus the small persisted part.
+use super::appearance::Appearance;
 use super::images::Images;
 use super::stream_model::StreamModel;
 use super::{AppWindow, ToastItem};
@@ -56,6 +57,7 @@ pub struct Persisted {
     pub tab: MediaKind,
     pub source: Option<SourceId>,
     pub sel: Option<Sel>,
+    pub appearance: Appearance,
 }
 
 impl Persisted {

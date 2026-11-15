@@ -9,7 +9,7 @@ import { DialogApi } from "dialog-api.slint";
 export component TopBar inherits Rectangle {
     callback escaped();
     public function focus-search() { search.focus-search(); }
-    height: Theme.topbar-h;
+    height: Theme.header-h;
     background: Theme.panel;
     Rectangle { y: parent.height - 1px; height: 1px; background: Theme.divider; }
     HorizontalLayout {

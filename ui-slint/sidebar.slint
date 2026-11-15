@@ -27,7 +27,7 @@ component SideList inherits Rectangle {
                 y: 18px;
                 text: item.label;
                 color: Theme.text-dim;
-                font-size: 11px;
+                font-size: Theme.fs-xs;
                 font-weight: Theme.semibold;
             }
             if item.kind == 4: Rectangle {
@@ -36,7 +36,7 @@ component SideList inherits Rectangle {
                     y: 18px;
                     text: item.label;
                     color: Theme.text-dim;
-                    font-size: 11px;
+                    font-size: Theme.fs-xs;
                     font-weight: Theme.semibold;
                 }
                 plus := Rectangle {
@@ -47,7 +47,7 @@ component SideList inherits Rectangle {
                     border-radius: Theme.radius;
                     background: plus-ta.has-hover ? Theme.row-hover : transparent;
                     plus-ta := TouchArea { clicked => { BrowseApi.group-new(); } }
-                    Text { text: "+"; color: Theme.text-muted; font-size: 16px; font-weight: Theme.semibold; horizontal-alignment: center; vertical-alignment: center; }
+                    Text { text: "+"; color: Theme.text-muted; font-size: Theme.fs-lg; font-weight: Theme.semibold; horizontal-alignment: center; vertical-alignment: center; }
                 }
             }
             if item.kind != 0 && item.kind != 4: Rectangle {
@@ -77,7 +77,7 @@ component SideList inherits Rectangle {
                     width: parent.width - self.x - (item.kind == 3 ? 100px : item.count >= 0 ? 60px : 10px);
                     text: item.label;
                     color: on ? #ffffff : Theme.text-row;
-                    font-size: 13px;
+                    font-size: Theme.fs-md;
                     vertical-alignment: center;
                     height: parent.height;
                     overflow: elide;
@@ -92,7 +92,7 @@ component SideList inherits Rectangle {
                     badge := Text {
                         text: item.count;
                         color: Theme.badge-text;
-                        font-size: 11px;
+                        font-size: Theme.fs-xs;
                         horizontal-alignment: center;
                         vertical-alignment: center;
                     }
@@ -131,7 +131,7 @@ export component Sidebar inherits Rectangle {
                 x: 18px;
                 text: "CATEGORIES";
                 color: Theme.text-muted;
-                font-size: 12px;
+                font-size: Theme.fs-sm;
                 font-weight: Theme.semibold;
                 vertical-alignment: center;
                 height: parent.height;
@@ -149,7 +149,7 @@ export component Sidebar inherits Rectangle {
                 Text {
                     text: BrowseApi.edit-on ? "Done" : "Edit";
                     color: BrowseApi.edit-on ? Theme.on-accent : Theme.text-muted;
-                    font-size: 12px;
+                    font-size: Theme.fs-sm;
                     font-weight: Theme.semibold;
                     horizontal-alignment: center;
                     vertical-alignment: center;

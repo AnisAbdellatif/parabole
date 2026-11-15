@@ -19,7 +19,7 @@ component Pill inherits Rectangle {
     Text {
         text: root.text;
         color: root.on ? Theme.on-accent : Theme.text;
-        font-size: 12px;
+        font-size: Theme.fs-sm;
         font-weight: Theme.semibold;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -37,7 +37,7 @@ component Glyph inherits Rectangle {
     opacity: enabled ? 1 : 0.3;
     background: ta.has-hover && enabled ? Theme.surface-hover : transparent;
     ta := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
-    Text { text: root.text; color: Theme.text-muted; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+    Text { text: root.text; color: Theme.text-muted; font-size: Theme.fs-xs; horizontal-alignment: center; vertical-alignment: center; }
 }
 
 component IconBtn inherits TouchArea {
@@ -64,7 +64,7 @@ export component EditPanel inherits Rectangle {
                     width: parent.width - 20px;
                     text: BrowseApi.edit-hint;
                     color: Theme.info-fg;
-                    font-size: 12px;
+                    font-size: Theme.fs-sm;
                     wrap: word-wrap;
                     vertical-alignment: center;
                     height: parent.height;
@@ -73,7 +73,7 @@ export component EditPanel inherits Rectangle {
         }
         Rectangle {
             height: 28px;
-            Text { x: 22px; text: "MY GROUPS"; color: Theme.text-dim; font-size: 11px; font-weight: Theme.semibold; vertical-alignment: center; height: parent.height; }
+            Text { x: 22px; text: "MY GROUPS"; color: Theme.text-dim; font-size: Theme.fs-xs; font-weight: Theme.semibold; vertical-alignment: center; height: parent.height; }
             Pill { x: parent.width - self.width - 12px; y: 2px; width: 100px; height: 24px; text: "+ New group"; clicked => { BrowseApi.group-new(); } }
         }
         ListView {
@@ -82,7 +82,7 @@ export component EditPanel inherits Rectangle {
                 height: 34px;
                 Glyph { x: 12px; y: 4px; text: "▲"; enabled: i > 0; clicked => { BrowseApi.edit-group-move(i, -1); } }
                 Glyph { x: 40px; y: 4px; text: "▼"; enabled: i < BrowseApi.edit-groups.length - 1; clicked => { BrowseApi.edit-group-move(i, 1); } }
-                Text { x: 74px; width: parent.width - 74px - 140px; text: g.name; color: Theme.text; font-size: 13px; vertical-alignment: center; height: parent.height; overflow: elide; }
+                Text { x: 74px; width: parent.width - 74px - 140px; text: g.name; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; overflow: elide; }
                 Pill { x: parent.width - 134px; y: 4px; width: 60px; height: 26px; text: "Rename"; clicked => { BrowseApi.edit-group-rename(i); } }
                 Pill { x: parent.width - 68px; y: 4px; width: 60px; height: 26px; text: g.confirm ? "Delete?" : "Delete"; on: g.confirm; clicked => { BrowseApi.edit-group-delete(i); } }
             }
@@ -98,7 +98,7 @@ export component EditPanel inherits Rectangle {
                 if BrowseApi.edit-can-reorder: Glyph { x: 38px; y: 7px; text: "▼"; enabled: i < BrowseApi.edit-cats.length - 1; clicked => { BrowseApi.edit-move(i, 1); } }
                 IconBtn { x: 68px; y: 6px; source: c.hidden ? Icons.eye-off : Icons.eye; clicked => { BrowseApi.edit-hide(i); } }
                 IconBtn { x: 98px; y: 6px; source: c.pinned ? Icons.star-filled : Icons.star; tint: c.pinned ? Theme.star : Theme.text-muted; clicked => { BrowseApi.edit-pin(i); } }
-                Text { x: 134px; width: parent.width - 134px - 56px; text: c.label; color: Theme.text-row; font-size: 13px; vertical-alignment: center; height: parent.height; overflow: elide; }
+                Text { x: 134px; width: parent.width - 134px - 56px; text: c.label; color: Theme.text-row; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; overflow: elide; }
                 Rectangle {
                     x: parent.width - self.width - 16px;
                     y: 10px;
@@ -106,7 +106,7 @@ export component EditPanel inherits Rectangle {
                     height: 20px;
                     border-radius: 6px;
                     background: Theme.surface;
-                    cnt := Text { text: c.count; color: Theme.badge-text; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+                    cnt := Text { text: c.count; color: Theme.badge-text; font-size: Theme.fs-xs; horizontal-alignment: center; vertical-alignment: center; }
                 }
             }
         }
@@ -136,12 +136,12 @@ export component EditPanel inherits Rectangle {
                             width: parent.width - 20px;
                             text <=> BrowseApi.edit-filter;
                             color: Theme.text;
-                            font-size: 13px;
+                            font-size: Theme.fs-md;
                             single-line: true;
                             vertical-alignment: center;
                             edited => { BrowseApi.edit-filter-edited(self.text); }
                         }
-                        if BrowseApi.edit-filter == "": Text { x: 10px; text: "Filter, e.g. FR |"; color: Theme.text-faint; font-size: 13px; vertical-alignment: center; height: parent.height; }
+                        if BrowseApi.edit-filter == "": Text { x: 10px; text: "Filter, e.g. FR |"; color: Theme.text-faint; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; }
                     }
                     Pill { width: 112px; text: "Hide matching"; on: BrowseApi.edit-has-filter; enabled: BrowseApi.edit-has-filter; clicked => { BrowseApi.edit-bulk("hide-match"); } }
                 }
@@ -159,7 +159,7 @@ export component EditPanel inherits Rectangle {
                         border-color: Theme.border;
                         background: BrowseApi.hide-new ? Theme.accent : Theme.input-bg;
                     }
-                    Text { x: 28px; text: "Hide new categories"; color: Theme.text; font-size: 12px; vertical-alignment: center; height: parent.height; }
+                    Text { x: 28px; text: "Hide new categories"; color: Theme.text; font-size: Theme.fs-sm; vertical-alignment: center; height: parent.height; }
                 }
             }
         }

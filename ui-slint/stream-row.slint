@@ -44,7 +44,7 @@ export component StreamRow inherits Rectangle {
         width: parent.width - 68px - 76px;
         text: root.item.name;
         color: Theme.text;
-        font-size: 14px;
+        font-size: Theme.fs-md;
         font-weight: Theme.medium;
         overflow: elide;
     }
@@ -54,7 +54,7 @@ export component StreamRow inherits Rectangle {
         width: parent.width - 68px - 76px;
         text: root.item.meta;
         color: Theme.text-muted;
-        font-size: 12px;
+        font-size: Theme.fs-sm;
         overflow: elide;
     }
     if root.item.watched: Rectangle {

@@ -23,7 +23,7 @@ export component AppWindow inherits Window {
     min-height: 500px;
     background: Theme.bg;
     default-font-family: Theme.font;
-    default-font-size: 13px;
+    default-font-size: Theme.fs-md;
 
     function move-cursor(d: int) { Core.cursor = max(0, min(Core.streams.length - 1, Core.cursor + d)); }
     init => { keys.focus(); }

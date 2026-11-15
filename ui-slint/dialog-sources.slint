@@ -42,10 +42,10 @@ component SourceItem inherits Rectangle {
         if root.account != "": Text {
             text: root.account;
             wrap: word-wrap;
-            font-size: 12px;
+            font-size: Theme.fs-sm;
             color: root.account-level == 2 ? Theme.error : root.account-level == 1 ? Theme.warn : Theme.text-muted;
         }
-        if root.error != "": Text { text: root.error; wrap: word-wrap; font-size: 12px; color: Theme.error; }
+        if root.error != "": Text { text: root.error; wrap: word-wrap; font-size: Theme.fs-sm; color: Theme.error; }
     }
 }
 
@@ -72,15 +72,15 @@ export component SourcesDialog inherits DialogFrame {
         DButton { text: "Set"; clicked => { DialogApi.auto-hours-commit(DialogApi.auto-hours); } }
     }
     Rectangle { height: 1px; background: Theme.divider; }
-    Text { text: DialogApi.form-editing ? "Edit source" : "Add source"; color: Theme.text; font-size: 14px; font-weight: Theme.semibold; }
-    Text { text: "Paste anything (M3U link, Xtream URL + username + password, file path):"; color: Theme.text-muted; font-size: 12px; }
+    Text { text: DialogApi.form-editing ? "Edit source" : "Add source"; color: Theme.text; font-size: Theme.fs-md; font-weight: Theme.semibold; }
+    Text { text: "Paste anything (M3U link, Xtream URL + username + password, file path):"; color: Theme.text-muted; font-size: Theme.fs-sm; }
     paste := DField {
         multiline: true;
         rows: 3;
         text <=> DialogApi.form-paste;
         edited(t) => { DialogApi.form-paste-edited(t); }
     }
-    if DialogApi.form-detected != "": Text { text: DialogApi.form-detected; color: Theme.text-dim; font-size: 12px; wrap: word-wrap; }
+    if DialogApi.form-detected != "": Text { text: DialogApi.form-detected; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; }
     FormRow { label: "Name"; DField { text <=> DialogApi.form-name; } }
     FormRow {
         label: "URL / file";

@@ -18,12 +18,12 @@ export component StatusBar inherits Rectangle {
                 background: Core.syncing ? Theme.warn : Theme.ok;
             }
         }
-        Text { text: Core.status-sources; color: Theme.text-muted; font-size: 12px; vertical-alignment: center; }
-        Text { text: Core.status-items; color: Theme.text-muted; font-size: 12px; vertical-alignment: center; }
+        Text { text: Core.status-sources; color: Theme.text-muted; font-size: Theme.fs-sm; vertical-alignment: center; }
+        Text { text: Core.status-items; color: Theme.text-muted; font-size: Theme.fs-sm; vertical-alignment: center; }
         if Core.playing-title != "": Text {
             text: "Playing: " + Core.playing-title + " in " + Core.playing-kind;
             color: Theme.text;
-            font-size: 12px;
+            font-size: Theme.fs-sm;
             vertical-alignment: center;
             overflow: elide;
         }
@@ -32,9 +32,9 @@ export component StatusBar inherits Rectangle {
             border-radius: 6px;
             background: stop.has-hover ? Theme.surface-hover : Theme.surface;
             stop := TouchArea { clicked => { Core.stop-playback(); } }
-            Text { text: "■ Stop"; color: Theme.text; font-size: 12px; horizontal-alignment: center; vertical-alignment: center; }
+            Text { text: "■ Stop"; color: Theme.text; font-size: Theme.fs-sm; horizontal-alignment: center; vertical-alignment: center; }
         }
         Rectangle { horizontal-stretch: 1; }
-        Text { text: "Profile: " + Core.profile-name; color: Theme.text-muted; font-size: 12px; vertical-alignment: center; }
+        Text { text: "Profile: " + Core.profile-name; color: Theme.text-muted; font-size: Theme.fs-sm; vertical-alignment: center; }
     }
 }

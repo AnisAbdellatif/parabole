@@ -14,7 +14,7 @@ export component VideoTag inherits Rectangle {
     label := Text {
         text: PlayerApi.tag;
         color: PlayerApi.is-live ? Theme.live-fg : Theme.info-fg;
-        font-size: 11px;
+        font-size: Theme.fs-xs;
         font-weight: Theme.semibold;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -31,8 +31,8 @@ export component NerdStats inherits Rectangle {
     row := HorizontalLayout {
         padding: 10px;
         spacing: 12px;
-        Text { text: PlayerApi.stats-labels; color: Theme.text-muted; font-size: 11.5px; }
-        Text { text: PlayerApi.stats-values; color: Theme.text; font-size: 11.5px; }
+        Text { text: PlayerApi.stats-labels; color: Theme.text-muted; font-size: Theme.fs-xs; }
+        Text { text: PlayerApi.stats-values; color: Theme.text; font-size: Theme.fs-xs; }
     }
 }
 
@@ -51,9 +51,9 @@ export component NextCard inherits Rectangle {
     VerticalLayout {
         alignment: center;
         spacing: 4px;
-        Text { text: "Next episode"; color: Theme.text-muted; font-size: 12px; horizontal-alignment: center; }
-        Text { text: PlayerApi.next-label; color: Theme.text; font-size: 15px; font-weight: Theme.semibold; horizontal-alignment: center; overflow: elide; }
-        Text { text: "Playing in " + PlayerApi.next-secs + "s"; color: Theme.text-muted; font-size: 12px; horizontal-alignment: center; }
+        Text { text: "Next episode"; color: Theme.text-muted; font-size: Theme.fs-sm; horizontal-alignment: center; }
+        Text { text: PlayerApi.next-label; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; horizontal-alignment: center; overflow: elide; }
+        Text { text: "Playing in " + PlayerApi.next-secs + "s"; color: Theme.text-muted; font-size: Theme.fs-sm; horizontal-alignment: center; }
         HorizontalLayout {
             alignment: center;
             spacing: 8px;

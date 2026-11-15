@@ -12,12 +12,12 @@ export component EmptyBox inherits Rectangle {
         alignment: center;
         padding-bottom: 60px;
         spacing: 6px;
-        if root.busy: Text { text: "Loading…"; color: Theme.accent; font-size: 13px; horizontal-alignment: center; }
-        Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: Theme.semibold; horizontal-alignment: center; }
+        if root.busy: Text { text: "Loading…"; color: Theme.accent; font-size: Theme.fs-md; horizontal-alignment: center; }
+        Text { text: root.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; horizontal-alignment: center; }
         if root.body != "": Text {
             text: root.body;
             color: Theme.text-muted;
-            font-size: 14px;
+            font-size: Theme.fs-md;
             horizontal-alignment: center;
             wrap: word-wrap;
         }
@@ -33,7 +33,7 @@ export component EmptyBox inherits Rectangle {
                 cta-text := Text {
                     text: root.cta;
                     color: Theme.on-accent;
-                    font-size: 13px;
+                    font-size: Theme.fs-md;
                     font-weight: Theme.semibold;
                     horizontal-alignment: center;
                     vertical-alignment: center;

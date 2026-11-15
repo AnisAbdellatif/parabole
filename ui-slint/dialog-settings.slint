@@ -19,7 +19,7 @@ export component SettingsDialog inherits DialogFrame {
     HorizontalLayout {
         spacing: 12px;
         DButton { text: "Detect"; clicked => { DialogApi.settings-detect(); } }
-        Text { text: DialogApi.set-detected; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+        Text { text: DialogApi.set-detected; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
     }
     HorizontalLayout { alignment: start; DButton { text: "Save"; kind: 1; clicked => { DialogApi.settings-save(); } } }
 }

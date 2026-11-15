@@ -6,13 +6,13 @@ import { VideoSurface } from "player-surface.slint";
 
 component PaneInfo inherits VerticalLayout {
     spacing: 4px;
-    Text { text: PlayerApi.title; color: Theme.text; font-size: 16px; font-weight: Theme.semibold; overflow: elide; }
-    Text { text: PlayerApi.meta; color: Theme.text-muted; font-size: 12px; overflow: elide; }
+    Text { text: PlayerApi.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; overflow: elide; }
+    Text { text: PlayerApi.meta; color: Theme.text-muted; font-size: Theme.fs-sm; overflow: elide; }
     Rectangle { height: 8px; }
     Text {
         text: "Space pause · F fullscreen · PgUp/PgDn change channel · I stats" + (PlayerApi.is-live ? " · Ctrl+L go live" : "");
         color: Theme.text-muted;
-        font-size: 12px;
+        font-size: Theme.fs-sm;
         wrap: word-wrap;
     }
     Rectangle { vertical-stretch: 1; }

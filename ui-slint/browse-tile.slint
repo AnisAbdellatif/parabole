@@ -40,7 +40,7 @@ export component Tile inherits Rectangle {
         if !root.item.has-poster: Text {
             text: root.item.initials;
             color: Theme.text-faint;
-            font-size: 28px;
+            font-size: Theme.fs-hero;
             font-weight: Theme.semibold;
         }
         if root.item.has-poster: Image {
@@ -73,7 +73,7 @@ export component Tile inherits Rectangle {
         height: root.item.sub == "" ? 36px : 18px;
         text: root.item.name;
         color: Theme.text;
-        font-size: 13px;
+        font-size: Theme.fs-md;
         font-weight: Theme.semibold;
         wrap: word-wrap;
         overflow: elide;
@@ -85,7 +85,7 @@ export component Tile inherits Rectangle {
         height: 28px;
         text: root.item.sub;
         color: Theme.text-muted;
-        font-size: 11.5px;
+        font-size: Theme.fs-xs;
         wrap: word-wrap;
         overflow: elide;
     }

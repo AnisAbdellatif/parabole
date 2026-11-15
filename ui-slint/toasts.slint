@@ -19,7 +19,7 @@ export component Toasts inherits VerticalLayout {
             padding: 12px;
             padding-left: 14px;
             spacing: 8px;
-            Text { text: t.text; color: Theme.text; font-size: 13px; wrap: word-wrap; horizontal-stretch: 1; }
+            Text { text: t.text; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; horizontal-stretch: 1; }
             TouchArea {
                 width: 20px;
                 clicked => { Core.toast-dismissed(t.id); }

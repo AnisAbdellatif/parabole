@@ -20,10 +20,10 @@ export component InfoBody inherits HorizontalLayout {
         spacing: 4px;
         alignment: start;
         for f in root.info.fields: VerticalLayout {
-            Text { text: f.label; color: Theme.text-dim; font-size: 11px; font-weight: Theme.semibold; }
-            Text { text: f.value; color: Theme.text; font-size: 13px; wrap: word-wrap; }
+            Text { text: f.label; color: Theme.text-dim; font-size: Theme.fs-xs; font-weight: Theme.semibold; }
+            Text { text: f.value; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; }
         }
-        if root.info.fields.length == 0: Text { text: "No details available."; color: Theme.text-muted; font-size: 13px; }
+        if root.info.fields.length == 0: Text { text: "No details available."; color: Theme.text-muted; font-size: Theme.fs-md; }
     }
 }
 
@@ -44,7 +44,7 @@ export component DetailsPanel inherits Rectangle {
             width: parent.width - 80px;
             text: BrowseApi.details-title;
             color: Theme.text;
-            font-size: 18px;
+            font-size: Theme.fs-lg;
             font-weight: Theme.semibold;
             overflow: elide;
         }
@@ -63,7 +63,7 @@ export component DetailsPanel inherits Rectangle {
             height: parent.height - 72px;
             content-height: body.preferred-height;
             body := VerticalLayout {
-                if BrowseApi.details.state == 1: Text { text: "Loading details…"; color: Theme.text-muted; font-size: 14px; }
+                if BrowseApi.details.state == 1: Text { text: "Loading details…"; color: Theme.text-muted; font-size: Theme.fs-md; }
                 if BrowseApi.details.state == 3: EmptyBox {
                     height: 200px;
                     title: "Could not load details";

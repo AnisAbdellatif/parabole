@@ -1,4 +1,5 @@
 //! Slint front end. Run with `cargo run --features slint-ui --bin iptv-player-slint`.
+mod appearance;
 mod browse;
 mod callbacks;
 mod data;
@@ -56,6 +57,7 @@ pub fn run() -> Result<()> {
     core.set_streams(ModelRc::from(streams.clone()));
     core.set_toasts(ModelRc::from(toasts.clone()));
     core.set_tab(state.tab as i32);
+    state.appearance.apply(&win);
     let profile = state.profile.unwrap_or_default();
     APP.with(|a| {
         *a.borrow_mut() = Some(SlintApp {

@@ -23,7 +23,7 @@ export component DButton inherits Rectangle {
     label := Text {
         text: root.text;
         color: root.kind == 1 ? Theme.on-accent : Theme.text;
-        font-size: 13px;
+        font-size: Theme.fs-md;
         font-weight: Theme.medium;
         horizontal-alignment: center;
         vertical-alignment: center;
@@ -52,7 +52,7 @@ export component DField inherits Rectangle {
         width: parent.width - 20px;
         height: root.multiline ? parent.height - 16px : parent.height;
         color: Theme.text;
-        font-size: 13px;
+        font-size: Theme.fs-md;
         single-line: !root.multiline;
         wrap: root.multiline ? TextWrap.word-wrap : TextWrap.no-wrap;
         vertical-alignment: root.multiline ? TextVerticalAlignment.top : TextVerticalAlignment.center;
@@ -63,7 +63,7 @@ export component DField inherits Rectangle {
         if self.text == "" && !self.has-focus: Text {
             text: root.placeholder;
             color: Theme.text-faint;
-            font-size: 13px;
+            font-size: Theme.fs-md;
             x: 0px;
             horizontal-alignment: left;
             y: root.multiline ? 0px : (parent.height - self.height) / 2;
@@ -87,7 +87,7 @@ export component DCheck inherits Rectangle {
             background: root.checked ? Theme.accent : Theme.input-bg;
             if root.checked: Icon { source: Icons.check; tint: Theme.on-accent; size: 12px; x: 3px; y: 3px; }
         }
-        Text { text: root.text; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+        Text { text: root.text; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; }
     }
     TouchArea { clicked => { root.checked = !root.checked; } }
 }
@@ -96,7 +96,7 @@ export component DCheck inherits Rectangle {
 export component FormRow inherits HorizontalLayout {
     in property <string> label;
     spacing: 12px;
-    Text { text: root.label; color: Theme.text-muted; font-size: 13px; width: 124px; vertical-alignment: top; y: 8px; }
+    Text { text: root.label; color: Theme.text-muted; font-size: Theme.fs-md; width: 124px; vertical-alignment: top; y: 8px; }
     @children
 }
 
@@ -117,7 +117,7 @@ export component DialogFrame inherits Rectangle {
         HorizontalLayout {
             padding: 16px;
             padding-bottom: 12px;
-            Text { text: root.title; color: Theme.text; font-size: 16px; font-weight: Theme.semibold; vertical-alignment: center; horizontal-stretch: 1; }
+            Text { text: root.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; vertical-alignment: center; horizontal-stretch: 1; }
             TouchArea {
                 width: 24px;
                 clicked => { DialogApi.close(); }
