@@ -1,5 +1,5 @@
 // Browse area state and callbacks (poster grid, series, details, menus, edit mode). Owned by the browse area.
-import { ChipItem, MenuEntry } from "types.slint";
+import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup } from "types.slint";
 
 export global BrowseApi {
     // Tried after DialogApi and PlayerApi; return true when handled.
@@ -23,4 +23,37 @@ export global BrowseApi {
     callback chip-clicked(string);
     callback row-menu-requested(int);
     callback row-menu-picked(string);
+
+    // Sidebar.
+    in property <[SideRow]> side-rows;
+    in property <[MenuEntry]> side-menu;
+    in property <int> side-scroll-index;
+    in property <int> side-scroll-tick;
+    in-out property <bool> sidebar-focus: false;
+    callback side-menu-requested(string);
+    callback side-menu-picked(string);
+    callback pin-toggled(string);
+    callback group-new();
+    callback sidebar-step(int);
+
+    // Edit mode.
+    in property <bool> edit-on: false;
+    in property <string> edit-hint;
+    in property <bool> edit-can-reorder: false;
+    in property <[EditCat]> edit-cats;
+    in property <[EditGroup]> edit-groups;
+    in property <bool> edit-has-filter: false;
+    in property <bool> hide-new: false;
+    in property <bool> hide-new-available: false;
+    in-out property <string> edit-filter;
+    callback edit-toggled();
+    callback edit-hide(int);
+    callback edit-pin(int);
+    callback edit-move(int, int);
+    callback edit-bulk(string);
+    callback edit-filter-edited(string);
+    callback hide-new-toggled(bool);
+    callback edit-group-move(int, int);
+    callback edit-group-rename(int);
+    callback edit-group-delete(int);
 }

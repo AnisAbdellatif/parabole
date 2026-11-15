@@ -1,18 +1,8 @@
 //! Copies app state into the `Core` global's properties.
+use super::Core;
 use super::state::{Sel, SlintApp};
-use super::{Core, SidebarItem};
-use crate::model::{MediaKind, StreamRow};
+use crate::model::StreamRow;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
-
-fn item(id: String, kind: i32, label: String, count: i32, icon: i32) -> SidebarItem {
-    SidebarItem {
-        id: id.into(),
-        kind,
-        label: label.into(),
-        count,
-        icon,
-    }
-}
 
 impl SlintApp {
     pub fn push_profiles(&self) {
@@ -33,57 +23,6 @@ impl SlintApp {
         core.set_profile_name(names.get(idx).cloned().unwrap_or_default());
         core.set_profile_index(idx as i32);
         core.set_profiles(ModelRc::new(VecModel::from(names)));
-    }
-
-    pub fn push_sidebar(&self) {
-        let Some(win) = self.win.upgrade() else {
-            return;
-        };
-        let prefix = self.state.source.is_none() && self.sources.len() > 1;
-        let mut v = vec![item(String::new(), 0, "LIBRARY".into(), -1, 0)];
-        v.push(item(Sel::Favorites.to_id(), 1, "Favorites".into(), -1, 1));
-        v.push(item(Sel::Recent.to_id(), 1, "Recent".into(), -1, 2));
-        if self.state.tab != MediaKind::Live {
-            v.push(item(
-                Sel::Continue.to_id(),
-                1,
-                "Continue watching".into(),
-                -1,
-                3,
-            ));
-        }
-        if !self.groups.is_empty() {
-            v.push(item(String::new(), 0, "GROUPS".into(), -1, 0));
-            for g in &self.groups {
-                v.push(item(
-                    Sel::Group(g.id).to_id(),
-                    2,
-                    g.name.clone(),
-                    g.count as i32,
-                    0,
-                ));
-            }
-        }
-        v.push(item(String::new(), 0, "CATEGORIES".into(), -1, 0));
-        for c in self.categories.iter().filter(|c| !c.hidden) {
-            let label = if prefix {
-                format!("{} · {}", self.source_name(c.source_id), c.name)
-            } else {
-                c.name.clone()
-            };
-            let id = Sel::Category(c.source_id, c.key.clone()).to_id();
-            v.push(item(id, 3, label, c.count as i32, 0));
-        }
-        let core = win.global::<Core>();
-        core.set_sidebar(ModelRc::new(VecModel::from(v)));
-        core.set_selected_id(
-            self.state
-                .sel
-                .as_ref()
-                .map(Sel::to_id)
-                .unwrap_or_default()
-                .into(),
-        );
     }
 
     pub fn push_streams(&mut self, rows: Vec<StreamRow>) {

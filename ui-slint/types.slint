@@ -39,3 +39,27 @@ export struct MenuEntry {
     label: string,
     kind: int,
 }
+
+// kind: 0 header, 1 special entry, 2 group, 3 category, 4 "MY GROUPS" header with a + button.
+// icon: 0 none, 1 star, 2 recent, 3 resume.
+export struct SideRow {
+    id: string,
+    kind: int,
+    label: string,
+    count: int,
+    icon: int,
+    pinned: bool,
+}
+
+export struct EditCat {
+    label: string,
+    count: int,
+    hidden: bool,
+    pinned: bool,
+    matched: bool,
+}
+
+export struct EditGroup {
+    name: string,
+    confirm: bool,
+}

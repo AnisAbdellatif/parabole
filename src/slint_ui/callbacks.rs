@@ -24,6 +24,15 @@ fn clear_search(a: &mut SlintApp) {
     }
 }
 
+pub(crate) fn select(a: &mut SlintApp, sel: Sel) {
+    a.state.sel = Some(sel);
+    clear_search(a);
+    reset_cursor(a);
+    super::browse::close_series(a);
+    a.push_sidebar();
+    a.reload_streams();
+}
+
 pub fn connect(win: &AppWindow) {
     let core = win.global::<Core>();
     core.on_tab_selected(|i| {
@@ -69,12 +78,9 @@ pub fn connect(win: &AppWindow) {
     });
     core.on_sidebar_selected(|id| {
         with_app(|a| {
-            let Some(sel) = Sel::from_id(&id) else { return };
-            a.state.sel = Some(sel);
-            clear_search(a);
-            reset_cursor(a);
-            a.push_sidebar();
-            a.reload_streams();
+            if let Some(sel) = Sel::from_id(&id) {
+                select(a, sel);
+            }
         });
     });
     core.on_stream_activated(|i| {
