@@ -23,7 +23,7 @@ component SideList inherits Rectangle {
         clip: true;
         pill := Rectangle {
             visible: Core.selected-index >= 0;
-            y: Core.selected-index * Theme.sidebar-row-step + list.content-y;
+            y: Core.selected-index * Theme.sidebar-row-step + (Theme.sidebar-row-step - Theme.sidebar-row-h) / 2 + list.content-y;
             height: Theme.sidebar-row-h;
             border-radius: Theme.radius;
             background: Theme.selected-bg;
