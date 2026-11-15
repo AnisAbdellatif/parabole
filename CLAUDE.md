@@ -1,6 +1,6 @@
-# IPTV Player — conventions
+# Parabole — conventions
 
-Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `iptv-player`); the egui UI is kept as bin `iptv-player-egui`. Design: `PLAN.md` (read only the section you need).
+Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `parabole`); the egui UI is kept as bin `parabole-egui`. Design: `PLAN.md` (read only the section you need).
 
 ## Layout
 - `src/model.rs` — shared plain data types. Changing it affects every module.

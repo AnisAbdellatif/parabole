@@ -5,7 +5,7 @@ set -eu
 cd "$(dirname "$0")/../.."
 UTMCTL=/Applications/UTM.app/Contents/MacOS/utmctl
 VM=Xubuntu
-GUEST_DIR=iptv-player-slint
+GUEST_DIR=parabole
 OUT=/tmp/vm-e2e
 SSH_OPTS="-o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=accept-new"
 
@@ -37,7 +37,7 @@ sync_src() {
 }
 
 build() {
-    guest ". ~/.cargo/env && cd $GUEST_DIR && cargo build --bin iptv-player -j3 && cargo build --example vm_seed -j3"
+    guest ". ~/.cargo/env && cd $GUEST_DIR && cargo build --bin parabole -j3 && cargo build --example vm_seed -j3"
 }
 
 test_run() {

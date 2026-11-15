@@ -1,13 +1,13 @@
 # Unverified: not built locally (needs flatpak-builder on Linux). Build: see packaging/README.md.
 # shortcut: cargo runs with network access during the build (not Flathub-compliant, which needs vendored
 # sources from flatpak-cargo-generator.py); fine for sideloaded builds, upgrade before a Flathub submission.
-app-id: dev.iptvplayer.app
+app-id: dev.parabole.app
 runtime: org.freedesktop.Platform
 runtime-version: '24.08'
 sdk: org.freedesktop.Sdk
 sdk-extensions:
   - org.freedesktop.Sdk.Extension.rust-stable
-command: iptv-player
+command: parabole
 finish-args:
   - --share=network
   - --share=ipc
@@ -52,15 +52,15 @@ modules:
         url: https://github.com/mpv-player/mpv/archive/refs/tags/v0.40.0.tar.gz
         sha256: 10a0f4654f62140a6dd4d380dcf0bbdbdcf6e697556863dc499c296182f081a3
 
-  - name: iptv-player
+  - name: parabole
     buildsystem: simple
     build-options:
       build-args: [--share=network]
     build-commands:
       - cargo build --release
-      - install -Dm755 target/release/iptv-player /app/bin/iptv-player
-      - install -Dm644 packaging/iptv-player.desktop /app/share/applications/dev.iptvplayer.app.desktop
-      - install -Dm644 packaging/icon.png /app/share/icons/hicolor/1024x1024/apps/dev.iptvplayer.app.png
+      - install -Dm755 target/release/parabole /app/bin/parabole
+      - install -Dm644 packaging/parabole.desktop /app/share/applications/dev.parabole.app.desktop
+      - install -Dm644 packaging/icon.png /app/share/icons/hicolor/1024x1024/apps/dev.parabole.app.png
     sources:
       - type: dir
         path: ../..

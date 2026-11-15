@@ -1,13 +1,13 @@
 #!/bin/sh
-# Builds dist/IPTV Player.app and dist/IPTV-Player-<version>-macos-<arch>.dmg. Needs: brew mpv dylibbundler.
+# Builds dist/Parabole.app and dist/Parabole-<version>-macos-<arch>.dmg. Needs: brew mpv dylibbundler.
 # Signs with Developer ID + notarizes when APPLE_* env vars are set, else ad-hoc signs.
 set -eu
 cd "$(dirname "$0")/.."
-NAME="IPTV Player"
-BIN=iptv-player
+NAME="Parabole"
+BIN=parabole
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
 APP="dist/$NAME.app"
-DMG="dist/IPTV-Player-$VERSION-macos-$(uname -m).dmg"
+DMG="dist/Parabole-$VERSION-macos-$(uname -m).dmg"
 
 cargo build --release ${CARGO_FLAGS:-}
 rm -rf dist && mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Frameworks" "$APP/Contents/Resources"
@@ -26,7 +26,7 @@ cat > "$APP/Contents/Info.plist" <<PLIST
 <plist version="1.0"><dict>
 <key>CFBundleName</key><string>$NAME</string>
 <key>CFBundleDisplayName</key><string>$NAME</string>
-<key>CFBundleIdentifier</key><string>dev.iptvplayer.app</string>
+<key>CFBundleIdentifier</key><string>dev.parabole.app</string>
 <key>CFBundleExecutable</key><string>$BIN</string>
 <key>CFBundleIconFile</key><string>icon</string>
 <key>CFBundlePackageType</key><string>APPL</string>

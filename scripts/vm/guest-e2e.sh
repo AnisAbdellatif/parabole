@@ -97,7 +97,7 @@ else
 fi
 
 # --- app ----------------------------------------------------------------
-"$REPO/target/debug/iptv-player" >"$OUT/app.log" 2>&1 & APP=$!; PIDS+=($APP)
+"$REPO/target/debug/parabole" >"$OUT/app.log" 2>&1 & APP=$!; PIDS+=($APP)
 WIN=
 for _ in $(seq 60); do
     WIN=$(xdotool search --onlyvisible --pid "$APP" 2>/dev/null | head -1 || true)

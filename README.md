@@ -1,12 +1,12 @@
-# IPTV Player
+# Parabole
 
-Rust IPTV player with a Slint UI (the older egui UI is kept as `iptv-player-egui`). Design notes: `PLAN.md`.
+Rust IPTV player with a Slint UI (the older egui UI is kept as `parabole-egui`). Design notes: `PLAN.md`.
 
 ## Building
 
 ```sh
 cargo run              # Slint UI with the embedded libmpv player (default)
-cargo run --bin iptv-player-egui   # the egui UI
+cargo run --bin parabole-egui   # the egui UI
 cargo build --no-default-features  # egui UI only, external players only (mpv / VLC / custom)
 ```
 

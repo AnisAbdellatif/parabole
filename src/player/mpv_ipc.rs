@@ -11,9 +11,9 @@ const TIMEOUT: Duration = Duration::from_millis(500);
 pub fn socket_path() -> PathBuf {
     let pid = std::process::id();
     if cfg!(windows) {
-        PathBuf::from(format!(r"\\.\pipe\iptv-player-mpv-{pid}"))
+        PathBuf::from(format!(r"\\.\pipe\parabole-mpv-{pid}"))
     } else {
-        std::env::temp_dir().join(format!("iptv-player-mpv-{pid}.sock"))
+        std::env::temp_dir().join(format!("parabole-mpv-{pid}.sock"))
     }
 }
 

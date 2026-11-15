@@ -1,5 +1,5 @@
 #!/bin/sh
-# Builds dist/IPTV-Player-<version>-x86_64.AppImage with libmpv bundled (linuxdeploy). Linux only.
+# Builds dist/Parabole-<version>-x86_64.AppImage with libmpv bundled (linuxdeploy). Linux only.
 # Needs: libmpv-dev + eframe dev packages (see ci.yml), curl, and FUSE or APPIMAGE_EXTRACT_AND_RUN=1.
 set -eu
 cd "$(dirname "$0")/.."
@@ -17,9 +17,9 @@ chmod +x "$TOOLS/linuxdeploy"
 # linuxdeploy follows ldd, so libmpv and its dependencies land in AppDir/usr/lib.
 # GL/EGL/Vulkan drivers are on linuxdeploy's excludelist and must come from the host.
 "$TOOLS/linuxdeploy" --appdir AppDir \
-  --executable target/release/iptv-player \
-  --desktop-file packaging/iptv-player.desktop \
-  --icon-file packaging/icon.png --icon-filename iptv-player \
+  --executable target/release/parabole \
+  --desktop-file packaging/parabole.desktop \
+  --icon-file packaging/icon.png --icon-filename parabole \
   --output appimage
-mv IPTV_Player-*.AppImage "dist/IPTV-Player-$VERSION-$ARCH.AppImage"
-echo "built dist/IPTV-Player-$VERSION-$ARCH.AppImage"
+mv Parabole-*.AppImage "dist/Parabole-$VERSION-$ARCH.AppImage"
+echo "built dist/Parabole-$VERSION-$ARCH.AppImage"

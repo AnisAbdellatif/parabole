@@ -10,7 +10,7 @@ mod snapshot;
 mod sw_platform;
 
 use i_slint_backend_testing::ElementHandle;
-use iptv_player::slint_ui::{
+use parabole::slint_ui::{
     AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, PlayerApi, StreamItem, Theme,
     ToastItem, build, fonts,
 };

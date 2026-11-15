@@ -5,13 +5,13 @@
 //!   `vm_seed --wait <secs>`             wait for that refresh; prints only "refresh ok" or "refresh failed"
 //! Real mode never prints the file content or error texts (they can contain the credentials).
 use anyhow::{Context, Result, bail};
-use iptv_player::db::Db;
-use iptv_player::model::{Source, SourceInput, SourceKind};
-use iptv_player::player::{PlayerKind, PlayerSettings};
-use iptv_player::sources::detect::detect;
-use iptv_player::sources::m3u;
-use iptv_player::ui::db_path;
-use iptv_player::worker::player_settings;
+use parabole::db::Db;
+use parabole::model::{Source, SourceInput, SourceKind};
+use parabole::player::{PlayerKind, PlayerSettings};
+use parabole::sources::detect::detect;
+use parabole::sources::m3u;
+use parabole::ui::db_path;
+use parabole::worker::player_settings;
 
 fn main() -> Result<()> {
     let arg1 = std::env::args()

@@ -4,7 +4,7 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 
 ## Ground rules
 - The egui app stays untouched and keeps building: `cargo run` = egui.
-- The Slint app is a second binary behind the cargo feature `slint-ui`: `cargo run --features slint-ui --bin iptv-player-slint`.
+- The Slint app is a second binary behind the cargo feature `slint-ui`: `cargo run --features slint-ui --bin parabole`.
 - Rust glue lives in `src/slint_ui/`, with one concern per file and files under 300 lines (CLAUDE.md rules apply). `.slint` markup lives in `ui-slint/`, one component per file, and `app.slint` composes them.
 - Reuse `model.rs`, `db/`, `sources/`, `player/` and `worker/` unchanged where possible. The UI talks to the worker only through `Command`/`Event`, exactly as egui does. If shared code is egui-coupled (e.g. `player/embed` takes `eframe::CreationContext`), split out a toolkit-neutral core and keep the egui path working.
 - Visual target: `docs/redesign.html` and the tokens in `src/ui/theme/mod.rs`, mirrored as a Slint `global Theme`.
@@ -97,7 +97,7 @@ Notes:
   - Superscript letters (`ᵁᴴᴰ`) render once DejaVu is added to the fontique fallback chain (`slint_ui/fonts.rs`, `unstable-fontique-011` feature); a `.slint` font import alone only registers a named family.
 - **Idle cost:** egui is fully idle when nothing changes. The Slint port wakes up a little, probably from the toast timer, which repeats even with no toasts.
 - **Scrolling:** smoothness wasn't measured, because synthetic input doesn't reach the app on this machine.
-- **Screenshots:** `/tmp/cmp/iptv-player.png` (egui) and `/tmp/cmp/iptv-player-slint.png` (Slint), same DB, same first category.
+- **Screenshots:** `/tmp/cmp/parabole.png` (egui) and `/tmp/cmp/parabole.png` (Slint), same DB, same first category.
 
 ## Dev-experience notes
 (each agent appends 2–5 terse bullets: what was easier or harder than egui, and any Slint pitfalls hit)
@@ -211,4 +211,4 @@ Gaps:
 - Sources auto-refresh saves on every edit; an empty field saves 0.
 
 ## Default UI
-The Slint UI is the default: `slint-ui` is in the default features (and implies `embedded-mpv`), `src/main.rs` is the Slint binary `iptv-player`, and the egui UI is `iptv-player-egui` (`src/bin/`). `--no-default-features` builds only the egui binary. Commands above that say `--features slint-ui` or `--bin iptv-player-slint` no longer need them.
+The Slint UI is the default: `slint-ui` is in the default features (and implies `embedded-mpv`), `src/main.rs` is the Slint binary `parabole`, and the egui UI is `parabole-egui` (`src/bin/`). `--no-default-features` builds only the egui binary. Older commands above that pass `--features slint-ui` or `--bin` no longer need either.

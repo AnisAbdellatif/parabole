@@ -1,4 +1,4 @@
-# IPTV Player — Plan (Rust + egui)
+# Parabole — Plan (Rust + egui)
 
 Cross-platform (macOS / Windows / Linux) desktop IPTV player. Playback through embedded mpv, VLC, or any external player.
 Inputs: Xtream Codes, M3U/M3U8 URL, M3U file. Stalker portals come later.

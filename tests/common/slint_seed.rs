@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 //! Scratch library and environment isolation shared by the Slint UI test binaries.
-use iptv_player::db::Db;
-use iptv_player::model::{Source, SourceKind};
-use iptv_player::sources::m3u;
+use parabole::db::Db;
+use parabole::model::{Source, SourceKind};
+use parabole::sources::m3u;
 use std::path::{Path, PathBuf};
 
 const FIXTURE: &[u8] = include_bytes!("../fixtures/slint-ui.m3u");

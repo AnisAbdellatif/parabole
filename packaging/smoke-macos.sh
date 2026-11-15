@@ -2,9 +2,9 @@
 # Launches the bundled app with a scratch HOME for a few seconds; fails if it exits early.
 set -eu
 cd "$(dirname "$0")/.."
-APP="${1:-dist/IPTV Player.app}"
+APP="${1:-dist/Parabole.app}"
 SCRATCH=$(mktemp -d)
-HOME="$SCRATCH" "$APP/Contents/MacOS/iptv-player" >"$SCRATCH/out.log" 2>&1 &
+HOME="$SCRATCH" "$APP/Contents/MacOS/parabole" >"$SCRATCH/out.log" 2>&1 &
 PID=$!
 sleep 6
 if kill -0 "$PID" 2>/dev/null; then

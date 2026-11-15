@@ -1,8 +1,8 @@
 [Desktop Entry]
 Type=Application
-Name=IPTV Player
+Name=Parabole
 Comment=Browse and play IPTV playlists and Xtream sources
-Exec=iptv-player
-Icon=iptv-player
+Exec=parabole
+Icon=parabole
 Categories=AudioVideo;Video;Player;
 Terminal=false

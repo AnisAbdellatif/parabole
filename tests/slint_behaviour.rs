@@ -4,7 +4,7 @@
 mod slint_seed;
 
 use i_slint_backend_testing::{AccessibleRole, ElementHandle};
-use iptv_player::slint_ui::{
+use parabole::slint_ui::{
     AppWindow, AppearanceApi, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, Theme, build,
     fonts,
 };

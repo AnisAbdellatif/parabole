@@ -1,4 +1,4 @@
-# IPTV Player — UI inventory (for redesign)
+# Parabole — UI inventory (for redesign)
 
 Desktop IPTV player (macOS / Windows / Linux) built with Rust + egui. It plays live TV channels, movies and series from the user's own IPTV playlists. Everything below exists today; the redesign may regroup, restyle or rename it, but should keep every function.
 

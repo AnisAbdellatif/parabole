@@ -3,7 +3,7 @@
 The `.slint` markup (ui-slint/, `Core` global) exists and is committed (1932a0e). This spec covers the Rust side. Implement it file by file, in this order, and run `cargo check --features slint-ui` after each step. Report deviations; don't redesign. Every file stays under 300 lines.
 
 ## Step 0: make the markup compile
-Get `cargo build --features slint-ui --bin iptv-player-slint` green with every component wired into `app.slint` (still no Rust logic). Commit: "slint: markup compiles".
+Get `cargo build --features slint-ui --bin parabole` green with every component wired into `app.slint` (still no Rust logic). Commit: "slint: markup compiles".
 
 ## Step 1: `src/imgcache/mod.rs`, a toolkit-neutral entry point (small change)
 Add one public fn, reusing `store` and `fetch`:

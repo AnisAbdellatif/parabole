@@ -12,8 +12,7 @@ use std::sync::Arc;
 
 /// Shared with the Slint binary.
 pub fn db_path() -> Result<PathBuf> {
-    let dirs =
-        ProjectDirs::from("dev", "iptv-player", "IPTV Player").context("no home directory")?;
+    let dirs = ProjectDirs::from("dev", "parabole", "Parabole").context("no home directory")?;
     std::fs::create_dir_all(dirs.data_dir()).context("create data dir")?;
     Ok(dirs.data_dir().join("iptv.db"))
 }
@@ -38,7 +37,7 @@ pub fn run() -> eframe::Result {
         ..Default::default()
     };
     eframe::run_native(
-        "IPTV Player",
+        "Parabole",
         options,
         Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);

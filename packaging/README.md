@@ -7,7 +7,7 @@ Fonts, icons and the mpv Lua script are `include_bytes!`/`include_str!`'d into t
 
 ```sh
 brew install mpv dylibbundler
-packaging/macos.sh          # dist/IPTV Player.app + dist/IPTV-Player-<ver>-macos-<arch>.dmg
+packaging/macos.sh          # dist/Parabole.app + dist/Parabole-<ver>-macos-<arch>.dmg
 packaging/verify-macos.sh   # no /opt/homebrew or /usr/local links left, signature valid
 packaging/smoke-macos.sh    # launches the app with a scratch HOME for 6s
 ```
@@ -19,7 +19,7 @@ packaging/smoke-macos.sh    # launches the app with a scratch HOME for 6s
 Needs Rust (MSVC), a Visual Studio developer shell (for `lib.exe`), and `7z`.
 
 ```powershell
-./packaging/windows.ps1     # dist\IPTV-Player-<ver>-windows-x64.zip (exe + libmpv-2.dll)
+./packaging/windows.ps1     # dist\Parabole-<ver>-windows-x64.zip (exe + libmpv-2.dll)
 ```
 
 `packaging/windows-mpv.ps1` downloads the latest shinchiro `mpv-dev-x86_64` build and generates `mpv.lib` from its `.def`. No MSI (skipped: zip is enough for now).
@@ -28,7 +28,7 @@ Needs Rust (MSVC), a Visual Studio developer shell (for `lib.exe`), and `7z`.
 
 ```sh
 sudo apt-get install libmpv-dev   # plus the eframe dev packages listed in .github/workflows/ci.yml
-packaging/linux.sh          # dist/IPTV-Player-<ver>-x86_64.AppImage
+packaging/linux.sh          # dist/Parabole-<ver>-x86_64.AppImage
 ```
 
 GL/EGL/Vulkan drivers are intentionally not bundled; they come from the host.
@@ -36,7 +36,7 @@ GL/EGL/Vulkan drivers are intentionally not bundled; they come from the host.
 ## Flatpak
 
 ```sh
-flatpak-builder --user --install --force-clean build-dir packaging/flatpak/dev.iptvplayer.app.yml
+flatpak-builder --user --install --force-clean build-dir packaging/flatpak/dev.parabole.app.yml
 ```
 
 Builds mpv (libass + ffmpeg) from source against `org.freedesktop.Platform//24.08`. Not built in CI. Uses network during the cargo build, so it is not Flathub-ready as is.

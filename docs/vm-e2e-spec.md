@@ -6,9 +6,9 @@ Goal: run the real Slint app with embedded mpv video and real input inside the U
 - UTM VM "Xubuntu" (aarch64, Ubuntu 26.10, 4 vCPU, 3.4 GB RAM + 2 GB swap, 17 GB free).
 - `ssh xubuntu@<ip>`: key auth works. The IP comes from the `/var/db/dhcpd_leases` entry `name=xubuntu-vm` (currently 192.168.64.2).
 - No sudo: everything below runs as `xubuntu`. Do not try to sudo. If a package is missing, stop and report its name.
-- The Linux build works: `cargo build --features slint-ui --bin iptv-player-slint -j3`, about 20 min cold, with an incremental target already in the guest. Build only that bin: linking two debug bins at once ran out of RAM.
+- The Linux build works: `cargo build --features slint-ui --bin parabole -j3`, about 20 min cold, with an incremental target already in the guest. Build only that bin: linking two debug bins at once ran out of RAM.
 - Installed: rustup stable (`. ~/.cargo/env`), libmpv-dev, mpv, ffmpeg, xvfb, xdotool, imagemagick, x11-utils, mesa (llvmpipe), python3, rsync, DejaVu fonts.
-- The repo is copied (not cloned) to `~/iptv-player-slint` with rsync, excluding `target`, `.git` and `.tokenade`.
+- The repo is copied (not cloned) to `~/parabole` with rsync, excluding `target`, `.git` and `.tokenade`.
 - Host control: `/Applications/UTM.app/Contents/MacOS/utmctl {start --hide|stop|status} Xubuntu`. `utmctl ip-address` does not work (no guest agent); use the lease file.
 
 ## Files
@@ -16,7 +16,7 @@ Goal: run the real Slint app with embedded mpv video and real input inside the U
    - Subcommands: `up | sync | build | test | fetch | all | down`.
    - `up`: start the VM hidden if it's stopped, then wait (max 120 s) for SSH on the leased IP.
    - `sync`: rsync with the excludes above.
-   - `build`: `cargo build --features slint-ui --bin iptv-player-slint -j3`.
+   - `build`: `cargo build --features slint-ui --bin parabole -j3`.
    - `test`: runs `scripts/vm/guest-e2e.sh` over SSH.
    - `fetch`: rsyncs `~/e2e-out/` back to host `/tmp/vm-e2e/`.
    - `all` = up, sync, build, test, fetch. Exit code = the test result.
@@ -38,7 +38,7 @@ Goal: run the real Slint app with embedded mpv video and real input inside the U
      - an M3U **file** source at `$HOME/e2e.m3u` with category "E2E Live" (ch1–ch3, `tvg-chno` 1–3) and category "E2E Movies" (one movie → ch1.mp4);
      - add the source through the app's normal startup path if the DB API is reachable, else via a tiny `--features slint-ui` example binary or `sqlite3`. Choose the simplest; `src/db` may be used from a Rust example under `examples/` only if needed;
      - Settings: embedded player on (check how `PlayerSettings` picks embedded vs external, and seed it).
-   - **App:** run `target/debug/iptv-player-slint` in the background, logging to `~/e2e-out/app.log`. Find its window with `xdotool search --sync --pid`.
+   - **App:** run `target/debug/parabole` in the background, logging to `~/e2e-out/app.log`. Find its window with `xdotool search --sync --pid`.
    - **Helpers** (bash functions):
      - `shot NAME`: `import -window root ~/e2e-out/NAME.png`;
      - `region_mean X Y W H`: prints mean R G B (0–255) with `convert … -crop … -resize 1x1 txt:-`;

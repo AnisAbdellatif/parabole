@@ -1,8 +1,8 @@
 [package]
-name = "iptv-player"
+name = "parabole"
 version = "0.1.0"
 edition = "2024"
-default-run = "iptv-player"
+default-run = "parabole"
 
 [dependencies]
 anyhow = "1.0.104"
@@ -32,7 +32,7 @@ slint-ui = ["embedded-mpv", "dep:slint", "dep:slint-build", "dep:arboard"]
 slint-build = { version = "1.18", optional = true }
 
 [[bin]]
-name = "iptv-player"
+name = "parabole"
 path = "src/main.rs"
 required-features = ["slint-ui"]
 

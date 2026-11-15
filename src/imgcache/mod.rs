@@ -140,7 +140,7 @@ pub use fetch::client as http_client;
 
 /// Cache dir shared by every UI toolkit.
 pub fn default_dir() -> Option<PathBuf> {
-    ProjectDirs::from("dev", "iptv-player", "IPTV Player").map(|d| d.cache_dir().join("images"))
+    ProjectDirs::from("dev", "parabole", "Parabole").map(|d| d.cache_dir().join("images"))
 }
 
 /// Cached bytes for `url`, downloading and storing them on a miss. Blocking; call off the UI thread.

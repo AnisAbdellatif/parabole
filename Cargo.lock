@@ -2912,31 +2912,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "791930b43c0d5973160d90a8f3894509f2b273430f5c5c73b668636d0287c5c0"
 
 [[package]]
-name = "iptv-player"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "arboard",
- "directories",
- "eframe",
- "egui",
- "egui_dnd",
- "egui_extras",
- "i-slint-backend-testing",
- "image",
- "libmpv2",
- "reqwest",
- "rfd",
- "rusqlite",
- "serde",
- "serde_json",
- "shlex 2.0.1",
- "slint",
- "slint-build",
- "url",
-]
-
-[[package]]
 name = "itertools"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3927,6 +3902,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "36820e9051aca1014ddc75770aab4d68bc1e9e632f0f5627c4086bc216fb583b"
 dependencies = [
  "ttf-parser",
+]
+
+[[package]]
+name = "parabole"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "arboard",
+ "directories",
+ "eframe",
+ "egui",
+ "egui_dnd",
+ "egui_extras",
+ "i-slint-backend-testing",
+ "image",
+ "libmpv2",
+ "reqwest",
+ "rfd",
+ "rusqlite",
+ "serde",
+ "serde_json",
+ "shlex 2.0.1",
+ "slint",
+ "slint-build",
+ "url",
 ]
 
 [[package]]

@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 $dir = Join-Path (Get-Location) 'mpv-dev'
 New-Item -ItemType Directory -Force $dir | Out-Null
 
-$headers = @{ 'User-Agent' = 'iptv-player-ci' }
+$headers = @{ 'User-Agent' = 'parabole-ci' }
 if ($env:GITHUB_TOKEN) { $headers['Authorization'] = "Bearer $env:GITHUB_TOKEN" }
 $rel = Invoke-RestMethod -Headers $headers 'https://api.github.com/repos/shinchiro/mpv-winbuild-cmake/releases/latest'
 $asset = $rel.assets | Where-Object { $_.name -match '^mpv-dev-x86_64-\d{8}' } | Select-Object -First 1
