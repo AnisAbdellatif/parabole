@@ -27,7 +27,8 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: persisted state is saved only on window close.
 - Dialogs: account panel is one coloured text line (not separate labelled fields); dropdowns use the std-widgets `ComboBox` (platform style, not `dialog-kit` styled); dialog card max body height is fixed at 600px (a binding to window height formed a layout loop).
 - Dialogs: saving settings does not call the embedded player's `apply_mpv_args` (player area owns that); group dialog is only reachable via `DialogApi.open-dialog("group")` with the context properties set by browse.
-- Dialogs: clicks and typing are covered headless (see "Headless UI tests"); the sources, settings and profiles forms are only snapshotted, not driven.
+- Dialogs: the sources dialog scrolls (`max-body` 560) so its Add/Test buttons are below the fold on a 800px window; the appearance dialog is now driven headless, sources/settings/profiles forms are only snapshotted. Clicks and typing are covered headless (see "Headless UI tests"); the sources, settings and profiles forms are only snapshotted, not driven.
+- Zap carousel: on a short docked pane (band under ~140px) only the current card shows and it is clipped to the band; `AccentSlider` has arrow-key support (as std Slider did) but `AccentSwitch` toggles on Space/Enter only when focused (click does not focus it).
 - Player: mini mode is not always-on-top (needs the `unstable-winit-*` slint feature); the window just shrinks to 480x270 and restores.
 - Player: dock side and splitter size are not persisted; status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
 - Player: `slint-ui` needs the default `embedded-mpv` feature (no `--no-default-features --features slint-ui` build). Fullscreen was not screenshotted (macOS Space changes the window id); mini/docked right/bottom/stats were.
