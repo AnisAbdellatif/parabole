@@ -5,6 +5,7 @@ mod callbacks;
 mod data;
 mod dialogs;
 mod events;
+mod fonts;
 mod images;
 mod player;
 mod push;
@@ -26,6 +27,7 @@ use stream_model::StreamModel;
 slint::include_modules!();
 
 pub fn run() -> Result<()> {
+    fonts::install_fallback();
     let path = db_path()?;
     install_mpv_script(&path);
     let db = Db::open(&path).context("open database")?;
