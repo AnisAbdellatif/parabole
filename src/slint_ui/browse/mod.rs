@@ -5,6 +5,7 @@ mod empty;
 mod filters;
 mod grid;
 mod groups;
+mod hero;
 mod menu;
 mod rows;
 mod series;
@@ -39,6 +40,7 @@ pub struct BrowseArea {
     pub series_timer: slint::Timer,
     pub episodes: Rc<VecModel<EpisodeItem>>,
     pub info: details::InfoStore,
+    pub hero: hero::HeroState,
     pub grid: Rc<GridModel>,
     pub cta: Cell<Option<empty::Cta>>,
     pub group_ctx: Option<groups::GroupCtx>,
@@ -59,7 +61,15 @@ pub fn connect(win: &AppWindow) {
         a.streams.set_image_hook(Rc::new(|url| {
             let url = url.to_owned();
             slint::Timer::single_shot(std::time::Duration::ZERO, move || {
-                with_app(|a| details::poster_ready(a, &url));
+                with_app(|a| {
+                    details::poster_ready(a, &url);
+                    hero::push(a);
+                });
+            });
+        }));
+        a.streams.set_reset_hook(Rc::new(|| {
+            slint::Timer::single_shot(std::time::Duration::ZERO, || {
+                with_app(hero::rows_reset);
             });
         }));
     });
@@ -70,6 +80,7 @@ pub fn connect(win: &AppWindow) {
         with_app(|a| rows::run(a, i as usize, RowAction::ToggleHidden));
     });
     details::connect(win);
+    hero::connect(win);
     series::connect(win);
     empty::connect(win);
     edit::connect(win);

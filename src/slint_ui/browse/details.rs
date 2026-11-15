@@ -24,6 +24,10 @@ pub struct InfoStore {
     pub open: Option<Open>,
 }
 
+pub fn cached<'a>(a: &'a SlintApp, key: &Key) -> Option<&'a MediaInfo> {
+    a.browse.info.cache.get(key)
+}
+
 /// Sends `LoadInfo` once per key; only Xtream sources have details.
 pub fn request(a: &mut SlintApp, key: &Key) {
     let xtream = a
@@ -79,6 +83,7 @@ pub fn loaded(
     }
     push(a);
     super::series::push(a);
+    super::hero::push(a);
 }
 
 /// A poster finished loading: redraw whichever info views show it.

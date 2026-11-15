@@ -19,6 +19,7 @@ pub struct StreamModel {
     source_names: RefCell<HashMap<SourceId, String>>,
     grid: RefCell<Weak<GridModel>>,
     on_image: RefCell<Option<ImageHook>>,
+    on_reset: RefCell<Option<Rc<dyn Fn()>>>,
     playing: Cell<Option<i64>>,
 }
 
@@ -40,6 +41,7 @@ impl StreamModel {
             source_names: Default::default(),
             grid: Default::default(),
             on_image: Default::default(),
+            on_reset: Default::default(),
             playing: Cell::new(None),
         }
     }
@@ -57,6 +59,15 @@ impl StreamModel {
         if let Some(g) = self.grid.borrow().upgrade() {
             g.reset();
         }
+        let hook = self.on_reset.borrow().clone();
+        if let Some(hook) = hook {
+            hook();
+        }
+    }
+
+    /// Called after every `set_rows`, inside the app borrow: defer before touching app state.
+    pub fn set_reset_hook(&self, hook: Rc<dyn Fn()>) {
+        *self.on_reset.borrow_mut() = Some(hook);
     }
 
     /// Marks the row with this stream id as playing and refreshes the old and new rows.

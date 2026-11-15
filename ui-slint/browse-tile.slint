@@ -15,11 +15,24 @@ export component Tile inherits Rectangle {
     callback hide-clicked();
     callback right-clicked(length, length);
 
+    property <bool> hovered: area.has-hover;
+    property <bool> focused: root.cursor || root.hovered;
+    changed hovered => {
+        if (root.hovered) { BrowseApi.hover-index = root.item.index; }
+        else if (BrowseApi.hover-index == root.item.index) { BrowseApi.hover-index = -1; }
+    }
+
     border-radius: Theme.radius-card;
-    border-width: 1px;
+    border-width: root.focused ? 2px : 1px;
     background: Theme.card;
     clip: true;
-    border-color: root.playing ? Theme.accent : (root.cursor || area.has-hover) ? Theme.card-border-hover : Theme.card-border;
+    border-color: root.focused ? Theme.accent : root.playing ? Theme.accent : Theme.card-border;
+    transform-scale: (root.focused && !Theme.reduce-motion) ? 1.06 : 1.0;
+    drop-shadow-blur: root.focused ? 18px : 0px;
+    drop-shadow-offset-y: 6px;
+    drop-shadow-color: #000000b0;
+    animate transform-scale { duration: Theme.motion; easing: ease-out; }
+    animate drop-shadow-blur { duration: Theme.motion; }
     opacity: (root.item.missing || root.item.hidden) ? 0.5 : 1;
 
     area := TouchArea {

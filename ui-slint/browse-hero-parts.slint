@@ -1,0 +1,42 @@
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+
+// Pill button of the hero banner.
+export component HeroBtn inherits Rectangle {
+    in property <bool> primary: false;
+    in property <image> icon;
+    in property <color> icon-tint: root.primary ? Theme.on-accent : Theme.text;
+    in property <string> label;
+    callback clicked();
+    height: 34px;
+    width: txt.preferred-width + (root.icon.width > 0 ? 54px : 32px);
+    border-radius: 17px;
+    border-width: root.primary ? 0px : 1px;
+    border-color: #ffffff30;
+    background: root.primary ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent) : (ta.has-hover ? #ffffff30 : #ffffff1c);
+    animate background { duration: Theme.motion; }
+    ta := TouchArea { clicked => { root.clicked(); } }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 8px;
+        alignment: center;
+        if root.icon.width > 0: Icon { source: root.icon; tint: root.icon-tint; size: 14px; y: (parent.height - self.height) / 2; }
+        txt := Text {
+            text: root.label;
+            color: root.primary ? Theme.on-accent : Theme.text;
+            font-size: Theme.fs-md;
+            font-weight: Theme.semibold;
+            vertical-alignment: center;
+        }
+    }
+}
+
+export component LiveChip inherits Rectangle {
+    in property <string> text: "LIVE";
+    width: t.preferred-width + 16px;
+    height: 20px;
+    border-radius: 10px;
+    background: Theme.live-bg;
+    t := Text { text: root.text; color: Theme.live-fg; font-size: Theme.fs-xs; font-weight: Theme.semibold; horizontal-alignment: center; vertical-alignment: center; }
+}
