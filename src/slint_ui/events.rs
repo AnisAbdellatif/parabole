@@ -33,7 +33,6 @@ pub fn drain() {
                 Event::Playing { title, kind, .. } => set_playing(a, &title, kind_name(kind)),
                 Event::PlayerStopped => set_playing(a, "", ""),
                 Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
-                Event::UrlReady(_) => {} // Gap: no clipboard crate in deps
                 Event::PlayEmbedded(play) => {
                     a.toast("Embedded player not yet in Slint UI; using mpv");
                     a.worker.send(Command::LaunchRequest {
@@ -43,7 +42,8 @@ pub fn drain() {
                         stream_id: play.stream_id,
                     });
                 }
-                Event::InfoLoaded { .. }
+                Event::UrlReady(_)
+                | Event::InfoLoaded { .. }
                 | Event::SeriesLoaded { .. }
                 | Event::TestResult(_)
                 | Event::AccountChecked(..) => {}

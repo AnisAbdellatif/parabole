@@ -1,5 +1,26 @@
 // Browse area state and callbacks (poster grid, series, details, menus, edit mode). Owned by the browse area.
+import { ChipItem, MenuEntry } from "types.slint";
+
 export global BrowseApi {
     // Tried after DialogApi and PlayerApi; return true when handled.
     callback key(KeyEvent) -> bool;
+    // Asks the orchestrator-wired dialog layer to open "sources" or "group".
+    callback request-dialog(string);
+
+    in property <bool> grid-view;
+    in property <bool> sort-visible;
+    in property <string> sort-label;
+    in property <[MenuEntry]> sort-items;
+    in property <[ChipItem]> chips;
+    in property <[MenuEntry]> row-menu;
+
+    // Context for the group dialog (id -1 = create); the dialog layer calls group-submit(name).
+    in property <int> group-ctx-id: -1;
+    in property <string> group-ctx-name;
+    callback group-submit(string);
+
+    callback sort-picked(string);
+    callback chip-clicked(string);
+    callback row-menu-requested(int);
+    callback row-menu-picked(string);
 }

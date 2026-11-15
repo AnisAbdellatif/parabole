@@ -25,3 +25,17 @@ export struct ToastItem {
     id: int,
     text: string,
 }
+
+// Browse area structs.
+export struct ChipItem {
+    id: string,
+    label: string,
+    on: bool,
+}
+
+// kind: 0 item, 1 header, 2 separator.
+export struct MenuEntry {
+    id: string,
+    label: string,
+    kind: int,
+}

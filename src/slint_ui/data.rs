@@ -1,7 +1,7 @@
-//! DB reloads, mirroring `ui/data.rs` (no edit mode, alternates or search chips).
+//! DB reloads, mirroring `ui/data.rs`.
 use super::ToastItem;
 use super::state::{Sel, SlintApp};
-use crate::model::{MediaKind, SourceId, StreamRow};
+use crate::model::{MediaKind, SourceId};
 use slint::Model;
 use std::time::Instant;
 
@@ -88,10 +88,12 @@ impl SlintApp {
     }
 
     pub fn reload_categories(&mut self) {
-        match self
-            .db
-            .categories(self.profile(), self.state.source, self.state.tab, false)
-        {
+        match self.db.categories(
+            self.profile(),
+            self.state.source,
+            self.state.tab,
+            self.browse.edit,
+        ) {
             Ok(c) => self.categories = c,
             Err(e) => self.toast(format!("{e:#}")),
         }
@@ -122,11 +124,13 @@ impl SlintApp {
 
     pub fn reload_streams(&mut self) {
         let (profile, tab) = (self.profile(), self.state.tab);
+        let sort = super::browse::load_sort(self);
+        self.browse.sort = sort;
         let res = if !self.search_applied.is_empty() {
             self.db.search(
                 profile,
-                self.state.source,
-                Some(tab),
+                self.browse.filter.source(self.state.source),
+                self.browse.filter.media(tab),
                 &self.search_applied,
                 SEARCH_LIMIT,
             )
@@ -138,9 +142,9 @@ impl SlintApp {
                 Some(Sel::Group(id)) => self.db.group_streams(profile, *id, tab),
                 Some(Sel::Category(s, k)) => self
                     .db
-                    .streams_in_category(profile, *s, tab, k, false)
+                    .streams_in_category(profile, *s, tab, k, self.browse.edit)
                     .map(|mut rows| {
-                        self.sort(&mut rows);
+                        sort.apply(&mut rows);
                         rows
                     }),
                 None => Ok(Vec::new()),
@@ -152,24 +156,6 @@ impl SlintApp {
         });
         self.push_streams(rows);
         self.push_status();
-    }
-
-    /// Per-category sort saved by the egui UI ("provider" | "number" | "name").
-    fn sort(&self, rows: &mut [StreamRow]) {
-        let Some(Sel::Category(s, k)) = &self.state.sel else {
-            return;
-        };
-        let key = format!("sort:{s}:{}:{k}", self.state.tab.as_str());
-        let mode = self
-            .db
-            .get_setting(Some(self.profile()), &key)
-            .ok()
-            .flatten();
-        match mode.as_deref() {
-            Some("number") => rows.sort_by_key(|r| (r.num.is_none(), r.num)),
-            Some("name") => rows.sort_by_cached_key(|r| r.name.to_lowercase()),
-            _ => {}
-        }
     }
 
     pub fn source_name(&self, id: SourceId) -> &str {

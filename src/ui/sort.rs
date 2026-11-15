@@ -11,9 +11,9 @@ pub enum SortMode {
 }
 
 impl SortMode {
-    const ALL: [SortMode; 3] = [SortMode::Provider, SortMode::Number, SortMode::Name];
+    pub(crate) const ALL: [SortMode; 3] = [SortMode::Provider, SortMode::Number, SortMode::Name];
 
-    fn as_str(self) -> &'static str {
+    pub(crate) fn as_str(self) -> &'static str {
         match self {
             SortMode::Provider => "provider",
             SortMode::Number => "number",
@@ -21,7 +21,7 @@ impl SortMode {
         }
     }
 
-    fn label(self) -> &'static str {
+    pub(crate) fn label(self) -> &'static str {
         match self {
             SortMode::Provider => "Provider order",
             SortMode::Number => "Number",
@@ -29,7 +29,7 @@ impl SortMode {
         }
     }
 
-    fn parse(s: &str) -> Self {
+    pub(crate) fn parse(s: &str) -> Self {
         Self::ALL
             .into_iter()
             .find(|m| m.as_str() == s)

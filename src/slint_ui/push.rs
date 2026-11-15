@@ -132,6 +132,7 @@ impl SlintApp {
         };
         core.set_empty_text(empty.into());
         core.set_cursor(core.get_cursor().min(n.saturating_sub(1) as i32));
+        self.push_browse_header();
     }
 
     pub fn push_status(&self) {

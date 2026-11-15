@@ -12,6 +12,7 @@ export component StreamRow inherits Rectangle {
     callback clicked();
     callback double-clicked();
     callback favorite-clicked();
+    callback right-clicked(length, length);
 
     height: Theme.channel-row-h;
     border-radius: Theme.radius-l;
@@ -23,6 +24,11 @@ export component StreamRow inherits Rectangle {
     row-area := TouchArea {
         clicked => { root.clicked(); }
         double-clicked => { root.double-clicked(); }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                root.right-clicked(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
     }
 
     LogoTile {
