@@ -1,0 +1,36 @@
+// Hover label for icon-only controls. Instantiate inside the control, sized by `anchor-w/h`.
+import { Theme } from "theme.slint";
+
+export enum TipAlign { center, start, end }
+
+export component Tip inherits Rectangle {
+    in property <string> text;
+    in property <bool> show;
+    in property <bool> below: false;
+    in property <TipAlign> align: TipAlign.center;
+    in property <length> anchor-w;
+    in property <length> anchor-h;
+    private property <bool> on: false;
+    x: root.align == TipAlign.start ? 0px : root.align == TipAlign.end ? root.anchor-w - self.width : (root.anchor-w - self.width) / 2;
+    y: root.below ? root.anchor-h + 6px : -self.height - 6px;
+    width: label.preferred-width + 16px;
+    height: label.preferred-height + 8px;
+    visible: root.text != "" && self.opacity > 0.01;
+    opacity: root.on ? 1 : 0;
+    animate opacity { duration: root.on ? Theme.motion : 0ms; }
+    background: Theme.toast-bg;
+    border-width: 1px;
+    border-color: Theme.toast-border;
+    border-radius: Theme.radius;
+    changed show => { if (!root.show) { root.on = false; } }
+    Timer {
+        interval: 400ms;
+        running: root.show && !root.on;
+        triggered => { root.on = true; }
+    }
+    label := Text {
+        text: root.text;
+        color: Theme.text;
+        font-size: Theme.fs-sm;
+    }
+}

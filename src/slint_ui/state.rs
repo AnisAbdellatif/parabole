@@ -50,7 +50,7 @@ impl Sel {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Persisted {
     pub profile: Option<ProfileId>,
@@ -58,6 +58,24 @@ pub struct Persisted {
     pub source: Option<SourceId>,
     pub sel: Option<Sel>,
     pub appearance: Appearance,
+    pub player_dock_bottom: bool,
+    pub player_pane_w: f32,
+    pub player_pane_h: f32,
+}
+
+impl Default for Persisted {
+    fn default() -> Self {
+        Self {
+            profile: None,
+            tab: MediaKind::default(),
+            source: None,
+            sel: None,
+            appearance: Appearance::default(),
+            player_dock_bottom: false,
+            player_pane_w: 420.0,
+            player_pane_h: 300.0,
+        }
+    }
 }
 
 impl Persisted {
@@ -136,5 +154,12 @@ mod tests {
         std::fs::write(&p, b"{not json").unwrap();
         assert!(Persisted::load(&p).sel.is_none());
         std::fs::remove_file(&p).unwrap();
+    }
+
+    #[test]
+    fn old_state_file_gets_pane_defaults() {
+        let s: Persisted = serde_json::from_str(r#"{"tab":"Live"}"#).unwrap();
+        assert_eq!((s.player_pane_w, s.player_pane_h), (420.0, 300.0));
+        assert!(!s.player_dock_bottom);
     }
 }

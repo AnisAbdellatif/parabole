@@ -78,6 +78,7 @@ export component VideoSurface inherits Rectangle {
     }
     ctl := PlayerControls {
         docked: root.docked;
+        shown: root.chrome-on;
         x: 0px;
         y: parent.height - self.height;
         width: parent.width;

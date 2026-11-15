@@ -2,11 +2,15 @@
 import { Theme } from "theme.slint";
 import { Icon } from "icon.slint";
 import { TrackItem } from "types.slint";
+import { Tip, TipAlign } from "tip.slint";
+
+export { TipAlign }
 
 export component IconBtn inherits Rectangle {
     in property <image> icon;
     in property <bool> on: false;
     in property <string> tip;
+    in property <TipAlign> tip-align: TipAlign.center;
     out property <bool> hovered: ta.has-hover;
     callback clicked();
     width: 32px;
@@ -23,6 +27,13 @@ export component IconBtn inherits Rectangle {
     ta := TouchArea {
         mouse-cursor: pointer;
         clicked => { root.clicked(); }
+    }
+    Tip {
+        text: root.tip;
+        show: ta.has-hover;
+        align: root.tip-align;
+        anchor-w: root.width;
+        anchor-h: root.height;
     }
 }
 

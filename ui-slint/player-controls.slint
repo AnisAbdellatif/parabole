@@ -2,19 +2,49 @@
 import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { PlayerApi } from "player-api.slint";
-import { IconBtn, Bar, Pill, TrackMenu } from "player-widgets.slint";
+import { IconBtn, Bar, Pill, TrackMenu, TipAlign } from "player-widgets.slint";
 import { SeekBar, Clock } from "player-seek.slint";
+import { HelpBtn } from "player-help.slint";
 
 export component PlayerControls inherits Rectangle {
     in property <bool> docked: false;
+    // Chrome is showing (not auto-hidden).
+    in property <bool> shown: true;
     out property <bool> hovered: bg.has-hover;
     private property <bool> seekable: !PlayerApi.is-live && PlayerApi.duration > 0;
+    private property <string> info-text: root.seekable
+        ? PlayerApi.pos-text + " / −" + Clock.fmt(PlayerApi.duration - PlayerApi.position)
+        : PlayerApi.is-live ? (PlayerApi.behind >= 1 ? "−" + Clock.fmt(PlayerApi.behind) + " behind live" : "Live") : "";
+    // Narrow rows drop items by priority instead of overlapping: each `uN` is the width used so far.
+    private property <length> slot: 34px;
+    private property <length> avail: root.width - 24px;
+    private property <length> u0: (root.docked ? 3 : 2) * root.slot - 2px + 4px;
+    private property <bool> mute-on: root.u0 + root.slot <= root.avail;
+    private property <length> u1: root.u0 + (root.mute-on ? root.slot : 0px);
+    private property <bool> pill-on: PlayerApi.is-live && PlayerApi.behind >= 3 && root.u1 + 76px <= root.avail;
+    private property <length> u2: root.u1 + (root.pill-on ? 76px : 0px);
+    private property <bool> subs-on: PlayerApi.sub-tracks.length > 0 && root.u2 + root.slot <= root.avail;
+    private property <length> u3: root.u2 + (root.subs-on ? root.slot : 0px);
+    private property <bool> audio-on: PlayerApi.audio-tracks.length > 0 && root.u3 + root.slot <= root.avail;
+    private property <length> u4: root.u3 + (root.audio-on ? root.slot : 0px);
+    private property <bool> vol-on: root.width >= 360px && root.u4 + 82px <= root.avail;
+    private property <length> u5: root.u4 + (root.vol-on ? 82px : 0px);
+    private property <bool> help-on: root.u5 + root.slot <= root.avail;
+    private property <length> u6: root.u5 + (root.help-on ? root.slot : 0px);
+    private property <bool> stop-on: root.u6 + root.slot <= root.avail;
+    private property <length> u7: root.u6 + (root.stop-on ? root.slot : 0px);
+    private property <bool> info-on: root.u7 + root.slot <= root.avail;
+    private property <length> u8: root.u7 + (root.info-on ? root.slot : 0px);
+    private property <bool> mini-on: root.u8 + root.slot <= root.avail;
+    private property <length> u9: root.u8 + (root.mini-on ? root.slot : 0px);
+    private property <bool> text-on: root.info-text != "" && root.u9 + measure.preferred-width + 8px <= root.avail;
     height: (root.seekable ? 20px : 0px) + 44px + 28px;
     background: @linear-gradient(180deg, #00000000 0%, #000000c0 100%);
     bg := TouchArea { }
+    measure := Text { visible: false; text: root.info-text; font-size: Theme.fs-sm; }
     VerticalLayout {
-        padding-left: 16px;
-        padding-right: 16px;
+        padding-left: 12px;
+        padding-right: 12px;
         padding-bottom: 6px;
         alignment: end;
         if root.seekable: SeekBar {
@@ -23,39 +53,45 @@ export component PlayerControls inherits Rectangle {
             changed(f) => { PlayerApi.seek(f); }
         }
         HorizontalLayout {
-            spacing: 4px;
+            spacing: 2px;
             alignment: start;
             cross-axis-alignment: center;
             height: 40px;
             pause-btn := IconBtn {
                 icon: PlayerApi.paused ? Icons.play : Icons.pause;
+                tip: PlayerApi.paused ? "Play (Space)" : "Pause (Space)";
+                tip-align: TipAlign.start;
                 clicked => { PlayerApi.toggle-pause(); }
             }
-            stop-btn := IconBtn { icon: Icons.stop; clicked => { PlayerApi.stop(); } }
-            mute-btn := IconBtn {
+            if root.stop-on: stop-btn := IconBtn {
+                icon: Icons.stop;
+                tip: "Stop";
+                tip-align: TipAlign.start;
+                clicked => { PlayerApi.stop(); }
+            }
+            if root.mute-on: mute-btn := IconBtn {
                 icon: PlayerApi.muted ? Icons.volume-off : Icons.volume;
+                tip: PlayerApi.muted ? "Unmute (M)" : "Mute (M)";
+                tip-align: TipAlign.start;
                 clicked => { PlayerApi.toggle-mute(); }
             }
-            if !root.docked: Bar {
+            if root.vol-on: Bar {
                 width: 80px;
                 frac: PlayerApi.volume / 130;
                 changed(f) => { PlayerApi.set-volume(f); }
             }
-            if root.seekable: Text {
-                text: PlayerApi.pos-text + " / −" + Clock.fmt(PlayerApi.duration - PlayerApi.position);
-                color: #cbd5e1;
-                font-size: Theme.fs-sm;
-                vertical-alignment: center;
+            if root.text-on: HorizontalLayout {
+                padding-left: 6px;
+                Text {
+                    text: root.info-text;
+                    color: #cbd5e1;
+                    font-size: Theme.fs-sm;
+                    vertical-alignment: center;
+                }
             }
-            if PlayerApi.is-live: Text {
-                text: PlayerApi.behind >= 1 ? "−" + Clock.fmt(PlayerApi.behind) + " behind live" : "Live";
-                color: #cbd5e1;
-                font-size: Theme.fs-sm;
-                vertical-alignment: center;
-            }
-            if PlayerApi.is-live && PlayerApi.behind >= 3: Rectangle {
+            if root.pill-on: Rectangle {
                 cross-axis-self-alignment: stretch;
-                width: 68px;
+                width: 74px;
                 Pill {
                     text: "Go live";
                     primary: true;
@@ -66,25 +102,45 @@ export component PlayerControls inherits Rectangle {
                 }
             }
             Rectangle { horizontal-stretch: 1; }
-            TrackMenu {
+            if root.subs-on: TrackMenu {
                 icon: Icons.subtitles;
+                tip: "Subtitles";
+                tip-align: TipAlign.end;
                 tracks: PlayerApi.sub-tracks;
                 off-marks-on: true;
                 picked(id) => { PlayerApi.select-sub(id); }
             }
-            TrackMenu {
+            if root.audio-on: TrackMenu {
                 icon: Icons.audio;
+                tip: "Audio track";
+                tip-align: TipAlign.end;
                 tracks: PlayerApi.audio-tracks;
                 picked(id) => { PlayerApi.select-audio(id); }
             }
-            info-btn := IconBtn { icon: Icons.info; on: PlayerApi.show-stats; clicked => { PlayerApi.toggle-stats(); } }
-            mini-btn := IconBtn { icon: Icons.mini; clicked => { PlayerApi.toggle-mini(); } }
+            if root.info-on: info-btn := IconBtn {
+                icon: Icons.info;
+                tip: "Stats (I)";
+                tip-align: TipAlign.end;
+                on: PlayerApi.show-stats;
+                clicked => { PlayerApi.toggle-stats(); }
+            }
+            if root.mini-on: mini-btn := IconBtn {
+                icon: Icons.mini;
+                tip: "Mini player (P)";
+                tip-align: TipAlign.end;
+                clicked => { PlayerApi.toggle-mini(); }
+            }
+            if root.help-on: HelpBtn { shown: root.shown; }
             fullscreen-btn := IconBtn {
                 icon: PlayerApi.fullscreen ? Icons.fullscreen-exit : Icons.fullscreen;
+                tip: PlayerApi.fullscreen ? "Exit fullscreen (F)" : "Fullscreen (F)";
+                tip-align: TipAlign.end;
                 clicked => { PlayerApi.toggle-fullscreen(); }
             }
             if root.docked: IconBtn {
                 icon: PlayerApi.dock-bottom ? Icons.dock-right : Icons.dock-bottom;
+                tip: PlayerApi.dock-bottom ? "Dock right" : "Dock bottom";
+                tip-align: TipAlign.end;
                 clicked => { PlayerApi.toggle-dock(); }
             }
         }

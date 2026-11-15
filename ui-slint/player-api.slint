@@ -1,6 +1,8 @@
 // Player area state and callbacks. Owned by the player area. Rust: win.global::<PlayerApi>().
 import { TrackItem, StreamItem } from "types.slint";
 
+export struct KeyHint { keys: string, action: string }
+
 export global PlayerApi {
     // Tried first for every key the window gets; return true when handled.
     callback key(KeyEvent) -> bool;
@@ -57,6 +59,12 @@ export global PlayerApi {
     // Auto-next card: empty label = hidden.
     in property <string> next-label;
     in property <int> next-secs: 0;
+    // Docked pane channel list (live only): a window of rows around the playing one.
+    in property <[StreamItem]> pane-items;
+    // Index of the playing row in `pane-items`; -1 = none.
+    in property <int> pane-current: -1;
+    // Shortcut help card rows.
+    in property <[KeyHint]> help-keys;
 
     callback toggle-pause();
     callback seek(float);
@@ -74,4 +82,6 @@ export global PlayerApi {
     callback pip-drag();
     callback next-cancel();
     callback next-now();
+    // Index into `pane-items`.
+    callback pane-play(int);
 }

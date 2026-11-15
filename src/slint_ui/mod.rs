@@ -68,6 +68,10 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     core.set_toasts(ModelRc::from(toasts.clone()));
     core.set_tab(state.tab as i32);
     state.appearance.apply(&win);
+    let api = win.global::<PlayerApi>();
+    api.set_dock_bottom(state.player_dock_bottom);
+    api.set_pane_w(state.player_pane_w);
+    api.set_pane_h(state.player_pane_h);
     let profile = state.profile.unwrap_or_default();
     APP.with(|a| {
         *a.borrow_mut() = Some(SlintApp {
@@ -110,6 +114,12 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     });
     win.window().on_close_requested(|| {
         with_app(|a| {
+            if let Some(w) = a.win.upgrade() {
+                let api = w.global::<PlayerApi>();
+                a.state.player_dock_bottom = api.get_dock_bottom();
+                a.state.player_pane_w = api.get_pane_w();
+                a.state.player_pane_h = api.get_pane_h();
+            }
             let _ = a.state.save(&a.state_path);
             a.worker.send(Command::Quit);
         });
