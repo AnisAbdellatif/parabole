@@ -1,0 +1,5 @@
+// Browse area state and callbacks (poster grid, series, details, menus, edit mode). Owned by the browse area.
+export global BrowseApi {
+    // Tried after DialogApi and PlayerApi; return true when handled.
+    callback key(KeyEvent) -> bool;
+}

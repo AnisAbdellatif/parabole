@@ -1,0 +1,5 @@
+// Dialog area state and callbacks (sources, settings, profiles, groups). Owned by the dialogs area.
+export global DialogApi {
+    // Tried first of all (an open dialog owns the keyboard); return true when handled.
+    callback key(KeyEvent) -> bool;
+}

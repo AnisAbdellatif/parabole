@@ -8,6 +8,15 @@ use slint::ComponentHandle;
 pub fn drain() {
     with_app(|a| {
         while let Ok(ev) = a.worker.rx.try_recv() {
+            let Some(ev) = super::dialogs::on_event(a, ev) else {
+                continue;
+            };
+            let Some(ev) = super::player::on_event(a, ev) else {
+                continue;
+            };
+            let Some(ev) = super::browse::on_event(a, ev) else {
+                continue;
+            };
             match ev {
                 Event::SourceChanged => a.reload_sources(),
                 Event::RefreshStarted(id) => {

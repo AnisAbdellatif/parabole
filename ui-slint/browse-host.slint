@@ -1,0 +1,10 @@
+// Center area: list header + stream list today; poster grid, series page and details switch in here.
+// Owned by the browse area.
+import { ListHeader } from "list-header.slint";
+import { StreamList } from "stream-list.slint";
+
+export component BrowseHost inherits VerticalLayout {
+    callback interacted();
+    ListHeader { }
+    StreamList { interacted => { root.interacted(); } }
+}

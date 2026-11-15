@@ -93,6 +93,12 @@ pub struct SlintApp {
     pub toast_timer: slint::Timer,
     pub next_toast: i32,
     pub images: Rc<Images>,
+    #[expect(dead_code, reason = "phase-2 scaffold; delete once the area uses it")]
+    pub player: super::player::PlayerArea,
+    #[expect(dead_code, reason = "phase-2 scaffold; delete once the area uses it")]
+    pub browse: super::browse::BrowseArea,
+    #[expect(dead_code, reason = "phase-2 scaffold; delete once the area uses it")]
+    pub dialogs: super::dialogs::DialogArea,
 }
 
 thread_local! {

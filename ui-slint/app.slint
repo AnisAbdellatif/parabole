@@ -1,16 +1,18 @@
-// Main window. One file per component; extension points are marked EXTENSION.
+// Main window. Area ownership: docs/slint-phase2.md. Keys go Dialog -> Player -> Browse -> Core.
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
 import { TopBar } from "topbar.slint";
 import { Sidebar } from "sidebar.slint";
-import { ListHeader } from "list-header.slint";
-import { StreamList } from "stream-list.slint";
+import { BrowseHost } from "browse-host.slint";
 import { StatusBar } from "status-bar.slint";
 import { Toasts } from "toasts.slint";
-import { PlayerPane } from "slots.slint";
-import { DialogHost } from "slots.slint";
+import { PlayerPane } from "player-pane.slint";
+import { DialogHost } from "dialog-host.slint";
+import { PlayerApi } from "player-api.slint";
+import { BrowseApi } from "browse-api.slint";
+import { DialogApi } from "dialog-api.slint";
 
-export { Core, Theme }
+export { Core, Theme, PlayerApi, BrowseApi, DialogApi }
 export { StreamItem, SidebarItem, ToastItem } from "types.slint";
 
 export component AppWindow inherits Window {
@@ -28,6 +30,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(e) => {
+            if (DialogApi.key(e) || PlayerApi.key(e) || BrowseApi.key(e)) { return accept; }
             if (e.modifiers.meta || e.modifiers.control) {
                 if (e.text == "1") { Core.tab-selected(0); return accept; }
                 if (e.text == "2") { Core.tab-selected(1); return accept; }
@@ -48,21 +51,13 @@ export component AppWindow inherits Window {
             top := TopBar { escaped => { keys.focus(); } }
             HorizontalLayout {
                 Sidebar { }
-                VerticalLayout {
-                    ListHeader { }
-                    StreamList { interacted => { keys.focus(); } }
-                }
-                // EXTENSION (player): docked embedded-player pane. Owned by the player area.
+                BrowseHost { interacted => { keys.focus(); } }
                 PlayerPane { }
             }
             StatusBar { }
         }
     }
 
-    // EXTENSION (browse): alternate center views (poster grid, series page, details) replace
-    // the StreamList/ListHeader pair above; add them as siblings and switch on a BrowseApi global.
-
-    // EXTENSION (dialogs): modal dialogs overlay the whole window.
     DialogHost { }
 
     Toasts {

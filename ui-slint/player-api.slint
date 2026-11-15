@@ -1,0 +1,5 @@
+// Player area state and callbacks. Owned by the player area. Rust: win.global::<PlayerApi>().
+export global PlayerApi {
+    // Tried first for every key the window gets; return true when handled.
+    callback key(KeyEvent) -> bool;
+}

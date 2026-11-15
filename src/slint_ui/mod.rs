@@ -1,8 +1,11 @@
 //! Slint front end. Run with `cargo run --features slint-ui --bin iptv-player-slint`.
+mod browse;
 mod callbacks;
 mod data;
+mod dialogs;
 mod events;
 mod images;
+mod player;
 mod push;
 mod state;
 mod stream_model;
@@ -74,9 +77,15 @@ pub fn run() -> Result<()> {
             toast_timer: Default::default(),
             next_toast: 0,
             images,
+            player: Default::default(),
+            browse: Default::default(),
+            dialogs: Default::default(),
         });
     });
     callbacks::connect(&win);
+    dialogs::connect(&win);
+    player::connect(&win);
+    browse::connect(&win);
     with_app(|a| {
         a.reload_all();
         a.worker.send(Command::AutoRefresh(profile));

@@ -8,19 +8,11 @@ export component Sidebar inherits Rectangle {
     width: Theme.sidebar-w;
     background: Theme.panel;
     Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
-    Text {
-        x: 18px;
-        y: 14px;
-        text: "CATEGORIES";
-        color: Theme.text-muted;
-        font-size: 12px;
-        font-weight: Theme.semibold;
-    }
     ListView {
         x: 10px;
-        y: 44px;
+        y: 8px;
         width: parent.width - 20px - 1px;
-        height: parent.height - 44px;
+        height: parent.height - 8px;
         for item in Core.sidebar: Rectangle {
             height: Theme.sidebar-row-step;
             if item.kind == 0: Text {
