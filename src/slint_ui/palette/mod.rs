@@ -99,6 +99,8 @@ impl SlintApp {
             .map(Entry::Stream)
             .collect();
         let multi = self.sources.len() > 1;
+        let ids: Vec<i64> = self.palette.streams.iter().map(|r| r.id).collect();
+        let cats = self.db.category_names(&ids).unwrap_or_default();
         let mut items: Vec<PaletteItem> = self
             .palette
             .streams
@@ -106,7 +108,8 @@ impl SlintApp {
             .map(|r| {
                 let src = self.sources.iter().find(|s| s.id == r.source_id);
                 let src = src.filter(|_| multi).map(|s| s.name.as_str());
-                item(kind_of(r.media), &r.name, &stream_subtitle(r.media, src))
+                let lead = cats.get(&r.id).map_or(media_label(r.media), String::as_str);
+                item(kind_of(r.media), &r.name, &stream_subtitle(lead, src))
             })
             .collect();
         if !q.is_empty() {
@@ -173,12 +176,11 @@ fn kind_of(m: MediaKind) -> i32 {
     }
 }
 
-// shortcut: kind instead of category name (StreamRow has no category), add a batched category lookup in db/search.rs to show it.
-/// Stream row subtitle: kind, plus " · source" when several sources exist.
-fn stream_subtitle(m: MediaKind, source: Option<&str>) -> String {
+/// Stream row subtitle: category (or kind), plus " · source" when several sources exist.
+fn stream_subtitle(lead: &str, source: Option<&str>) -> String {
     match source {
-        Some(s) => format!("{} · {s}", media_label(m)),
-        None => media_label(m).to_owned(),
+        Some(s) => format!("{lead} · {s}"),
+        None => lead.to_owned(),
     }
 }
 
@@ -196,10 +198,7 @@ mod tests {
 
     #[test]
     fn subtitle_adds_source_only_when_given() {
-        assert_eq!(stream_subtitle(MediaKind::Live, None), "Live");
-        assert_eq!(
-            stream_subtitle(MediaKind::Movie, Some("Home")),
-            "Movie · Home"
-        );
+        assert_eq!(stream_subtitle("Live", None), "Live");
+        assert_eq!(stream_subtitle("Movie", Some("Home")), "Movie · Home");
     }
 }

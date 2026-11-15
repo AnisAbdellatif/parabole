@@ -2,6 +2,7 @@ use super::Db;
 use super::browse::{STREAM_SELECT, stream_row};
 use crate::model::*;
 use anyhow::Result;
+use std::collections::HashMap;
 
 /// Quotes every token so FTS operators in user input (`OR`, `-`, `*`, `"`) are literal.
 pub(super) fn fts_query(input: &str) -> Option<String> {
@@ -56,6 +57,21 @@ impl Db {
             (profile, q, media.as_str(), source, limit as i64),
             stream_row(media),
         )?;
+        Ok(rows.collect::<rusqlite::Result<_>>()?)
+    }
+
+    /// Category name per stream id; streams without a category are absent.
+    pub fn category_names(&self, stream_ids: &[i64]) -> Result<HashMap<i64, String>> {
+        let marks = vec!["?"; stream_ids.len()].join(",");
+        let mut stmt = self.conn.prepare(&format!(
+            "SELECT s.id, c.name FROM streams s
+             JOIN categories c ON c.source_id = s.source_id AND c.media = s.media
+               AND c.ext_key = s.category_key
+             WHERE s.id IN ({marks})"
+        ))?;
+        let rows = stmt.query_map(rusqlite::params_from_iter(stream_ids), |r| {
+            Ok((r.get(0)?, r.get(1)?))
+        })?;
         Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
 }

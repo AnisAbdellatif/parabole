@@ -16,6 +16,10 @@ fn search_prefix_diacritics_and_filters() {
         ),
     )
     .unwrap();
+    let hit = db.search(p, None, Some(m), "can cinema", 10).unwrap();
+    let names = db.category_names(&[hit[0].id]).unwrap();
+    assert_eq!(names[&hit[0].id], "Cat a");
+    assert!(db.category_names(&[]).unwrap().is_empty());
     db.set_category_hidden(p, s, m, "h", true).unwrap();
     assert_eq!(
         db.search(p, None, Some(m), "can cinema", 10).unwrap().len(),
