@@ -3,12 +3,13 @@
 #[path = "common/slint_seed.rs"]
 mod slint_seed;
 
-use i_slint_backend_testing::ElementHandle;
+use i_slint_backend_testing::{AccessibleRole, ElementHandle};
 use iptv_player::slint_ui::{
-    AppWindow, AppearanceApi, BrowseApi, Core, DialogApi, PaletteApi, Theme, build, fonts,
+    AppWindow, AppearanceApi, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, Theme, build,
+    fonts,
 };
 use slint::platform::{Key, PointerEventButton, WindowEvent};
-use slint::{ComponentHandle, LogicalPosition, Model, SharedString};
+use slint::{ComponentHandle, LogicalPosition, Model, SharedString, VecModel};
 use std::cell::{Cell, RefCell};
 use std::future::poll_fn;
 use std::path::PathBuf;
@@ -318,6 +319,63 @@ async fn dialog_focus(win: &AppWindow) {
     .await;
 }
 
+async fn accessibility(win: &AppWindow) {
+    let api = win.global::<DialogApi>();
+    let settings = ElementHandle::find_by_accessible_label(win, "Settings")
+        .find(|e| e.accessible_role() == Some(AccessibleRole::Button))
+        .expect("a11y: rail Settings button");
+    settings.invoke_accessible_default_action();
+    wait_until("a11y: default action opens settings", || {
+        api.get_open() == "settings"
+    })
+    .await;
+    settle(50).await;
+    assert!(
+        ElementHandle::find_by_accessible_label(win, "Close")
+            .next()
+            .is_some(),
+        "a11y: dialog close button labelled"
+    );
+    api.invoke_close();
+    wait_until("a11y: closed", || api.get_open().is_empty()).await;
+}
+
+async fn episode_cursor(win: &AppWindow) {
+    let api = win.global::<BrowseApi>();
+    let model = api.get_episodes();
+    let eps = model
+        .as_any()
+        .downcast_ref::<VecModel<EpisodeItem>>()
+        .expect("episodes is a VecModel");
+    eps.set_vec(
+        (1..=3)
+            .map(|n| EpisodeItem {
+                id: n.to_string().into(),
+                num: format!("E{n}").into(),
+                title: format!("Episode {n}").into(),
+                progress: 0.0,
+                watched: false,
+            })
+            .collect::<Vec<_>>(),
+    );
+    api.set_episode_cursor(0);
+    api.set_series_open(true);
+    settle(50).await;
+    press(win, Key::DownArrow);
+    wait_until("episodes: Down moves the cursor", || {
+        api.get_episode_cursor() == 1
+    })
+    .await;
+    press(win, Key::Home);
+    wait_until("episodes: Home returns to the first", || {
+        api.get_episode_cursor() == 0
+    })
+    .await;
+    api.set_series_open(false);
+    eps.set_vec(Vec::new());
+    settle(30).await;
+}
+
 async fn profile_switch(win: &AppWindow) {
     let api = win.global::<PaletteApi>();
     open_palette(win, "profile").await;
@@ -393,8 +451,10 @@ fn behaviour() {
             palette(&win).await;
             appearance(&win, &dir).await;
             dialog_focus(&win).await;
+            accessibility(&win).await;
             profile_switch(&win).await;
             profile_switch_dialog(&win).await;
+            episode_cursor(&win).await;
             slint::quit_event_loop().ok();
         }
     };

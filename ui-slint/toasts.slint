@@ -30,6 +30,9 @@ export component Toasts inherits VerticalLayout {
                 Text { text: t.text; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; horizontal-stretch: 1; }
                 TouchArea {
                     width: 20px;
+                    accessible-role: button;
+                    accessible-label: "Dismiss";
+                    accessible-action-default => { Core.toast-dismissed(t.id); }
                     clicked => { Core.toast-dismissed(t.id); }
                     Icon { source: Icons.close; tint: Theme.text-muted; size: 14px; }
                 }

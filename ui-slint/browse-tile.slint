@@ -14,6 +14,9 @@ export component Tile inherits Rectangle {
     callback favorite-clicked();
     callback hide-clicked();
     callback right-clicked(length, length);
+    accessible-role: button;
+    accessible-label: root.item.name;
+    accessible-action-default => { root.clicked(); }
 
     property <bool> hovered: area.has-hover;
     property <bool> focused: root.cursor || root.hovered;
@@ -119,6 +122,9 @@ export component Tile inherits Rectangle {
         border-radius: 8px;
         background: #0000008c;
         TouchArea {
+            accessible-role: button;
+            accessible-label: root.item.favorite ? "Remove from favorites" : "Add to favorites";
+            accessible-action-default => { root.favorite-clicked(); }
             clicked => { root.favorite-clicked(); }
             Icon {
                 source: root.item.favorite ? Icons.star-filled : Icons.star;
@@ -136,6 +142,9 @@ export component Tile inherits Rectangle {
         border-radius: 8px;
         background: #0000008c;
         TouchArea {
+            accessible-role: button;
+            accessible-label: root.item.hidden ? "Show" : "Hide";
+            accessible-action-default => { root.hide-clicked(); }
             clicked => { root.hide-clicked(); }
             Icon { source: root.item.hidden ? Icons.eye-off : Icons.eye; tint: #ffffff; x: 7px; y: 7px; }
         }

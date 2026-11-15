@@ -10,6 +10,9 @@ export component DropPill inherits Rectangle {
     in property <length> max-label-w: 200px;
     callback clicked();
     callback picked(int);
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { if (root.options.length > 0) { popup.show(); } else { root.clicked(); } }
     height: 32px;
     width: min(label-text.preferred-width, root.max-label-w) + 42px;
     background: ta.has-hover ? Theme.surface-hover : Theme.surface;
@@ -51,6 +54,11 @@ export component DropPill inherits Rectangle {
             VerticalLayout {
                 padding: 4px;
                 for o[i] in root.options: Rectangle {
+                    accessible-role: list-item;
+                    accessible-label: o;
+                    accessible-checkable: true;
+                    accessible-checked: i == root.current;
+                    accessible-action-default => { root.picked(i); }
                     height: 30px;
                     border-radius: 6px;
                     background: row.has-hover ? Theme.surface-hover : transparent;

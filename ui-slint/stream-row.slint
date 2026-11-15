@@ -34,6 +34,11 @@ export component StreamRow inherits Rectangle {
     callback double-clicked();
     callback favorite-clicked();
     callback right-clicked(length, length);
+    accessible-role: list-item;
+    accessible-label: root.item.name;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.cursor;
+    accessible-action-default => { root.double-clicked(); }
 
     property <bool> show-progress: root.item.progress > 0 && !root.item.watched;
     // trailing slots below, each plus 10px spacing; the star slot is always reserved
@@ -118,6 +123,9 @@ export component StreamRow inherits Rectangle {
         }
         star := TouchArea {
             width: 32px;
+            accessible-role: button;
+            accessible-label: root.item.favorite ? "Remove from favorites" : "Add to favorites";
+            accessible-action-default => { root.favorite-clicked(); }
             clicked => { root.favorite-clicked(); }
             Icon {
                 visible: root.item.favorite || row-area.has-hover || star.has-hover;

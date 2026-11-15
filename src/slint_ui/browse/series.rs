@@ -52,6 +52,7 @@ pub fn open(a: &mut SlintApp, row: &StreamRow) {
         autoplay: row.resume_episode.as_ref().map(|e| e.id.clone()),
         progress: HashMap::new(),
     });
+    reset_cursor(a);
     a.worker.send(Command::LoadSeries {
         source: row.source_id,
         key: row.key.clone(),
@@ -63,6 +64,12 @@ pub fn open(a: &mut SlintApp, row: &StreamRow) {
             with_app(refresh_progress);
         });
     refresh_progress(a);
+}
+
+fn reset_cursor(a: &SlintApp) {
+    if let Some(win) = a.win.upgrade() {
+        win.global::<BrowseApi>().set_episode_cursor(0);
+    }
 }
 
 pub fn close(a: &mut SlintApp) {
@@ -209,7 +216,14 @@ pub fn push(a: &SlintApp) {
             watched: classify(p) == Watch::Watched,
         }
     });
-    a.browse.episodes.set_vec(eps.collect::<Vec<_>>());
+    let eps: Vec<_> = eps.collect();
+    let last = i32::try_from(eps.len())
+        .unwrap_or(i32::MAX)
+        .saturating_sub(1);
+    if api.get_episode_cursor() > last {
+        api.set_episode_cursor(last.max(0));
+    }
+    a.browse.episodes.set_vec(eps);
 }
 
 fn episode_id(a: &SlintApp, i: i32) -> Option<(String, bool)> {
@@ -233,6 +247,7 @@ pub fn connect(win: &AppWindow) {
             let i = id.strip_prefix("season:").and_then(|n| n.parse().ok());
             if let (Some(i), Some(s)) = (i, a.browse.series.as_mut()) {
                 s.season = i;
+                reset_cursor(a);
                 push(a);
             }
         });

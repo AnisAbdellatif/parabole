@@ -42,6 +42,11 @@ export component ListHeader inherits Rectangle {
             alignment: start;
             for c in BrowseApi.chips: Rectangle {
                 width: chip-text.preferred-width + 24px;
+                accessible-role: button;
+                accessible-label: c.label;
+                accessible-checkable: true;
+                accessible-checked: c.on;
+                accessible-action-default => { BrowseApi.chip-clicked(c.id); }
                 border-radius: 14px;
                 border-width: 1px;
                 background: c.on ? Theme.accent : (chip-ta.has-hover ? Theme.surface-hover : Theme.surface);

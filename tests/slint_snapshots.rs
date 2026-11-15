@@ -11,8 +11,8 @@ mod sw_platform;
 
 use i_slint_backend_testing::ElementHandle;
 use iptv_player::slint_ui::{
-    AppWindow, BrowseApi, Core, DialogApi, PaletteApi, PlayerApi, StreamItem, Theme, ToastItem,
-    build, fonts,
+    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, PlayerApi, StreamItem, Theme,
+    ToastItem, build, fonts,
 };
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
@@ -153,6 +153,32 @@ impl Shots {
         self.p.pump(2);
     }
 
+    fn series_screen(&mut self) {
+        let win = self.win.clone_strong();
+        let api = win.global::<BrowseApi>();
+        let model = api.get_episodes();
+        let eps = model
+            .as_any()
+            .downcast_ref::<VecModel<EpisodeItem>>()
+            .expect("episodes is a VecModel");
+        let ep = |n: i32, progress: f32, watched: bool| EpisodeItem {
+            id: n.to_string().into(),
+            num: format!("E{n}").into(),
+            title: format!("Episode {n}").into(),
+            progress,
+            watched,
+        };
+        eps.set_vec(vec![ep(1, 0.0, true), ep(2, 0.4, false), ep(3, 0.0, false)]);
+        api.set_series_title("Fixture Show".into());
+        api.set_season_label("Season 1".into());
+        api.set_episode_cursor(1);
+        api.set_series_open(true);
+        self.shot("series-episodes");
+        api.set_series_open(false);
+        eps.set_vec(Vec::new());
+        self.p.pump(2);
+    }
+
     fn toast_screen(&mut self) {
         let win = self.win.clone_strong();
         let core = win.global::<Core>();
@@ -272,6 +298,7 @@ fn snapshots() {
     }
     s.dialog_view("sources", "sources-form", |d| d.set_form_open(true));
     s.dialog_view("settings", "settings-players", |d| d.set_settings_tab(1));
+    s.series_screen();
     s.player_screens();
     s.toast_screen();
     let failures = std::mem::take(&mut s.failures);

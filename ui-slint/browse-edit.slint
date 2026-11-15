@@ -9,6 +9,10 @@ component Pill inherits Rectangle {
     in property <bool> on;
     in property <bool> enabled: true;
     callback clicked();
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
     height: 34px;
     border-radius: 17px;
     border-width: 1px;
@@ -29,8 +33,13 @@ component Pill inherits Rectangle {
 // Small square glyph button (arrows, plus).
 component Glyph inherits Rectangle {
     in property <string> text;
+    in property <string> label: root.text;
     in property <bool> enabled: true;
     callback clicked();
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
     width: 26px;
     height: 26px;
     border-radius: 6px;
@@ -43,6 +52,10 @@ component Glyph inherits Rectangle {
 component IconBtn inherits TouchArea {
     in property <image> source;
     in property <color> tint: Theme.text-muted;
+    in property <string> label;
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
     width: 28px;
     height: 28px;
     Icon { source: root.source; tint: root.tint; x: 6px; y: 6px; }
@@ -80,8 +93,8 @@ export component EditPanel inherits Rectangle {
             height: min(BrowseApi.edit-groups.length, 3) * 34px;
             for g[i] in BrowseApi.edit-groups: Rectangle {
                 height: 34px;
-                Glyph { x: 12px; y: 4px; text: "▲"; enabled: i > 0; clicked => { BrowseApi.edit-group-move(i, -1); } }
-                Glyph { x: 40px; y: 4px; text: "▼"; enabled: i < BrowseApi.edit-groups.length - 1; clicked => { BrowseApi.edit-group-move(i, 1); } }
+                Glyph { x: 12px; y: 4px; text: "▲"; label: "Move up"; enabled: i > 0; clicked => { BrowseApi.edit-group-move(i, -1); } }
+                Glyph { x: 40px; y: 4px; text: "▼"; label: "Move down"; enabled: i < BrowseApi.edit-groups.length - 1; clicked => { BrowseApi.edit-group-move(i, 1); } }
                 Text { x: 74px; width: parent.width - 74px - 140px; text: g.name; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; overflow: elide; }
                 Pill { x: parent.width - 134px; y: 4px; width: 60px; height: 26px; text: "Rename"; clicked => { BrowseApi.edit-group-rename(i); } }
                 Pill { x: parent.width - 68px; y: 4px; width: 60px; height: 26px; text: g.confirm ? "Delete?" : "Delete"; on: g.confirm; clicked => { BrowseApi.edit-group-delete(i); } }
@@ -94,10 +107,10 @@ export component EditPanel inherits Rectangle {
                 opacity: c.hidden ? 0.45 : 1;
                 Rectangle { x: 10px; width: parent.width - 20px; border-radius: Theme.radius; background: c.matched ? Theme.match-bg : (row-ta.has-hover ? Theme.row-hover : transparent); }
                 row-ta := TouchArea { }
-                if BrowseApi.edit-can-reorder: Glyph { x: 12px; y: 7px; text: "▲"; enabled: i > 0; clicked => { BrowseApi.edit-move(i, -1); } }
-                if BrowseApi.edit-can-reorder: Glyph { x: 38px; y: 7px; text: "▼"; enabled: i < BrowseApi.edit-cats.length - 1; clicked => { BrowseApi.edit-move(i, 1); } }
-                IconBtn { x: 68px; y: 6px; source: c.hidden ? Icons.eye-off : Icons.eye; clicked => { BrowseApi.edit-hide(i); } }
-                IconBtn { x: 98px; y: 6px; source: c.pinned ? Icons.star-filled : Icons.star; tint: c.pinned ? Theme.star : Theme.text-muted; clicked => { BrowseApi.edit-pin(i); } }
+                if BrowseApi.edit-can-reorder: Glyph { x: 12px; y: 7px; text: "▲"; label: "Move up"; enabled: i > 0; clicked => { BrowseApi.edit-move(i, -1); } }
+                if BrowseApi.edit-can-reorder: Glyph { x: 38px; y: 7px; text: "▼"; label: "Move down"; enabled: i < BrowseApi.edit-cats.length - 1; clicked => { BrowseApi.edit-move(i, 1); } }
+                IconBtn { x: 68px; y: 6px; source: c.hidden ? Icons.eye-off : Icons.eye; label: c.hidden ? "Show category" : "Hide category"; clicked => { BrowseApi.edit-hide(i); } }
+                IconBtn { x: 98px; y: 6px; source: c.pinned ? Icons.star-filled : Icons.star; tint: c.pinned ? Theme.star : Theme.text-muted; label: c.pinned ? "Unpin category" : "Pin category"; clicked => { BrowseApi.edit-pin(i); } }
                 Text { x: 134px; width: parent.width - 134px - 56px; text: c.label; color: Theme.text-row; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; overflow: elide; }
                 Rectangle {
                     x: parent.width - self.width - 16px;
@@ -148,6 +161,11 @@ export component EditPanel inherits Rectangle {
                 Pill { text: "Show only matching"; enabled: BrowseApi.edit-has-filter; clicked => { BrowseApi.edit-bulk("show-match"); } }
                 if BrowseApi.hide-new-available: Rectangle {
                     height: 24px;
+                    accessible-role: checkbox;
+                    accessible-label: "Hide new categories";
+                    accessible-checkable: true;
+                    accessible-checked: BrowseApi.hide-new;
+                    accessible-action-default => { BrowseApi.hide-new-toggled(!BrowseApi.hide-new); }
                     ta := TouchArea { clicked => { BrowseApi.hide-new-toggled(!BrowseApi.hide-new); } }
                     Rectangle {
                         x: 0px;

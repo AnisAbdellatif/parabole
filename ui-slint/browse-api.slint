@@ -26,7 +26,18 @@ export global BrowseApi {
         }
         if (root.series-open) {
             if (e.text == Key.Escape) { root.series-back(); return true; }
-            return e.text == Key.Return || e.text == Key.UpArrow || e.text == Key.DownArrow || e.text == Key.PageUp || e.text == Key.PageDown || e.text == Key.Home || e.text == Key.End;
+            let last = max(0, root.episodes.length - 1);
+            if (e.text == Key.UpArrow) { root.episode-cursor = max(0, root.episode-cursor - 1); return true; }
+            if (e.text == Key.DownArrow) { root.episode-cursor = min(last, root.episode-cursor + 1); return true; }
+            if (e.text == Key.PageUp) { root.episode-cursor = max(0, root.episode-cursor - 8); return true; }
+            if (e.text == Key.PageDown) { root.episode-cursor = min(last, root.episode-cursor + 8); return true; }
+            if (e.text == Key.Home) { root.episode-cursor = 0; return true; }
+            if (e.text == Key.End) { root.episode-cursor = last; return true; }
+            if (e.text == Key.Return) {
+                if (root.episodes.length > 0) { root.episode-activated(root.episode-cursor); }
+                return true;
+            }
+            return false;
         }
         if (root.grid-view && Core.streams.length > 0) {
             if (e.text == Key.LeftArrow) { Core.cursor = max(0, Core.cursor - 1); return true; }
@@ -124,6 +135,7 @@ export global BrowseApi {
     in property <string> season-label;
     in property <[MenuEntry]> season-items;
     in property <[EpisodeItem]> episodes;
+    in-out property <int> episode-cursor: 0;
     in property <InfoView> series-info;
     callback series-back();
     callback season-picked(string);

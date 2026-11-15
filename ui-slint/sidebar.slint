@@ -66,6 +66,9 @@ component SideList inherits Rectangle {
                     font-weight: Theme.semibold;
                 }
                 plus := Rectangle {
+                    accessible-role: button;
+                    accessible-label: "New group";
+                    accessible-action-default => { BrowseApi.group-new(); }
                     x: parent.width - 36px;
                     y: 11px;
                     width: 28px;
@@ -80,6 +83,11 @@ component SideList inherits Rectangle {
                 height: Theme.sidebar-row-h;
                 border-radius: Theme.radius;
                 property <bool> on: item.id == Core.selected-id;
+                accessible-role: list-item;
+                accessible-label: item.label;
+                accessible-item-selectable: true;
+                accessible-item-selected: on;
+                accessible-action-default => { BrowseApi.sidebar-focus = false; Core.sidebar-selected(item.id); }
                 background: !on && ta.has-hover ? Theme.row-hover : transparent;
                 if item.icon != 0: Icon {
                     x: 10px;
@@ -123,6 +131,9 @@ component SideList inherits Rectangle {
                     }
                     // nested so hovering the pin keeps the row hovered
                     if item.kind == 3: TouchArea {
+                        accessible-role: button;
+                        accessible-label: item.pinned ? "Unpin category" : "Pin category";
+                        accessible-action-default => { BrowseApi.pin-toggled(item.id); }
                         visible: ta.has-hover;
                         x: parent.width - 36px;
                         y: (parent.height - self.height) / 2;
@@ -156,6 +167,7 @@ component SideFilter inherits Rectangle {
     input := TextInput {
         x: 10px;
         width: parent.width - 34px;
+        accessible-label: "Filter categories";
         text <=> BrowseApi.side-filter;
         color: Theme.text;
         font-size: Theme.fs-md;
@@ -177,6 +189,9 @@ component SideFilter inherits Rectangle {
     if BrowseApi.side-filter != "": clear := TouchArea {
         x: parent.width - 26px;
         width: 22px;
+        accessible-role: button;
+        accessible-label: "Clear filter";
+        accessible-action-default => { BrowseApi.side-filter = ""; BrowseApi.side-filter-edited(""); }
         clicked => { BrowseApi.side-filter = ""; BrowseApi.side-filter-edited(""); }
         Text { text: "×"; color: clear.has-hover ? Theme.text : Theme.text-muted; font-size: Theme.fs-lg; horizontal-alignment: center; vertical-alignment: center; }
     }
@@ -214,6 +229,9 @@ export component Sidebar inherits Rectangle {
                 border-width: 1px;
                 background: BrowseApi.edit-on ? Theme.accent : (edit-ta.has-hover ? Theme.surface-hover : Theme.surface);
                 border-color: BrowseApi.edit-on ? Theme.accent : Theme.border;
+                accessible-role: button;
+                accessible-label: BrowseApi.edit-on ? "Done" : "Edit";
+                accessible-action-default => { BrowseApi.edit-toggled(); }
                 edit-ta := TouchArea { clicked => { BrowseApi.edit-toggled(); } }
                 Text {
                     text: BrowseApi.edit-on ? "Done" : "Edit";
