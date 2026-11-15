@@ -33,9 +33,9 @@ pub fn drain() {
                 Event::Playing { title, kind, .. } => set_playing(a, &title, kind_name(kind)),
                 Event::PlayerStopped => set_playing(a, "", ""),
                 Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
-                Event::UrlReady(_) => {} // Gap: no clipboard crate in deps
-                // consumed by the player area before it gets here
+                // consumed by the player and browse areas before they get here
                 Event::PlayEmbedded(_)
+                | Event::UrlReady(_)
                 | Event::InfoLoaded { .. }
                 | Event::SeriesLoaded { .. }
                 | Event::TestResult(_)

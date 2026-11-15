@@ -9,6 +9,7 @@ mod player;
 mod push;
 mod state;
 mod stream_model;
+mod wiring;
 
 use crate::db::Db;
 use crate::ui::{db_path, install_mpv_script};
@@ -86,6 +87,7 @@ pub fn run() -> Result<()> {
     dialogs::connect(&win);
     player::connect(&win);
     browse::connect(&win);
+    wiring::connect(&win);
     with_app(|a| {
         a.reload_all();
         a.worker.send(Command::AutoRefresh(profile));

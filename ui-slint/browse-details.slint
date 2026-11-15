@@ -1,0 +1,78 @@
+import { Theme } from "theme.slint";
+import { InfoView } from "types.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+import { EmptyBox } from "browse-empty.slint";
+
+// Poster and provider fields (see src/ui/details_view.rs `info_body`).
+export component InfoBody inherits HorizontalLayout {
+    in property <InfoView> info;
+    spacing: 16px;
+    alignment: start;
+    if root.info.has-poster: Image {
+        width: 150px;
+        height: 225px;
+        source: root.info.poster;
+        image-fit: cover;
+    }
+    VerticalLayout {
+        spacing: 4px;
+        alignment: start;
+        for f in root.info.fields: VerticalLayout {
+            Text { text: f.label; color: Theme.text-dim; font-size: 11px; font-weight: Theme.semibold; }
+            Text { text: f.value; color: Theme.text; font-size: 13px; wrap: word-wrap; }
+        }
+        if root.info.fields.length == 0: Text { text: "No details available."; color: Theme.text-muted; font-size: 13px; }
+    }
+}
+
+export component DetailsPanel inherits Rectangle {
+    background: #000000b0;
+    TouchArea { clicked => { BrowseApi.details-closed(); } }
+    card := Rectangle {
+        width: min(parent.width - 48px, 620px);
+        height: min(parent.height - 48px, 80px + body.preferred-height);
+        background: Theme.card;
+        border-radius: Theme.radius-card;
+        border-width: 1px;
+        border-color: Theme.card-border-hover;
+        TouchArea { }
+        Text {
+            x: 20px;
+            y: 16px;
+            width: parent.width - 80px;
+            text: BrowseApi.details-title;
+            color: Theme.text;
+            font-size: 18px;
+            font-weight: Theme.semibold;
+            overflow: elide;
+        }
+        TouchArea {
+            x: parent.width - 44px;
+            y: 10px;
+            width: 32px;
+            height: 32px;
+            clicked => { BrowseApi.details-closed(); }
+            Icon { source: Icons.close; x: 8px; y: 8px; tint: Theme.text-muted; }
+        }
+        Flickable {
+            x: 20px;
+            y: 56px;
+            width: parent.width - 40px;
+            height: parent.height - 72px;
+            content-height: body.preferred-height;
+            body := VerticalLayout {
+                if BrowseApi.details.state == 1: Text { text: "Loading details…"; color: Theme.text-muted; font-size: 14px; }
+                if BrowseApi.details.state == 3: EmptyBox {
+                    height: 200px;
+                    title: "Could not load details";
+                    body: "The provider did not answer. Check the connection and try again.";
+                    cta: "Retry";
+                    clicked => { BrowseApi.details-retry(); }
+                }
+                if BrowseApi.details.state == 0 || BrowseApi.details.state == 2: InfoBody { info: BrowseApi.details; }
+            }
+        }
+    }
+}

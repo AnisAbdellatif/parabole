@@ -1,0 +1,167 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+
+component Pill inherits Rectangle {
+    in property <string> text;
+    in property <bool> on;
+    in property <bool> enabled: true;
+    callback clicked();
+    height: 34px;
+    border-radius: 17px;
+    border-width: 1px;
+    background: on ? Theme.accent : (ta.has-hover && enabled ? Theme.surface-hover : Theme.surface);
+    border-color: on ? Theme.accent : Theme.border;
+    opacity: enabled ? 1 : 0.4;
+    ta := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+    Text {
+        text: root.text;
+        color: root.on ? Theme.on-accent : Theme.text;
+        font-size: 12px;
+        font-weight: Theme.semibold;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+// Small square glyph button (arrows, plus).
+component Glyph inherits Rectangle {
+    in property <string> text;
+    in property <bool> enabled: true;
+    callback clicked();
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    opacity: enabled ? 1 : 0.3;
+    background: ta.has-hover && enabled ? Theme.surface-hover : transparent;
+    ta := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+    Text { text: root.text; color: Theme.text-muted; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+}
+
+component IconBtn inherits TouchArea {
+    in property <image> source;
+    in property <color> tint: Theme.text-muted;
+    width: 28px;
+    height: 28px;
+    Icon { source: root.source; tint: root.tint; x: 6px; y: 6px; }
+}
+
+export component EditPanel inherits Rectangle {
+    VerticalLayout {
+        Rectangle {
+            height: 52px;
+            Rectangle {
+                x: 12px;
+                y: 0px;
+                width: parent.width - 24px;
+                height: 44px;
+                border-radius: Theme.radius;
+                background: Theme.info-bg;
+                Text {
+                    x: 10px;
+                    width: parent.width - 20px;
+                    text: BrowseApi.edit-hint;
+                    color: Theme.info-fg;
+                    font-size: 12px;
+                    wrap: word-wrap;
+                    vertical-alignment: center;
+                    height: parent.height;
+                }
+            }
+        }
+        Rectangle {
+            height: 28px;
+            Text { x: 22px; text: "MY GROUPS"; color: Theme.text-dim; font-size: 11px; font-weight: Theme.semibold; vertical-alignment: center; height: parent.height; }
+            Pill { x: parent.width - self.width - 12px; y: 2px; width: 100px; height: 24px; text: "+ New group"; clicked => { BrowseApi.group-new(); } }
+        }
+        ListView {
+            height: min(BrowseApi.edit-groups.length, 3) * 34px;
+            for g[i] in BrowseApi.edit-groups: Rectangle {
+                height: 34px;
+                Glyph { x: 12px; y: 4px; text: "▲"; enabled: i > 0; clicked => { BrowseApi.edit-group-move(i, -1); } }
+                Glyph { x: 40px; y: 4px; text: "▼"; enabled: i < BrowseApi.edit-groups.length - 1; clicked => { BrowseApi.edit-group-move(i, 1); } }
+                Text { x: 74px; width: parent.width - 74px - 140px; text: g.name; color: Theme.text; font-size: 13px; vertical-alignment: center; height: parent.height; overflow: elide; }
+                Pill { x: parent.width - 134px; y: 4px; width: 60px; height: 26px; text: "Rename"; clicked => { BrowseApi.edit-group-rename(i); } }
+                Pill { x: parent.width - 68px; y: 4px; width: 60px; height: 26px; text: g.confirm ? "Delete?" : "Delete"; on: g.confirm; clicked => { BrowseApi.edit-group-delete(i); } }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.divider; }
+        ListView {
+            for c[i] in BrowseApi.edit-cats: Rectangle {
+                height: 40px;
+                opacity: c.hidden ? 0.45 : 1;
+                Rectangle { x: 10px; width: parent.width - 20px; border-radius: Theme.radius; background: c.matched ? Theme.match-bg : (row-ta.has-hover ? Theme.row-hover : transparent); }
+                row-ta := TouchArea { }
+                if BrowseApi.edit-can-reorder: Glyph { x: 12px; y: 7px; text: "▲"; enabled: i > 0; clicked => { BrowseApi.edit-move(i, -1); } }
+                if BrowseApi.edit-can-reorder: Glyph { x: 38px; y: 7px; text: "▼"; enabled: i < BrowseApi.edit-cats.length - 1; clicked => { BrowseApi.edit-move(i, 1); } }
+                IconBtn { x: 68px; y: 6px; source: c.hidden ? Icons.eye-off : Icons.eye; clicked => { BrowseApi.edit-hide(i); } }
+                IconBtn { x: 98px; y: 6px; source: c.pinned ? Icons.star-filled : Icons.star; tint: c.pinned ? Theme.star : Theme.text-muted; clicked => { BrowseApi.edit-pin(i); } }
+                Text { x: 134px; width: parent.width - 134px - 56px; text: c.label; color: Theme.text-row; font-size: 13px; vertical-alignment: center; height: parent.height; overflow: elide; }
+                Rectangle {
+                    x: parent.width - self.width - 16px;
+                    y: 10px;
+                    width: cnt.preferred-width + 14px;
+                    height: 20px;
+                    border-radius: 6px;
+                    background: Theme.surface;
+                    cnt := Text { text: c.count; color: Theme.badge-text; font-size: 11px; horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+        }
+        Rectangle {
+            height: 214px;
+            background: Theme.toolbar;
+            Rectangle { height: 1px; background: Theme.divider; }
+            VerticalLayout {
+                padding: 12px;
+                spacing: 8px;
+                HorizontalLayout { spacing: 6px; Pill { text: "Show all"; clicked => { BrowseApi.edit-bulk("show-all"); } } Pill { text: "Hide all"; clicked => { BrowseApi.edit-bulk("hide-all"); } } }
+                HorizontalLayout {
+                    spacing: 6px;
+                    Pill { text: "Reset order"; enabled: BrowseApi.edit-can-reorder; clicked => { BrowseApi.edit-bulk("reset"); } }
+                    Pill { text: "Sort A–Z"; enabled: BrowseApi.edit-can-reorder; clicked => { BrowseApi.edit-bulk("sort-az"); } }
+                }
+                HorizontalLayout {
+                    spacing: 6px;
+                    Rectangle {
+                        height: 34px;
+                        background: Theme.input-bg;
+                        border-radius: Theme.radius;
+                        border-width: 1px;
+                        border-color: filter.has-focus ? Theme.selected-border : Theme.border;
+                        filter := TextInput {
+                            x: 10px;
+                            width: parent.width - 20px;
+                            text <=> BrowseApi.edit-filter;
+                            color: Theme.text;
+                            font-size: 13px;
+                            single-line: true;
+                            vertical-alignment: center;
+                            edited => { BrowseApi.edit-filter-edited(self.text); }
+                        }
+                        if BrowseApi.edit-filter == "": Text { x: 10px; text: "Filter, e.g. FR |"; color: Theme.text-faint; font-size: 13px; vertical-alignment: center; height: parent.height; }
+                    }
+                    Pill { width: 112px; text: "Hide matching"; on: BrowseApi.edit-has-filter; enabled: BrowseApi.edit-has-filter; clicked => { BrowseApi.edit-bulk("hide-match"); } }
+                }
+                Pill { text: "Show only matching"; enabled: BrowseApi.edit-has-filter; clicked => { BrowseApi.edit-bulk("show-match"); } }
+                if BrowseApi.hide-new-available: Rectangle {
+                    height: 24px;
+                    ta := TouchArea { clicked => { BrowseApi.hide-new-toggled(!BrowseApi.hide-new); } }
+                    Rectangle {
+                        x: 0px;
+                        y: 3px;
+                        width: 18px;
+                        height: 18px;
+                        border-radius: 4px;
+                        border-width: 1px;
+                        border-color: Theme.border;
+                        background: BrowseApi.hide-new ? Theme.accent : Theme.input-bg;
+                    }
+                    Text { x: 28px; text: "Hide new categories"; color: Theme.text; font-size: 12px; vertical-alignment: center; height: parent.height; }
+                }
+            }
+        }
+    }
+}

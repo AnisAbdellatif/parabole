@@ -1,0 +1,54 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+import { Tile } from "browse-tile.slint";
+
+// Rows of cards computed from the width; the Rust model is lazy, one GridRow per visible row.
+export component PosterGrid inherits Rectangle {
+    callback interacted();
+    in property <int> cursor: Core.cursor;
+    property <length> avail: root.width - 48px;
+    property <int> cols: max(1, floor((root.avail + Theme.gap) / (Theme.poster-min-w + Theme.gap)));
+    property <length> card-w: (root.avail - Theme.gap * (root.cols - 1)) / root.cols;
+    property <length> row-step: root.card-w * 1.5 + Theme.poster-title-h + Theme.gap;
+
+    init => { BrowseApi.grid-cols = root.cols; BrowseApi.grid-cols-changed(root.cols); }
+    changed cols => { BrowseApi.grid-cols = root.cols; BrowseApi.grid-cols-changed(root.cols); }
+    changed cursor => {
+        let r = floor(root.cursor / root.cols);
+        if (-list.content-y > r * root.row-step) {
+            list.content-y = -r * root.row-step;
+        } else if (-list.content-y + list.visible-height < (r + 1) * root.row-step) {
+            list.content-y = -((r + 1) * root.row-step - list.visible-height);
+        }
+    }
+
+    list := ListView {
+        x: 24px;
+        width: parent.width - 48px;
+        height: parent.height;
+        for row in BrowseApi.grid-rows: Rectangle {
+            height: root.row-step;
+            for t[n] in row.tiles: Tile {
+                x: n * (root.card-w + Theme.gap);
+                y: 0px;
+                width: root.card-w;
+                height: root.card-w * 1.5 + Theme.poster-title-h;
+                item: t;
+                cursor: t.index == Core.cursor;
+                playing: Core.playing-title != "" && t.name == Core.playing-title;
+                clicked => { Core.cursor = t.index; root.interacted(); }
+                double-clicked => { Core.cursor = t.index; Core.stream-activated(t.index); }
+                favorite-clicked => { Core.favorite-toggled(t.index); root.interacted(); }
+                hide-clicked => { BrowseApi.tile-hide-toggled(t.index); }
+                right-clicked(x, y) => { Core.cursor = t.index; BrowseApi.row-menu-requested(t.index); menu.open(x, y); root.interacted(); }
+            }
+        }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.row-menu;
+        picked(id) => { BrowseApi.row-menu-picked(id); root.interacted(); }
+    }
+}

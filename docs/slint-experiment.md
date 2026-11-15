@@ -32,6 +32,12 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Player: dock side and splitter size are not persisted; status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
 - Player: `slint-ui` needs the default `embedded-mpv` feature (no `--no-default-features --features slint-ui` build). Fullscreen was not screenshotted (macOS Space changes the window id); mini/docked right/bottom/stats were.
 - Player: key handling uses a `PlayerApi.hover` flag (pointer over video) in place of egui's hover rect; arrows seek/volume only act while the pointer is over the video or in fullscreen/mini.
+- browse: context-menu submenus (Play with / Add to group / Play from) are flattened into section headers; menu can overflow the window edge.
+- browse: no connection-full warning (needs accounts from the dialogs area); list rows lack the edit-mode eye (tiles have it).
+- browse: drag reorder is ▲▼ buttons; sidebar "Hide matching…" prefills the edit filter with the name prefix; filter chips don't wrap.
+- browse: group dialog is `BrowseApi.request-dialog("group")` + `group-ctx-*` + `group-submit`; orchestrator must wire it to the dialogs area.
+- browse: series page also fetches info on open (egui doesn't); verified only with fake data (no Xtream offline).
+- browse: posters look blurry (`images.rs` THUMB=96, not browse-owned). Cmd+Left sidebar focus not verified via automation (Cmd+D verified).
 
 ## Comparison
 (filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
@@ -50,3 +56,7 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Player: femtovg keeps GL state, so the mpv render is wrapped in a save/restore of fbo, program, VAO, buffers, texture, viewport and the blend/scissor/depth/stencil/cull toggles.
 - Player: `parent` is not allowed on a component's root element in `.slint`; position it at the instantiation site. A `PopupWindow` track menu and `Timer`-based control auto-hide (compare `animation-tick()`) both worked without Rust help.
 - Player: `mod core;` next to the `core` crate works if you import with `self::core`; python's `http.server` can't seek, so test media needs `-movflags +faststart`.
+
+- browse: Slint maps Cmd to `modifiers.control` on macOS; a `meta||control` check covers both.
+- browse: a child without x/y inside a Rectangle is centered; PopupWindow x/y can't be set from a function (bind to root properties).
+- browse: osascript can't send modifier combos; a small CGEvent swift helper can.

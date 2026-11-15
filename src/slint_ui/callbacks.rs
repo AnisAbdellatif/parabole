@@ -14,13 +14,23 @@ fn reset_cursor(a: &SlintApp) {
     }
 }
 
-fn clear_search(a: &mut SlintApp) {
+pub(crate) fn clear_search(a: &mut SlintApp) {
     a.search_text.clear();
     a.search_applied.clear();
+    a.browse.filter = Default::default();
     a.search_timer.stop();
     if let Some(w) = a.win.upgrade() {
         w.global::<Core>().set_search_text("".into());
     }
+}
+
+pub(crate) fn select(a: &mut SlintApp, sel: Sel) {
+    a.state.sel = Some(sel);
+    clear_search(a);
+    reset_cursor(a);
+    super::browse::close_series(a);
+    a.push_sidebar();
+    a.reload_streams();
 }
 
 pub fn connect(win: &AppWindow) {
@@ -34,6 +44,11 @@ pub fn connect(win: &AppWindow) {
             };
             a.state.sel = None;
             reset_cursor(a);
+            super::browse::close_series(a);
+            if let Some(w) = a.win.upgrade() {
+                w.global::<Core>().set_tab(i);
+                w.global::<super::BrowseApi>().set_sidebar_focus(false);
+            }
             a.reload_categories();
         });
     });
@@ -43,6 +58,7 @@ pub fn connect(win: &AppWindow) {
             a.state.source = None;
             a.state.sel = None;
             clear_search(a);
+            super::browse::close_series(a);
             a.push_profiles();
             a.reload_sources();
         });
@@ -54,6 +70,7 @@ pub fn connect(win: &AppWindow) {
                 .start(slint::TimerMode::SingleShot, SEARCH_DELAY, || {
                     with_app(|a| {
                         a.search_applied = a.search_text.trim().to_owned();
+                        super::browse::close_series(a);
                         reset_cursor(a);
                         a.reload_streams();
                     });
@@ -68,44 +85,19 @@ pub fn connect(win: &AppWindow) {
     });
     core.on_sidebar_selected(|id| {
         with_app(|a| {
-            let Some(sel) = Sel::from_id(&id) else { return };
-            a.state.sel = Some(sel);
-            clear_search(a);
-            reset_cursor(a);
-            a.push_sidebar();
-            a.reload_streams();
+            if let Some(sel) = Sel::from_id(&id) {
+                select(a, sel);
+            }
         });
     });
     core.on_stream_activated(|i| {
         with_app(|a| {
-            let Some(row) = a.streams.row(i as usize).filter(|r| !r.missing) else {
-                return;
-            };
-            if row.media == MediaKind::Series {
-                a.toast("Series view not yet in Slint UI");
-                return;
-            }
-            a.worker.send(Command::Play {
-                profile: a.profile(),
-                stream_id: row.id,
-                kind: None,
-            });
+            super::browse::activate(a, i as usize);
         });
     });
     core.on_favorite_toggled(|i| {
         with_app(|a| {
-            let Some(row) = a.streams.row(i as usize) else {
-                return;
-            };
-            let res = a.db.set_favorite(
-                a.profile(),
-                row.source_id,
-                row.media,
-                &row.key,
-                !row.favorite,
-            );
-            a.report(res);
-            a.reload_streams();
+            super::browse::row_action(a, i as usize, super::browse::RowAction::ToggleFavorite);
         });
     });
     core.on_toast_dismissed(|id| {

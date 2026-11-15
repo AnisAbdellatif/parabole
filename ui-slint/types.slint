@@ -56,3 +56,80 @@ export struct TrackItem {
     label: string,
     selected: bool,
 }
+
+// Browse area structs.
+export struct ChipItem {
+    id: string,
+    label: string,
+    on: bool,
+}
+
+// kind: 0 item, 1 header, 2 separator.
+export struct MenuEntry {
+    id: string,
+    label: string,
+    kind: int,
+}
+
+// kind: 0 header, 1 special entry, 2 group, 3 category, 4 "MY GROUPS" header with a + button.
+// icon: 0 none, 1 star, 2 recent, 3 resume.
+export struct SideRow {
+    id: string,
+    kind: int,
+    label: string,
+    count: int,
+    icon: int,
+    pinned: bool,
+}
+
+export struct EditCat {
+    label: string,
+    count: int,
+    hidden: bool,
+    pinned: bool,
+    matched: bool,
+}
+
+export struct EditGroup {
+    name: string,
+    confirm: bool,
+}
+
+export struct TileItem {
+    index: int,
+    name: string,
+    sub: string,
+    initials: string,
+    poster: image,
+    has-poster: bool,
+    favorite: bool,
+    progress: float,
+    watched: bool,
+    hidden: bool,
+    missing: bool,
+}
+
+export struct GridRow {
+    tiles: [TileItem],
+}
+
+export struct EpisodeItem {
+    id: string,
+    num: string,
+    title: string,
+    progress: float,
+    watched: bool,
+}
+
+export struct FieldItem {
+    label: string,
+    value: string,
+}
+
+// state: 0 nothing, 1 loading, 2 loaded, 3 failed.
+export struct InfoView {
+    state: int,
+    poster: image,
+    has-poster: bool,
+    fields: [FieldItem],
+}

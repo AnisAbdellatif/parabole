@@ -94,7 +94,6 @@ pub struct SlintApp {
     pub next_toast: i32,
     pub images: Rc<Images>,
     pub player: super::player::PlayerArea,
-    #[expect(dead_code, reason = "phase-2 scaffold; delete once the area uses it")]
     pub browse: super::browse::BrowseArea,
     pub dialogs: super::dialogs::DialogArea,
 }

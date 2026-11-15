@@ -1,28 +1,79 @@
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
 
 export component ListHeader inherits Rectangle {
-    height: 58px;
-    HorizontalLayout {
+    height: 58px + (BrowseApi.chips.length > 0 ? 38px : 0px);
+    VerticalLayout {
         padding-left: 24px;
         padding-right: 24px;
         padding-top: 18px;
         padding-bottom: 12px;
         spacing: 10px;
-        alignment: start;
-        Text {
-            text: Core.list-title;
-            color: Theme.text;
-            font-size: 20px;
-            font-weight: Theme.semibold;
-            vertical-alignment: center;
-            overflow: elide;
+        HorizontalLayout {
+            height: 28px;
+            spacing: 10px;
+            Text {
+                text: Core.list-title;
+                color: Theme.text;
+                font-size: 20px;
+                font-weight: Theme.semibold;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Text {
+                text: Core.list-subtitle;
+                color: Theme.text-muted;
+                font-size: 13px;
+                vertical-alignment: center;
+            }
+            Rectangle { horizontal-stretch: 1; }
+            if BrowseApi.sort-visible: sort-btn := Rectangle {
+                width: sort-text.preferred-width + 28px;
+                background: sort-ta.has-hover ? Theme.surface-hover : Theme.surface;
+                border-radius: Theme.radius;
+                border-width: 1px;
+                border-color: Theme.border;
+                sort-ta := TouchArea {
+                    clicked => { menu.open(sort-btn.absolute-position.x + sort-btn.width - 180px, sort-btn.absolute-position.y + sort-btn.height + 4px); }
+                }
+                sort-text := Text {
+                    x: 12px;
+                    text: BrowseApi.sort-label + " ▾";
+                    color: Theme.text;
+                    font-size: 13px;
+                    vertical-alignment: center;
+                    height: parent.height;
+                }
+            }
         }
-        Text {
-            text: Core.list-subtitle;
-            color: Theme.text-muted;
-            font-size: 13px;
-            vertical-alignment: center;
+        if BrowseApi.chips.length > 0: HorizontalLayout {
+            height: 28px;
+            spacing: 6px;
+            alignment: start;
+            for c in BrowseApi.chips: Rectangle {
+                width: chip-text.preferred-width + 24px;
+                border-radius: 14px;
+                border-width: 1px;
+                background: c.on ? Theme.accent : (chip-ta.has-hover ? Theme.surface-hover : Theme.surface);
+                border-color: c.on ? Theme.accent : Theme.border;
+                chip-ta := TouchArea { clicked => { BrowseApi.chip-clicked(c.id); } }
+                chip-text := Text {
+                    x: 12px;
+                    text: c.label;
+                    color: c.on ? Theme.on-accent : Theme.text-muted;
+                    font-size: 12px;
+                    font-weight: Theme.medium;
+                    vertical-alignment: center;
+                    height: parent.height;
+                }
+            }
         }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.sort-items;
+        menu-width: 180px;
+        picked(id) => { BrowseApi.sort-picked(id); }
     }
 }

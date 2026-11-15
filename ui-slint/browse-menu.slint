@@ -1,0 +1,65 @@
+import { Theme } from "theme.slint";
+import { MenuEntry } from "types.slint";
+
+// Popup menu opened at window coordinates; `picked` gets the entry id.
+export component ContextMenu inherits Rectangle {
+    in property <[MenuEntry]> items;
+    in property <length> menu-width: 220px;
+    callback picked(string);
+    width: 0px;
+    height: 0px;
+
+    property <length> px;
+    property <length> py;
+    public function open(ax: length, ay: length) {
+        root.px = ax - root.absolute-position.x;
+        root.py = ay - root.absolute-position.y;
+        pop.show();
+    }
+
+    pop := PopupWindow {
+        x: root.px;
+        y: root.py;
+        width: root.menu-width;
+        height: col.preferred-height + 8px;
+        Rectangle {
+            background: Theme.surface;
+            border-radius: Theme.radius;
+            border-width: 1px;
+            border-color: Theme.border;
+            col := VerticalLayout {
+                padding: 4px;
+                for e in root.items: Rectangle {
+                    height: e.kind == 2 ? 9px : e.kind == 1 ? 26px : 30px;
+                    if e.kind == 0: Rectangle {
+                        border-radius: 6px;
+                        background: ta.has-hover ? Theme.surface-hover : transparent;
+                        ta := TouchArea { clicked => { root.picked(e.id); } }
+                        Text {
+                            x: 10px;
+                            width: parent.width - 20px;
+                            text: e.label;
+                            color: Theme.text;
+                            font-size: 13px;
+                            vertical-alignment: center;
+                            overflow: elide;
+                        }
+                    }
+                    if e.kind == 1: Text {
+                        x: 10px;
+                        y: 8px;
+                        text: e.label;
+                        color: Theme.text-dim;
+                        font-size: 11px;
+                        font-weight: Theme.semibold;
+                    }
+                    if e.kind == 2: Rectangle {
+                        y: 4px;
+                        height: 1px;
+                        background: Theme.divider;
+                    }
+                }
+            }
+        }
+    }
+}

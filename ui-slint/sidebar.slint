@@ -3,17 +3,24 @@ import { Theme } from "theme.slint";
 import { Core } from "core.slint";
 import { Icons } from "icons.slint";
 import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+import { EditPanel } from "browse-edit.slint";
 
-export component Sidebar inherits Rectangle {
-    width: Theme.sidebar-w;
-    background: Theme.panel;
-    Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
-    ListView {
+component SideList inherits Rectangle {
+    in property <int> tick: BrowseApi.side-scroll-tick;
+    changed tick => {
+        if (-list.content-y > BrowseApi.side-scroll-index * Theme.sidebar-row-step) {
+            list.content-y = -BrowseApi.side-scroll-index * Theme.sidebar-row-step;
+        } else if (-list.content-y + list.visible-height < (BrowseApi.side-scroll-index + 1) * Theme.sidebar-row-step) {
+            list.content-y = -((BrowseApi.side-scroll-index + 1) * Theme.sidebar-row-step - list.visible-height);
+        }
+    }
+    list := ListView {
         x: 10px;
-        y: 8px;
-        width: parent.width - 20px - 1px;
-        height: parent.height - 8px;
-        for item in Core.sidebar: Rectangle {
+        width: parent.width - 20px;
+        height: parent.height;
+        for item in BrowseApi.side-rows: Rectangle {
             height: Theme.sidebar-row-step;
             if item.kind == 0: Text {
                 x: 10px;
@@ -23,14 +30,42 @@ export component Sidebar inherits Rectangle {
                 font-size: 11px;
                 font-weight: Theme.semibold;
             }
-            if item.kind != 0: Rectangle {
+            if item.kind == 4: Rectangle {
+                Text {
+                    x: 10px;
+                    y: 18px;
+                    text: item.label;
+                    color: Theme.text-dim;
+                    font-size: 11px;
+                    font-weight: Theme.semibold;
+                }
+                plus := Rectangle {
+                    x: parent.width - 36px;
+                    y: 6px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: Theme.radius;
+                    background: plus-ta.has-hover ? Theme.row-hover : transparent;
+                    plus-ta := TouchArea { clicked => { BrowseApi.group-new(); } }
+                    Text { text: "+"; color: Theme.text-muted; font-size: 16px; font-weight: Theme.semibold; horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+            if item.kind != 0 && item.kind != 4: Rectangle {
                 height: Theme.sidebar-row-h;
                 border-radius: Theme.radius;
                 border-width: 1px;
                 property <bool> on: item.id == Core.selected-id;
                 background: on ? Theme.selected-bg : (ta.has-hover ? Theme.row-hover : transparent);
-                border-color: on ? Theme.selected-border : transparent;
-                ta := TouchArea { clicked => { Core.sidebar-selected(item.id); } }
+                border-color: on ? (BrowseApi.sidebar-focus ? Theme.accent : Theme.selected-border) : transparent;
+                ta := TouchArea {
+                    clicked => { BrowseApi.sidebar-focus = false; Core.sidebar-selected(item.id); }
+                    pointer-event(e) => {
+                        if (item.kind >= 2 && e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                            BrowseApi.side-menu-requested(item.id);
+                            menu.open(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                        }
+                    }
+                }
                 if item.icon != 0: Icon {
                     x: 10px;
                     y: (parent.height - self.height) / 2;
@@ -39,7 +74,7 @@ export component Sidebar inherits Rectangle {
                 }
                 Text {
                     x: item.icon != 0 ? 36px : 10px;
-                    width: parent.width - self.x - (item.count >= 0 ? 60px : 10px);
+                    width: parent.width - self.x - (item.kind == 3 ? 100px : item.count >= 0 ? 60px : 10px);
                     text: item.label;
                     color: on ? #ffffff : Theme.text-row;
                     font-size: 13px;
@@ -48,7 +83,7 @@ export component Sidebar inherits Rectangle {
                     overflow: elide;
                 }
                 if item.count >= 0: Rectangle {
-                    x: parent.width - self.width - 8px;
+                    x: parent.width - self.width - (item.kind == 3 ? 40px : 8px);
                     y: (parent.height - self.height) / 2;
                     width: badge.preferred-width + 14px;
                     height: 20px;
@@ -62,7 +97,66 @@ export component Sidebar inherits Rectangle {
                         vertical-alignment: center;
                     }
                 }
+                if item.kind == 3: TouchArea {
+                    x: parent.width - 36px;
+                    y: (parent.height - self.height) / 2;
+                    width: 32px;
+                    height: 32px;
+                    clicked => { BrowseApi.pin-toggled(item.id); }
+                    Icon {
+                        source: item.pinned ? Icons.star-filled : Icons.star;
+                        tint: item.pinned ? Theme.star : Theme.text-muted;
+                        x: 8px;
+                        y: 8px;
+                    }
+                }
             }
         }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.side-menu;
+        picked(id) => { BrowseApi.side-menu-picked(id); }
+    }
+}
+
+export component Sidebar inherits Rectangle {
+    width: Theme.sidebar-w;
+    background: Theme.panel;
+    Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
+    VerticalLayout {
+        padding-right: 1px;
+        Rectangle {
+            height: 48px;
+            Text {
+                x: 18px;
+                text: "CATEGORIES";
+                color: Theme.text-muted;
+                font-size: 12px;
+                font-weight: Theme.semibold;
+                vertical-alignment: center;
+                height: parent.height;
+            }
+            Rectangle {
+                x: parent.width - self.width - 16px;
+                y: (parent.height - self.height) / 2;
+                width: 58px;
+                height: 30px;
+                border-radius: 15px;
+                border-width: 1px;
+                background: BrowseApi.edit-on ? Theme.accent : (edit-ta.has-hover ? Theme.surface-hover : Theme.surface);
+                border-color: BrowseApi.edit-on ? Theme.accent : Theme.border;
+                edit-ta := TouchArea { clicked => { BrowseApi.edit-toggled(); } }
+                Text {
+                    text: BrowseApi.edit-on ? "Done" : "Edit";
+                    color: BrowseApi.edit-on ? Theme.on-accent : Theme.text-muted;
+                    font-size: 12px;
+                    font-weight: Theme.semibold;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        if !BrowseApi.edit-on: SideList { }
+        if BrowseApi.edit-on: EditPanel { }
     }
 }

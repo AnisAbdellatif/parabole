@@ -1,0 +1,52 @@
+import { Theme } from "theme.slint";
+import { BrowseApi } from "browse-api.slint";
+
+// Centered message with an optional action button (see src/ui/empty_state.rs).
+export component EmptyBox inherits Rectangle {
+    in property <string> title;
+    in property <string> body;
+    in property <string> cta;
+    in property <bool> busy;
+    callback clicked();
+    VerticalLayout {
+        alignment: center;
+        padding-bottom: 60px;
+        spacing: 6px;
+        if root.busy: Text { text: "Loading…"; color: Theme.accent; font-size: 13px; horizontal-alignment: center; }
+        Text { text: root.title; color: Theme.text; font-size: 18px; font-weight: Theme.semibold; horizontal-alignment: center; }
+        if root.body != "": Text {
+            text: root.body;
+            color: Theme.text-muted;
+            font-size: 14px;
+            horizontal-alignment: center;
+            wrap: word-wrap;
+        }
+        if root.cta != "": HorizontalLayout {
+            alignment: center;
+            padding-top: 10px;
+            Rectangle {
+                width: cta-text.preferred-width + 40px;
+                height: 34px;
+                border-radius: 17px;
+                background: cta-ta.has-hover ? #7ff0de : Theme.accent;
+                cta-ta := TouchArea { clicked => { root.clicked(); } }
+                cta-text := Text {
+                    text: root.cta;
+                    color: Theme.on-accent;
+                    font-size: 13px;
+                    font-weight: Theme.semibold;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+}
+
+export component EmptyState inherits EmptyBox {
+    title: BrowseApi.empty-title;
+    body: BrowseApi.empty-body;
+    cta: BrowseApi.empty-cta;
+    busy: BrowseApi.empty-busy;
+    clicked => { BrowseApi.empty-cta-clicked(); }
+}

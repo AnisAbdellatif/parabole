@@ -2,6 +2,8 @@ import { ListView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
 import { StreamRow } from "stream-row.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
 
 // Virtualized: the Rust model is lazy, so only visible rows are ever built.
 export component StreamList inherits Rectangle {
@@ -32,16 +34,12 @@ export component StreamList inherits Rectangle {
                 clicked => { Core.cursor = i; root.interacted(); }
                 double-clicked => { Core.cursor = i; Core.stream-activated(i); }
                 favorite-clicked => { Core.favorite-toggled(i); root.interacted(); }
+                right-clicked(x, y) => { Core.cursor = i; BrowseApi.row-menu-requested(i); menu.open(x, y); root.interacted(); }
             }
         }
     }
-    if Core.streams.length == 0: Text {
-        text: Core.empty-text;
-        color: Theme.text-muted;
-        font-size: 14px;
-        horizontal-alignment: center;
-        vertical-alignment: center;
-        wrap: word-wrap;
-        width: parent.width - 48px;
+    menu := ContextMenu {
+        items: BrowseApi.row-menu;
+        picked(id) => { BrowseApi.row-menu-picked(id); root.interacted(); }
     }
 }
