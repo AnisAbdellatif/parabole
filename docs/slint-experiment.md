@@ -25,12 +25,12 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `UrlReady` (copy URL) ignored: no clipboard crate in deps. `PlayEmbedded` falls back to external mpv with a toast.
 - Phase 1: `InfoLoaded`/`SeriesLoaded`/`TestResult`/`AccountChecked` ignored (phase 2).
 - Phase 1: persisted state is saved only on window close.
-- Dialogs: account panel is one coloured text line (not separate labelled fields); dropdowns use the std-widgets `ComboBox` (platform style, not `dialog-kit` styled); dialog card max body height is fixed at 600px (a binding to window height formed a layout loop).
+- Dialogs: account panel is one coloured text line (not separate labelled fields); dropdowns use the std-widgets `ComboBox` (platform style, not `dialog-kit` styled). (Body height now follows the window, see "UI review passes".)
 - Dialogs: saving settings does not call the embedded player's `apply_mpv_args` (player area owns that); group dialog is only reachable via `DialogApi.open-dialog("group")` with the context properties set by browse.
-- Dialogs: the sources dialog scrolls (`max-body` 560) so its Add/Test buttons are below the fold on a 800px window; the appearance dialog is now driven headless, sources/settings/profiles forms are only snapshotted. Clicks and typing are covered headless (see "Headless UI tests"); the sources, settings and profiles forms are only snapshotted, not driven.
+- Dialogs: the appearance pane is now driven headless, sources/settings/profiles forms are only snapshotted. Clicks and typing are covered headless (see "Headless UI tests"); the sources, settings and profiles forms are only snapshotted, not driven.
 - Zap carousel: on a short docked pane (band under ~140px) only the current card shows and it is clipped to the band; `AccentSlider` has arrow-key support (as std Slider did) but `AccentSwitch` toggles on Space/Enter only when focused (click does not focus it).
 - Player: mini mode is not always-on-top (needs the `unstable-winit-*` slint feature); the window just shrinks to 480x270 and restores.
-- Player: dock side and splitter size are not persisted; status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
+- Player: status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
 - Player: `slint-ui` needs the default `embedded-mpv` feature (no `--no-default-features --features slint-ui` build). Fullscreen was not screenshotted (macOS Space changes the window id); mini/docked right/bottom/stats were.
 - Player: key handling uses a `PlayerApi.hover` flag (pointer over video) in place of egui's hover rect; arrows seek/volume only act while the pointer is over the video or in fullscreen/mini.
 - browse: context-menu submenus (Play with / Add to group / Play from) are flattened into section headers; menu can overflow the window edge.
@@ -185,3 +185,23 @@ Safety rules:
 Do not click or type inside the VM window during a run: the script injects keys and pointer moves on the same display, and your input would race with it.
 
 Bugs this found (all fixed): stored `mpv_args` ignored by the Slint player, the video Image not repainted on X11 until something else dirtied it, PiP not shrinking a maximized window.
+
+## UI review passes
+Branches `ui/{nav-search,browse-density,dialogs,player-pane}` are merged into `exp/slint-ui`. Supersedes the older notes above where they differ.
+- Shell: fixed 64px rail with labels (no hover expansion, no Favorites button); header search filters the current tab, Cmd/Ctrl+K palette searches everything; source, sort and season pickers share `DropPill`; status bar no longer repeats the profile.
+- Palette: stream rows show their category (`Db::category_names`), plus the source when there are several.
+- Browse: no hero on Live; VOD hero is 34% of the height (180–320px) and appears only once a backdrop loads; rows are 48px with the star on hover/favorite; sidebar has a filter field, is resizable (200–460px, saved) and shows the pin star in place of the count on hover. Dominant-colour code is gone.
+- Dialogs: `DialogFrame`/`DialogBody`/`DialogFooter` (`dialog-frame.slint`) keep the footer fixed and scroll the body, max `min(600px, window - 220px)`. Sources is a list view plus an add/edit form; Settings has Playback/Players/Appearance tabs (no standalone Appearance dialog); Profiles has Switch, an Active badge and a "⋯" menu.
+- Player: tooltips (`tip.slint`) with real shortcuts; docked pane shows tech line, position and a live channel list (±25 around the current one); shortcut help popover (`player-help.slint`); volume bar when the row is ≥360px; dock side and pane size are saved. Controls drop out by priority when the row is too narrow.
+
+Pitfalls found:
+- A layout inside the overlay host feeds the dialog's height into the window's size limits (layout loop); `DialogHost` centres with absolute x/y instead.
+- `alignment: end` on a `HorizontalLayout` overrides stretch; use a zero-stretch spacer.
+- `Persisted` has a hand-written `Default`; a new field must be added there too.
+
+Gaps:
+- Not exercised interactively (no input synthesis): tooltip delay, help popover open/close, channel-list click and scroll-into-view, star on hover, two-line row, equalizer, Compact density, the Profiles "⋯" menu, state restore across a restart.
+- Sidebar width and dock settings are read back only on window close.
+- Hero latch (keyed on tab + list title) was only checked in snapshots; its timing against late backdrops is unverified.
+- Channel-list logos update on the next zap, not when the image loads. Help card key column is 96px; long Ctrl combos may be cut on Linux/Windows.
+- Sources auto-refresh saves on every edit; an empty field saves 0.
