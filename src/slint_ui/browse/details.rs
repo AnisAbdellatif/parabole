@@ -1,5 +1,6 @@
 //! Movie/series details window and provider-info cache (ports `ui/details_view.rs`).
 use crate::model::{MediaInfo, MediaKind, SourceId, SourceKind, StreamRow};
+use crate::slint_ui::images::Size;
 use crate::slint_ui::state::{SlintApp, with_app};
 use crate::slint_ui::{AppWindow, BrowseApi, FieldItem, InfoView};
 use crate::worker::Command;
@@ -21,6 +22,10 @@ pub struct InfoStore {
     loading: HashSet<Key>,
     failed: HashSet<Key>,
     pub open: Option<Open>,
+}
+
+pub fn cached<'a>(a: &'a SlintApp, key: &Key) -> Option<&'a MediaInfo> {
+    a.browse.info.cache.get(key)
 }
 
 /// Sends `LoadInfo` once per key; only Xtream sources have details.
@@ -78,6 +83,7 @@ pub fn loaded(
     }
     push(a);
     super::series::push(a);
+    super::hero::push(a);
 }
 
 /// A poster finished loading: redraw whichever info views show it.
@@ -130,14 +136,14 @@ pub fn view(a: &SlintApp, key: &Key, fallback_poster: Option<&str>) -> InfoView 
             v.state = 2;
             v.fields = ModelRc::new(VecModel::from(fields(info)));
             let url = info.cover.as_deref().or(fallback_poster);
-            if let Some(img) = url.and_then(|u| a.images.get(u)) {
+            if let Some(img) = url.and_then(|u| a.images.get(u, Size::Poster)) {
                 v.poster = img;
                 v.has_poster = true;
             }
         }
         None if st.loading.contains(key) => v.state = 1,
         None => {
-            if let Some(img) = fallback_poster.and_then(|u| a.images.get(u)) {
+            if let Some(img) = fallback_poster.and_then(|u| a.images.get(u, Size::Poster)) {
                 v.poster = img;
                 v.has_poster = true;
             }

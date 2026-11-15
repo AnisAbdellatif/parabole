@@ -1,6 +1,6 @@
 //! Lazy list model: rows stay as `StreamRow`; `StreamItem`s are built per visible row.
 use super::browse::GridModel;
-use super::images::Images;
+use super::images::{Images, Size};
 use super::{StreamItem, TileItem};
 use crate::db::progress::{Watch, classify};
 use crate::model::{SourceId, StreamRow};
@@ -19,6 +19,7 @@ pub struct StreamModel {
     source_names: RefCell<HashMap<SourceId, String>>,
     grid: RefCell<Weak<GridModel>>,
     on_image: RefCell<Option<ImageHook>>,
+    on_reset: RefCell<Option<Rc<dyn Fn()>>>,
     playing: Cell<Option<i64>>,
 }
 
@@ -40,6 +41,7 @@ impl StreamModel {
             source_names: Default::default(),
             grid: Default::default(),
             on_image: Default::default(),
+            on_reset: Default::default(),
             playing: Cell::new(None),
         }
     }
@@ -57,6 +59,15 @@ impl StreamModel {
         if let Some(g) = self.grid.borrow().upgrade() {
             g.reset();
         }
+        let hook = self.on_reset.borrow().clone();
+        if let Some(hook) = hook {
+            hook();
+        }
+    }
+
+    /// Called after every `set_rows`, inside the app borrow: defer before touching app state.
+    pub fn set_reset_hook(&self, hook: Rc<dyn Fn()>) {
+        *self.on_reset.borrow_mut() = Some(hook);
     }
 
     /// Marks the row with this stream id as playing and refreshes the old and new rows.
@@ -88,7 +99,10 @@ impl StreamModel {
     pub fn tile(&self, i: usize) -> Option<TileItem> {
         let rows = self.rows.borrow();
         let r = rows.get(i)?;
-        let poster = r.logo.as_deref().and_then(|u| self.images.get(u));
+        let poster = r
+            .logo
+            .as_deref()
+            .and_then(|u| self.images.get(u, Size::Poster));
         Some(TileItem {
             index: i as i32,
             name: r.name.as_str().into(),
@@ -158,7 +172,10 @@ impl Model for StreamModel {
     fn row_data(&self, i: usize) -> Option<StreamItem> {
         let rows = self.rows.borrow();
         let r = rows.get(i)?;
-        let logo = r.logo.as_deref().and_then(|u| self.images.get(u));
+        let logo = r
+            .logo
+            .as_deref()
+            .and_then(|u| self.images.get(u, Size::Logo));
         Some(StreamItem {
             name: r.name.as_str().into(),
             meta: self.meta(r).into(),

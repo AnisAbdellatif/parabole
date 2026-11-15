@@ -1,6 +1,6 @@
 // Browse area state and callbacks (poster grid, series, details, menus, edit mode). Owned by the browse area.
 import { Core } from "core.slint";
-import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup, GridRow, EpisodeItem, InfoView } from "types.slint";
+import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup, GridRow, EpisodeItem, InfoView, HeroExtra } from "types.slint";
 
 export global BrowseApi {
     // Tried after DialogApi and PlayerApi; return true when handled.
@@ -89,6 +89,14 @@ export global BrowseApi {
     callback edit-group-move(int, int);
     callback edit-group-rename(int);
     callback edit-group-delete(int);
+
+    // Hero banner: focus is the cursor row or the hovered tile (hover-index -1 = none).
+    in property <HeroExtra> hero;
+    in-out property <int> hover-index: -1;
+    in-out property <length> scroll-y;
+    in-out property <length> scroll-room;
+    callback hero-focused(int);
+    callback hero-details(int);
 
     // Poster grid.
     in property <[GridRow]> grid-rows;

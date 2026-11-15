@@ -134,3 +134,15 @@ export struct InfoView {
     has-poster: bool,
     fields: [FieldItem],
 }
+
+// Hero extras pushed by Rust for the focused row; valid when `index` equals the hero's focus index.
+export struct HeroExtra {
+    index: int,
+    backdrop: image,
+    has-backdrop: bool,
+    color: color,
+    has-color: bool,
+    meta: string,
+    plot: string,
+    action: string,
+}

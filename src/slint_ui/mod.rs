@@ -39,12 +39,12 @@ pub fn run() -> Result<()> {
             let _ = slint::invoke_from_event_loop(events::drain);
         }),
     )?;
-    let images = Images::new(|url, buf| {
+    let images = Images::new(|url, size, dec| {
         let _ = slint::invoke_from_event_loop(move || {
             with_app(|a| {
-                match buf {
-                    Some(b) => a.images.insert(url.clone(), b),
-                    None => a.images.fail(url.clone()),
+                match dec {
+                    Some(d) => a.images.insert(url.clone(), size, d),
+                    None => a.images.fail(url.clone(), size),
                 }
                 a.streams.image_ready(&url);
             });

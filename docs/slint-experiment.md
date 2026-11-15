@@ -79,3 +79,14 @@ Notes:
 - browse: Slint maps Cmd to `modifiers.control` on macOS; a `meta||control` check covers both.
 - browse: a child without x/y inside a Rectangle is centered; PopupWindow x/y can't be set from a function (bind to root properties).
 - browse: osascript can't send modifier combos; a small CGEvent swift helper can.
+
+## Ambient S2b
+- Done: `images.rs` size classes (`Logo`/`Poster`/`Backdrop`, per-class LRU, dominant colour in `images/fx.rs`), hero (`browse-hero.slint`, `browse/hero.rs`), poster focus scale/ring/shadow, hero collapse on scroll.
+- Gaps: Live hero shows a `PLAYING` chip, not a progress bar (no EPG data). Movie resume time is `duration × progress` only when the provider duration is `HH:MM:SS`; otherwise plain "Resume". M3U movies have no info, so the hero uses the blurred poster as backdrop. Hover focus is not cleared if a hovered tile is destroyed by scrolling until the pointer moves. Hover focus applies to tiles only; list rows use the cursor. Hover cross-fade, collapse and tile scale were not exercised interactively (no input synthesis); only static screenshots.
+- Deviations: `stream-list.slint` got 3 lines (scroll-y/scroll-room forwarding to `BrowseApi`); `stream_model.rs` got a `set_reset_hook` so the hero rebuilds after `set_rows`.
+- Dev experience:
+  - A component inside a `VerticalLayout` whose height follows `root.height` creates a binding loop (layoutinfo); place it outside the layout with absolute `y` and offset the layout.
+  - `changed` handlers only attach to a component's own properties; forward child state (scroll position) through a global.
+  - `ListView.viewport-height` is deprecated for `content-height`; slint-build warnings only show when the build script fails.
+  - `transform-scale` + `drop-shadow-*` on a `clip: true` rectangle work, but the ListView clips scaled tiles at its edges; inset tiles by the overflow.
+  - A fake Xtream server (python, ~40 lines, generated PNG posters) on 127.0.0.1 plus a sqlite `insert into sources` is the quickest offline smoke seed; `pkill -f` can kill the invoking shell, use `killall`.

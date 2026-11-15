@@ -18,6 +18,9 @@ export component StreamList inherits Rectangle {
         }
     }
     changed cursor => { root.ensure-visible(root.cursor); }
+    property <length> scrolled: -list.content-y;
+    changed scrolled => { BrowseApi.scroll-y = root.scrolled; BrowseApi.scroll-room = list.content-height - list.visible-height; }
+    init => { BrowseApi.scroll-y = 0px; }
 
     list := ListView {
         x: 24px;
