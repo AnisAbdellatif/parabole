@@ -26,6 +26,8 @@ export global Core {
     in property <string> status-items;
     in property <string> empty-text;
     in property <[ToastItem]> toasts;
+    // "⌘" on macOS, set from Rust at startup; usage: Core.mod-label + "F".
+    in property <string> mod-label: "Ctrl+";
 
     callback tab-selected(int);
     callback profile-selected(int);

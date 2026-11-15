@@ -1,4 +1,4 @@
-//! Cmd+K command palette: search results arrive from the worker, the rest is built locally.
+//! Cmd/Ctrl+K command palette: search results arrive from the worker, the rest is built locally.
 mod entries;
 mod fuzzy;
 mod run;
@@ -98,11 +98,16 @@ impl SlintApp {
             .cloned()
             .map(Entry::Stream)
             .collect();
+        let multi = self.sources.len() > 1;
         let mut items: Vec<PaletteItem> = self
             .palette
             .streams
             .iter()
-            .map(|r| item(kind_of(r.media), &r.name, media_label(r.media)))
+            .map(|r| {
+                let src = self.sources.iter().find(|s| s.id == r.source_id);
+                let src = src.filter(|_| multi).map(|s| s.name.as_str());
+                item(kind_of(r.media), &r.name, &stream_subtitle(r.media, src))
+            })
             .collect();
         if !q.is_empty() {
             let mut cats = Vec::new();
@@ -168,10 +173,33 @@ fn kind_of(m: MediaKind) -> i32 {
     }
 }
 
+// shortcut: kind instead of category name (StreamRow has no category), add a batched category lookup in db/search.rs to show it.
+/// Stream row subtitle: kind, plus " · source" when several sources exist.
+fn stream_subtitle(m: MediaKind, source: Option<&str>) -> String {
+    match source {
+        Some(s) => format!("{} · {s}", media_label(m)),
+        None => media_label(m).to_owned(),
+    }
+}
+
 fn item(kind: i32, title: &str, subtitle: &str) -> PaletteItem {
     PaletteItem {
         kind,
         title: title.into(),
         subtitle: subtitle.into(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn subtitle_adds_source_only_when_given() {
+        assert_eq!(stream_subtitle(MediaKind::Live, None), "Live");
+        assert_eq!(
+            stream_subtitle(MediaKind::Movie, Some("Home")),
+            "Movie · Home"
+        );
     }
 }

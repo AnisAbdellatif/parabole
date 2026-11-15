@@ -67,6 +67,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     core.set_streams(ModelRc::from(streams.clone()));
     core.set_toasts(ModelRc::from(toasts.clone()));
     core.set_tab(state.tab as i32);
+    core.set_mod_label(push::MOD_LABEL.into());
     state.appearance.apply(&win);
     let profile = state.profile.unwrap_or_default();
     APP.with(|a| {

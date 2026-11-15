@@ -35,7 +35,7 @@ export component SearchBox inherits Rectangle {
             }
             if self.text == "" && !self.has-focus: Text {
                 x: 0px;
-                text: "Search (Cmd+F)";
+                text: "Filter this tab (" + Core.mod-label + "F)";
                 color: Theme.text-faint;
                 font-size: Theme.fs-md;
                 vertical-alignment: center;
