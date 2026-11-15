@@ -12,12 +12,14 @@ Run all five; the first four run in seconds.
 
 If `ci.yml` gained or changed a step since this list was written, run that step too.
 
+Also run `./scripts/check-packaging.sh` (syntax of release scripts with their shebang shell, shellcheck, executable bits, referenced files exist). CI runs it too, because the release workflow only runs on a tag.
+
 ## 2. Cross-platform risk (cannot be run on the dev Mac; review by reading)
 - Every `#[cfg(target_os = ...)]` / `#[cfg(windows)]` block: does the other-platform build still compile (no unused imports/vars, no missing fallback fn)? Windows- and Linux-only clippy warnings have broken CI before.
 - Tests touching files, paths or URLs must pass on Windows: no hardcoded `/tmp/...` or `/` separators in expectations (use `cfg(windows)` variants or `Path`), and drop every open DB/file handle before deleting its directory (Windows can't delete open files).
 - New dependency: is it gated to the right target in `Cargo.toml`? Is `Cargo.lock` committed?
 - New build-time tool or file (build.rs, icons, scripts): does the CI runner have it? Paths exist in git (`git ls-files <path>`), not only on disk?
-- Shell scripts in `packaging/`: syntax-check with the shell in the shebang (`head -1`; `/bin/sh` is dash on Linux runners, so no arrays or `[[`): `dash -n <script>` or `bash -n <script>`; executable bit kept (`git ls-files -s packaging/*.sh` shows 100755).
+- Release scripts in `packaging/` are only exercised on a tag: `check-packaging.sh` covers them statically (`/bin/sh` is dash on Linux runners: no arrays or `[[`). Anything it can't see (new tool installed in the script, new runner dependency) needs a read-through against `release.yml`.
 
 ## 3. Repo hygiene
 - `git status` clean after the checks (no generated file left uncommitted, e.g. `Cargo.lock`).
