@@ -56,7 +56,7 @@ Notes:
 - **Feature coverage:** the Slint port is not at parity yet (see Gaps). In particular, the Slint "items" status counts the whole tab, and egui counts the current category.
 - **Text:**
   - Slint shapes Arabic RTL correctly (word order is right). egui renders Arabic words in reversed order, because it has no bidi.
-  - Slint shows tofu boxes for superscript letters (`ᵁᴴᴰ`). The bundled DejaVu fallback that egui uses isn't registered with Slint yet.
+  - Superscript letters (`ᵁᴴᴰ`) render once DejaVu is added to the fontique fallback chain (`slint_ui/fonts.rs`, `unstable-fontique-011` feature); a `.slint` font import alone only registers a named family.
 - **Idle cost:** egui is fully idle when nothing changes. The Slint port wakes up a little, probably from the toast timer, which repeats even with no toasts.
 - **Scrolling:** smoothness wasn't measured, because synthetic input doesn't reach the app on this machine.
 - **Screenshots:** `/tmp/cmp/iptv-player.png` (egui) and `/tmp/cmp/iptv-player-slint.png` (Slint), same DB, same first category.
