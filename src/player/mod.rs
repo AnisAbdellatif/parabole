@@ -3,9 +3,6 @@
 mod argv;
 #[cfg(feature = "embedded-mpv")]
 pub mod embed;
-#[cfg(not(feature = "embedded-mpv"))]
-#[path = "embed_off.rs"]
-pub mod embed;
 pub mod live;
 mod locate;
 mod mpv_ipc;

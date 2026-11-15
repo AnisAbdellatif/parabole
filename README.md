@@ -1,13 +1,12 @@
 # Parabole
 
-Rust IPTV player with a Slint UI (the older egui UI is kept as `parabole-egui`). Design notes: `PLAN.md`.
+Rust IPTV player with a Slint UI. Design notes: `PLAN.md`.
 
 ## Building
 
 ```sh
 cargo run              # Slint UI with the embedded libmpv player (default)
-cargo run --bin parabole-egui   # the egui UI
-cargo build --no-default-features  # egui UI only, external players only (mpv / VLC / custom)
+cargo build --no-default-features  # library and tests only: no Slint, no libmpv
 ```
 
 The embedded player (`embedded-mpv` feature) links against **libmpv**:

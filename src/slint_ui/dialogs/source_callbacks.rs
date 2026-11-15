@@ -1,8 +1,8 @@
 //! Sources dialog callbacks.
 use super::source_form::detect_paste;
+use super::ua_preset::PRESETS;
 use super::{AppWindow, DialogApi};
 use crate::slint_ui::state::with_app;
-use crate::ui::sources::ua_preset::PRESETS;
 use crate::worker::{Command, auto_refresh};
 use slint::ComponentHandle;
 

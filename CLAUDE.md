@@ -1,6 +1,6 @@
 # Parabole — conventions
 
-Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `parabole`); the egui UI is kept as bin `parabole-egui`. Design: `PLAN.md` (read only the section you need).
+Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `parabole`). Design: `PLAN.md` (read only the section you need).
 
 ## Layout
 - `src/model.rs` — shared plain data types. Changing it affects every module.
@@ -8,8 +8,7 @@ Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `parabol
 - `src/db/` — SQLite storage and queries. No network, no UI.
 - `src/player/` — external player launching (mpv / VLC / custom). No DB, no UI.
 - `src/worker.rs` — background thread: runs network/DB jobs, talks to UI via Command/Event channels.
-- `ui-slint/` + `src/slint_ui/` — Slint views and their Rust glue (feature `slint-ui`, on by default). Notes: `docs/slint-experiment.md`.
-- `src/ui/` — egui views (secondary UI). No UI does network I/O; it sends Commands to the worker.
+- `ui-slint/` + `src/slint_ui/` — Slint views and their Rust glue (feature `slint-ui`, on by default). Notes: `docs/slint-experiment.md`. No UI does network I/O; it sends Commands to the worker.
 
 ## Code rules (code must stay workable for models with small context windows)
 - One concern per file. Keep files under ~300 lines; split into a submodule directory before they grow past that.

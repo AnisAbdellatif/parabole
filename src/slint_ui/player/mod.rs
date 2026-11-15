@@ -1,23 +1,27 @@
 //! Player area: embedded libmpv drawn into the Slint window. Spec: docs/slint-phase2.md.
+mod autonext;
 mod carousel;
 mod chrome;
 mod controls;
 mod keys;
 mod pip;
 mod playback;
+mod session;
 mod sync;
+mod track_memory;
 mod video;
+mod zap;
 
 use super::state::{SlintApp, with_app};
 use super::{AppWindow, StreamItem, TrackItem};
 use crate::player::embed::MpvCore;
 use crate::player::{PlayerSettings, TrackInfo};
-use crate::ui::player::session::Session;
-use crate::ui::player::zap::ZapBuffer;
 use crate::worker::{Event, player_settings};
+use session::Session;
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use zap::ZapBuffer;
 
 /// Per-area UI-thread state, stored in `SlintApp`.
 #[derive(Default)]

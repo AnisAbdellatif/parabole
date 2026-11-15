@@ -3,7 +3,7 @@ use super::super::{AppWindow, PlayerApi};
 use crate::player::embed::render::{
     Loader, ProcAddress, allocate_storage, create_target, proc_address,
 };
-use eframe::glow::{self, HasContext as _};
+use glow::{self, HasContext as _};
 use libmpv2::Mpv;
 use libmpv2::render::{OpenGLInitParams, RenderContext, RenderParam, RenderParamApiType};
 use slint::{

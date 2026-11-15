@@ -7,10 +7,7 @@ default-run = "parabole"
 [dependencies]
 anyhow = "1.0.104"
 directories = "6.0.0"
-eframe = { version = "0.37.0", default-features = false, features = ["accesskit", "clipboard", "default_fonts", "links", "system_fonts", "wayland", "x11", "glow", "persistence"] }
-egui = "0.37.0"
-egui_dnd = { version = "0.18.0", default-features = false }
-egui_extras = { version = "0.37.0", features = ["all_loaders"] }
+glow = { version = "0.18", optional = true }
 image = { version = "0.25.10", default-features = false, features = ["png", "jpeg"] }
 libmpv2 = { version = "7.0.1", optional = true }
 reqwest = { version = "0.13.5", default-features = false, features = ["blocking", "gzip", "rustls"] }
@@ -25,7 +22,7 @@ arboard = { version = "3.7", default-features = false, optional = true }
 
 [features]
 default = ["embedded-mpv", "slint-ui"]
-embedded-mpv = ["dep:libmpv2"]
+embedded-mpv = ["dep:libmpv2", "dep:glow"]
 slint-ui = ["embedded-mpv", "dep:slint", "dep:slint-build", "dep:arboard"]
 
 [build-dependencies]
@@ -39,3 +36,7 @@ required-features = ["slint-ui"]
 [dev-dependencies]
 i-slint-backend-testing = "=1.18.1"   # shortcut: unstable API pinned to slint's exact version, bump together
 slint = { version = "1.18", default-features = false, features = ["std", "compat-1-2", "renderer-software", "software-renderer-systemfonts", "software-renderer-path"] }
+
+[[example]]
+name = "vm_seed"
+required-features = ["slint-ui"]

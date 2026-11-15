@@ -4,7 +4,6 @@ use super::super::{AppWindow, PlayerApi, TrackItem};
 use super::chrome;
 use crate::model::MediaKind;
 use crate::player::{TrackInfo, TrackKind};
-use crate::ui::player::controls::fmt_time;
 use slint::{ComponentHandle, ModelRc, SharedString};
 use std::time::Instant;
 
@@ -104,5 +103,25 @@ pub fn push(a: &mut SlintApp) {
         };
         api.set_stats_labels(join(|l| l.0.to_string()).into());
         api.set_stats_values(join(|l| l.1.clone()).into());
+    }
+}
+
+fn fmt_time(seconds: f64) -> String {
+    let s = seconds.max(0.0) as u64;
+    match s / 3600 {
+        0 => format!("{}:{:02}", s / 60, s % 60),
+        h => format!("{h}:{:02}:{:02}", s / 60 % 60, s % 60),
+    }
+}
+
+#[cfg(test)]
+mod fmt_tests {
+    use super::fmt_time;
+
+    #[test]
+    fn formats_minutes_and_hours() {
+        assert_eq!(fmt_time(65.4), "1:05");
+        assert_eq!(fmt_time(3725.0), "1:02:05");
+        assert_eq!(fmt_time(-3.0), "0:00");
     }
 }

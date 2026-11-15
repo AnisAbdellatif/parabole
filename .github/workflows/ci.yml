@@ -27,7 +27,7 @@ jobs:
         if: runner.os == 'macOS'
         run: brew install mpv
 
-      - name: Install libmpv and eframe deps (Linux)
+      - name: Install libmpv and windowing deps (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update

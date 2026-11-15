@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds dist/Parabole-<version>-x86_64.AppImage with libmpv bundled (linuxdeploy). Linux only.
-# Needs: libmpv-dev + eframe dev packages (see ci.yml), curl, and FUSE or APPIMAGE_EXTRACT_AND_RUN=1.
+# Needs: libmpv-dev + windowing dev packages (see ci.yml), curl, and FUSE or APPIMAGE_EXTRACT_AND_RUN=1.
 set -eu
 cd "$(dirname "$0")/.."
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)

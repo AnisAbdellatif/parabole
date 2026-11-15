@@ -1,9 +1,9 @@
 //! Sort selector and search-filter chips (ports `ui/sort.rs`, `ui/search_filter.rs`).
+use super::search_filter::MEDIA_CHIPS;
+use super::sort::SortMode;
 use crate::model::MediaKind;
 use crate::slint_ui::state::{Sel, SlintApp, with_app};
 use crate::slint_ui::{AppWindow, BrowseApi, ChipItem, MenuEntry};
-use crate::ui::search_filter::MEDIA_CHIPS;
-use crate::ui::sort::SortMode;
 use slint::{ComponentHandle, ModelRc, VecModel};
 
 fn sort_key(a: &SlintApp) -> Option<String> {

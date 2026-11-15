@@ -1,4 +1,4 @@
-//! In-app player: libmpv with the OpenGL render API, drawn through eframe's glow context.
+//! In-app player: libmpv with the OpenGL render API, drawn into the Slint window.
 //! libmpv and its GL state live on the UI thread; the worker never touches this.
 
 mod commands;
@@ -8,16 +8,6 @@ pub(crate) mod render;
 mod stats;
 
 pub use self::core::MpvCore;
-use super::PlayerSettings;
-use anyhow::{Context, Result};
-use render::VideoOutput;
-use std::ops::{Deref, DerefMut};
-
-pub struct EmbeddedPlayer {
-    // Field order matters: the video output must drop before the Mpv (in `core`) it renders from.
-    video: VideoOutput,
-    core: MpvCore,
-}
 
 /// Options set once at init; headers and low-latency options are per file (see `commands`).
 const INIT_OPTIONS: [(&str, &str); 7] = [
@@ -32,44 +22,6 @@ const INIT_OPTIONS: [(&str, &str); 7] = [
         "reconnect=1,reconnect_streamed=1,reconnect_delay_max=5",
     ),
 ];
-
-impl EmbeddedPlayer {
-    /// Needs the GL context current (call from `App::new`).
-    pub fn new(cc: &eframe::CreationContext<'_>, settings: &PlayerSettings) -> Result<Self> {
-        let loader = cc
-            .get_proc_address
-            .as_ref()
-            .context("no OpenGL proc address loader")?;
-        let ctx = cc.egui_ctx.clone();
-        let core = MpvCore::new(settings, move || ctx.request_repaint())?;
-        let video = VideoOutput::new(core.mpv(), &**loader, &cc.egui_ctx)
-            .map_err(|e| anyhow::anyhow!("libmpv render context: {e}"))?;
-        Ok(Self { video, core })
-    }
-
-    pub fn paint(&self, ui: &egui::Ui, frame: &mut eframe::Frame, rect: egui::Rect) {
-        self.video.paint(ui, frame, rect);
-    }
-}
-
-impl Deref for EmbeddedPlayer {
-    type Target = MpvCore;
-    fn deref(&self) -> &MpvCore {
-        &self.core
-    }
-}
-
-impl DerefMut for EmbeddedPlayer {
-    fn deref_mut(&mut self) -> &mut MpvCore {
-        &mut self.core
-    }
-}
-
-impl Drop for EmbeddedPlayer {
-    fn drop(&mut self) {
-        self.video.release();
-    }
-}
 
 /// `--key=value` or `--flag` (= `yes`); other shapes are ignored.
 fn split_mpv_arg(arg: &str) -> Option<(&str, &str)> {

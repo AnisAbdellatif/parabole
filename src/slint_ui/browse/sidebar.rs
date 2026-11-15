@@ -1,11 +1,11 @@
 //! Sidebar rows, group/category menu, pinning, keyboard focus
 //! (ports `ui/sidebar_rows.rs`, `ui/sidebar_groups.rs`, the sidebar half of `ui/nav_keys.rs`).
 use super::groups;
+use super::sort::SortMode;
 use crate::model::MediaKind;
 use crate::slint_ui::callbacks::select;
 use crate::slint_ui::state::{Sel, SlintApp, with_app};
 use crate::slint_ui::{AppWindow, BrowseApi, Core, MenuEntry, SideRow};
-use crate::ui::sort::SortMode;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 
 fn row(id: String, kind: i32, label: String, count: i32, icon: i32, pinned: bool) -> SideRow {

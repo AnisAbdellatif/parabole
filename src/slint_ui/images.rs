@@ -116,6 +116,7 @@ impl Images {
         on_ready: impl Fn(String, Size, Option<Decoded>) + Send + Sync + 'static,
     ) -> Rc<Self> {
         let tx = imgcache::default_dir()
+            .inspect(|dir| imgcache::spawn_prune(dir.clone()))
             .zip(imgcache::http_client().ok())
             .map(|(dir, client)| {
                 let (tx, rx) = channel::<Key>();

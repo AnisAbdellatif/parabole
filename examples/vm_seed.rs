@@ -8,9 +8,9 @@ use anyhow::{Context, Result, bail};
 use parabole::db::Db;
 use parabole::model::{Source, SourceInput, SourceKind};
 use parabole::player::{PlayerKind, PlayerSettings};
+use parabole::slint_ui::paths::db_path;
 use parabole::sources::detect::detect;
 use parabole::sources::m3u;
-use parabole::ui::db_path;
 use parabole::worker::player_settings;
 
 fn main() -> Result<()> {

@@ -6,6 +6,7 @@ mod settings;
 mod source_callbacks;
 mod source_form;
 mod sources;
+mod ua_preset;
 
 use super::state::{SlintApp, with_app};
 use super::{AppWindow, DialogApi};

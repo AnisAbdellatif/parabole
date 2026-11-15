@@ -1,11 +1,10 @@
 //! Session lifecycle and the housekeeping tick; mirrors `ui/player/mod.rs` (`embed_tick`).
 use super::super::Core;
 use super::super::state::{SlintApp, with_app};
+use super::session::{EndAction, SAVE_EVERY, STABLE_AFTER_S, Session, end_action};
+use super::{autonext, track_memory};
 use super::{carousel, sync};
 use crate::player::{Notice, PlayerKind};
-use crate::ui::player::autonext;
-use crate::ui::player::session::{EndAction, SAVE_EVERY, STABLE_AFTER_S, Session, end_action};
-use crate::ui::player::track_memory;
 use crate::worker::{Command, EmbedPlay, Track, player_settings};
 use slint::ComponentHandle;
 use std::time::{Duration, Instant};

@@ -8,19 +8,21 @@ mod groups;
 mod hero;
 mod menu;
 mod rows;
+mod search_filter;
 mod series;
 mod sidebar;
+mod sort;
 
 use super::state::{Sel, SlintApp, with_app};
 use super::{AppWindow, BrowseApi, EditCat, EditGroup, EpisodeItem, SideRow};
-use crate::ui::search_filter::SearchFilter;
-use crate::ui::sort::SortMode;
 use crate::worker::Event;
 pub use filters::load_sort;
 pub use grid::GridModel;
 pub use rows::{RowAction, run as row_action};
+use search_filter::SearchFilter;
 pub use series::open as open_series;
 use slint::{ComponentHandle, ModelRc, VecModel};
+use sort::SortMode;
 use std::cell::Cell;
 use std::rc::Rc;
 

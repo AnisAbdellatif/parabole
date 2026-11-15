@@ -6,5 +6,4 @@ pub mod player;
 #[cfg(feature = "slint-ui")]
 pub mod slint_ui;
 pub mod sources;
-pub mod ui;
 pub mod worker;

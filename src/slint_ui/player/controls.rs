@@ -7,7 +7,7 @@ use slint::ComponentHandle;
 use std::time::Duration;
 
 const FULLSCREEN_EXIT: Duration = Duration::from_millis(900);
-/// Volume slider range, as in the egui bar.
+/// Volume slider range.
 const VOL_MAX: f64 = 130.0;
 
 pub fn connect(win: &AppWindow) {

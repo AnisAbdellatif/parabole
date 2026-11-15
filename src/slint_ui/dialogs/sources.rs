@@ -1,11 +1,11 @@
 //! Sources dialog (mirrors `ui/sources/{mod,list,account,ua_preset}.rs`).
 use super::DialogApi;
 use super::source_form::Fields;
+use super::ua_preset::{PRESETS, is_custom};
 use crate::model::SourceKind;
 use crate::slint_ui::SourceRow;
 use crate::slint_ui::state::SlintApp;
 use crate::sources::xtream::{AccountInfo, Expiry, format_date};
-use crate::ui::sources::ua_preset::{PRESETS, is_custom};
 use crate::worker::{Command, auto_refresh};
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::time::{SystemTime, UNIX_EPOCH};

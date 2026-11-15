@@ -33,7 +33,7 @@ pub fn tech_line(core: &MpvCore) -> String {
 }
 
 /// Seconds buffered ahead of the playhead: how far a live stream trails its edge.
-/// The egui player has no such value; this reuses the demuxer cache reading of the stats overlay.
+/// Reuses the demuxer cache reading of the stats overlay.
 pub fn behind_s(core: &MpvCore) -> f32 {
     core.mpv()
         .get_property::<f64>("demuxer-cache-duration")
