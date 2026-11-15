@@ -106,3 +106,4 @@ Dev experience:
 - `ListView.viewport-y` is deprecated for `content-y`; the error says so, so the fix was quick.
 - Animating a derived `t` (0..1) bound to `open` gives enter and exit animation without state machines, and `Theme.motion` = 0 makes it snap.
 - Slint runs no synthetic input without OS accessibility rights, so an env-var smoke hook was the practical way to screenshot overlays.
+- `HorizontalLayout` defaults to `cross-axis-alignment: stretch`, so a child with a fixed `height` sits at the TOP of the row (an explicit `y` there is overwritten by the layout). Set `cross-axis-alignment: center` on rows with mixed heights; children without a height then shrink to preferred, so use `cross-axis-self-alignment: stretch` where one must fill.

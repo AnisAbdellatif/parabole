@@ -18,6 +18,7 @@ export component SettingsDialog inherits DialogFrame {
     FormRow { label: "Extra mpv args"; DField { text <=> DialogApi.set-mpv-args; } }
     HorizontalLayout {
         spacing: 12px;
+        cross-axis-alignment: center;
         DButton { text: "Detect"; clicked => { DialogApi.settings-detect(); } }
         Text { text: DialogApi.set-detected; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
     }

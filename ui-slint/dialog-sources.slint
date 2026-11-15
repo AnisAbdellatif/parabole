@@ -25,6 +25,7 @@ component SourceItem inherits Rectangle {
         spacing: 6px;
         HorizontalLayout {
             spacing: 8px;
+            cross-axis-alignment: center;
             Text { text: root.name; color: Theme.text; font-weight: Theme.semibold; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
             Text { text: root.kind; color: Theme.text-dim; vertical-alignment: center; }
             Text { text: root.refreshing ? "refreshing…" : root.refreshed; color: Theme.text-dim; vertical-alignment: center; }
@@ -61,6 +62,7 @@ export component SourcesDialog inherits DialogFrame {
     }
     HorizontalLayout {
         spacing: 12px;
+        cross-axis-alignment: center;
         if DialogApi.sources.length > 1: DButton { text: "Refresh all"; clicked => { DialogApi.sources-refresh-all(); } }
         Text { text: "Auto-refresh at startup after (hours, 0 = off):"; color: Theme.text-muted; vertical-alignment: center; horizontal-stretch: 1; horizontal-alignment: right; }
         DField {

@@ -77,10 +77,10 @@ export component DCheck inherits Rectangle {
     height: 24px;
     HorizontalLayout {
         spacing: 8px;
+        cross-axis-alignment: center;
         Rectangle {
             width: 18px;
             height: 18px;
-            y: (parent.height - self.height) / 2;
             border-radius: 5px;
             border-width: 1px;
             border-color: root.checked ? Theme.accent : Theme.border;
@@ -96,7 +96,13 @@ export component DCheck inherits Rectangle {
 export component FormRow inherits HorizontalLayout {
     in property <string> label;
     spacing: 12px;
-    Text { text: root.label; color: Theme.text-muted; font-size: Theme.fs-md; width: 124px; vertical-alignment: top; y: 8px; }
+    cross-axis-alignment: center;
+    Rectangle {
+        width: 124px;
+        height: 34px;
+        cross-axis-self-alignment: start;
+        Text { text: root.label; color: Theme.text-muted; font-size: Theme.fs-md; vertical-alignment: center; }
+    }
     @children
 }
 

@@ -17,8 +17,8 @@ export component ShellHeader inherits Rectangle {
         padding-right: 16px;
         spacing: 12px;
         alignment: stretch;
+        cross-axis-alignment: center;
         search := SearchBox {
-            y: (parent.height - self.height) / 2;
             preferred-width: 420px;
             max-width: 460px;
             min-width: 146px;
@@ -27,7 +27,6 @@ export component ShellHeader inherits Rectangle {
         Rectangle { horizontal-stretch: 1; }
         ComboBox {
             width: 170px;
-            y: (parent.height - self.height) / 2;
             model: Core.source-names;
             current-index: Core.source-index;
             selected(_) => { Core.source-selected(self.current-index); }
@@ -35,7 +34,6 @@ export component ShellHeader inherits Rectangle {
         if BrowseApi.sort-visible: sort-btn := Rectangle {
             width: sort-text.preferred-width + 28px;
             height: 32px;
-            y: (parent.height - self.height) / 2;
             background: sort-ta.has-hover ? Theme.surface-hover : Theme.surface;
             border-radius: Theme.radius;
             border-width: 1px;

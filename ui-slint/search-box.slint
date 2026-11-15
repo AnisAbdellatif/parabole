@@ -15,7 +15,8 @@ export component SearchBox inherits Rectangle {
         padding-left: 12px;
         padding-right: 12px;
         spacing: 8px;
-        Icon { source: Icons.search; tint: Theme.text-muted; size: 16px; y: (parent.height - self.height) / 2; }
+        cross-axis-alignment: center;
+        Icon { source: Icons.search; tint: Theme.text-muted; size: 16px; }
         input := TextInput {
             text <=> Core.search-text;
             color: Theme.text;

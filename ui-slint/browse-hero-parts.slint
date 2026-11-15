@@ -21,7 +21,8 @@ export component HeroBtn inherits Rectangle {
         padding-right: 16px;
         spacing: 8px;
         alignment: center;
-        if root.icon.width > 0: Icon { source: root.icon; tint: root.icon-tint; size: 14px; y: (parent.height - self.height) / 2; }
+        cross-axis-alignment: center;
+        if root.icon.width > 0: Icon { source: root.icon; tint: root.icon-tint; size: 14px; }
         txt := Text {
             text: root.label;
             color: root.primary ? Theme.on-accent : Theme.text;
