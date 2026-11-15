@@ -30,8 +30,16 @@ pub fn drain() {
                     }
                     a.reload_sources();
                 }
-                Event::Playing { title, kind, .. } => set_playing(a, &title, kind_name(kind)),
-                Event::PlayerStopped => set_playing(a, "", ""),
+                Event::Playing { title, kind, .. } => {
+                    a.playing_id = a.play_req;
+                    a.streams.set_playing(a.playing_id);
+                    set_playing(a, &title, kind_name(kind));
+                }
+                Event::PlayerStopped => {
+                    a.playing_id = None;
+                    a.streams.set_playing(None);
+                    set_playing(a, "", "");
+                }
                 Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
                 // consumed by the player and browse areas before they get here
                 Event::PlayEmbedded(_)

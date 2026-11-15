@@ -1,0 +1,22 @@
+// Placeholder rows shown while the first sync runs.
+import { Theme } from "theme.slint";
+
+component SkeletonRow inherits Rectangle {
+    property <float> p: Theme.reduce-motion ? 0.5 : 0.1;
+    init => { if (!Theme.reduce-motion) { self.p = 0.9; } }
+    animate p { duration: Theme.motion * 8; iteration-count: -1; direction: alternate; easing: ease-in-out; }
+    height: Theme.channel-row-h;
+    border-radius: Theme.radius-l;
+    background: @linear-gradient(90deg, Theme.surface 0%, Theme.surface-hover p * 100%, Theme.surface 100%);
+}
+
+export component Skeleton inherits Rectangle {
+    VerticalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 12px;
+        spacing: Theme.channel-row-step - Theme.channel-row-h;
+        alignment: start;
+        for i in 8: SkeletonRow { opacity: 1 - i * 0.08; }
+    }
+}

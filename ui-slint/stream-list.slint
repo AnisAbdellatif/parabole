@@ -30,7 +30,7 @@ export component StreamList inherits Rectangle {
                 width: parent.width;
                 item: item;
                 cursor: i == Core.cursor;
-                playing: Core.playing-title != "" && item.name == Core.playing-title;
+                playing: item.playing;
                 clicked => { Core.cursor = i; root.interacted(); }
                 double-clicked => { Core.cursor = i; Core.stream-activated(i); }
                 favorite-clicked => { Core.favorite-toggled(i); root.interacted(); }

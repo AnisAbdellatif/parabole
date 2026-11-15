@@ -21,7 +21,7 @@ component RailButton inherits Rectangle {
         y: (parent.height - self.height) / 2;
         border-radius: Theme.radius-l;
         background: root.active ? @linear-gradient(135deg, Theme.accent 0%, Theme.accent-2 100%) : ta.has-hover ? Theme.surface : transparent;
-        drop-shadow-color: Theme.accent.with-alpha(0.35);
+        drop-shadow-color: root.active ? Theme.accent.with-alpha(0.35) : transparent;
         drop-shadow-blur: root.active ? 18px : 0px;
         Icon {
             x: (parent.width - self.width) / 2;
@@ -51,7 +51,7 @@ export component ShellRail inherits Rectangle {
     width: root.open ? Theme.rail-w-open : Theme.rail-w;
     animate width { duration: Theme.motion; easing: ease-out; }
     background: Theme.toolbar;
-    drop-shadow-color: #00000090;
+    drop-shadow-color: root.open ? #00000090 : transparent;
     drop-shadow-blur: root.open ? 28px : 0px;
     animate drop-shadow-blur { duration: Theme.motion; }
     Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }

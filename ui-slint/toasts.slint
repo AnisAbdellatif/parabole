@@ -7,23 +7,32 @@ export component Toasts inherits VerticalLayout {
     spacing: 8px;
     alignment: end;
     width: 340px;
-    for t in Core.toasts: Rectangle {
-        background: Theme.toast-bg;
-        border-radius: Theme.radius-l;
-        border-width: 1px;
-        border-color: Theme.toast-border;
-        drop-shadow-blur: 24px;
-        drop-shadow-offset-y: 8px;
-        drop-shadow-color: #00000064;
-        HorizontalLayout {
-            padding: 12px;
-            padding-left: 14px;
-            spacing: 8px;
-            Text { text: t.text; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; horizontal-stretch: 1; }
-            TouchArea {
-                width: 20px;
-                clicked => { Core.toast-dismissed(t.id); }
-                Icon { source: Icons.close; tint: Theme.text-muted; size: 14px; }
+    for t in Core.toasts: wrap := Rectangle {
+        property <bool> shown: false;
+        init => { self.shown = true; }
+        height: row.preferred-height;
+        card := Rectangle {
+            x: wrap.shown ? 0px : 40px;
+            opacity: wrap.shown ? 1 : 0;
+            animate x { duration: Theme.motion * 2; easing: ease-out-back; }
+            animate opacity { duration: Theme.motion * 2; easing: ease-out; }
+            background: Theme.toast-bg;
+            border-radius: Theme.radius-l;
+            border-width: 1px;
+            border-color: Theme.toast-border;
+            drop-shadow-blur: 24px;
+            drop-shadow-offset-y: 8px;
+            drop-shadow-color: #00000064;
+            row := HorizontalLayout {
+                padding: 12px;
+                padding-left: 14px;
+                spacing: 8px;
+                Text { text: t.text; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; horizontal-stretch: 1; }
+                TouchArea {
+                    width: 20px;
+                    clicked => { Core.toast-dismissed(t.id); }
+                    Icon { source: Icons.close; tint: Theme.text-muted; size: 14px; }
+                }
             }
         }
     }

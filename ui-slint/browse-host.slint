@@ -5,6 +5,7 @@ import { BrowseApi } from "browse-api.slint";
 import { ListHeader } from "list-header.slint";
 import { StreamList } from "stream-list.slint";
 import { PosterGrid } from "browse-grid.slint";
+import { Skeleton } from "skeleton.slint";
 import { EmptyState } from "browse-empty.slint";
 import { SeriesPage } from "browse-series.slint";
 import { DetailsPanel } from "browse-details.slint";
@@ -16,7 +17,8 @@ export component BrowseHost inherits Rectangle {
         if !BrowseApi.series-open: ListHeader { }
         if !BrowseApi.series-open && Core.streams.length > 0 && !BrowseApi.grid-view: StreamList { interacted => { root.interacted(); } }
         if !BrowseApi.series-open && Core.streams.length > 0 && BrowseApi.grid-view: PosterGrid { interacted => { root.interacted(); } }
-        if !BrowseApi.series-open && Core.streams.length == 0: EmptyState { }
+        if !BrowseApi.series-open && Core.streams.length == 0 && Core.syncing: Skeleton { }
+        if !BrowseApi.series-open && Core.streams.length == 0 && !Core.syncing: EmptyState { }
     }
     if BrowseApi.details-open: DetailsPanel { }
 }

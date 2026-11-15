@@ -54,15 +54,19 @@ pub fn run(a: &mut SlintApp, idx: usize, action: RowAction) {
             groups::open_group_dialog(a, None, String::new(), item);
         }
         RowAction::RemoveFromGroup => groups::remove_from_group(a, &row),
-        RowAction::PlayFrom(id) => a.worker.send(Command::Play {
-            profile,
-            stream_id: id,
-            kind: None,
-        }),
+        RowAction::PlayFrom(id) => {
+            a.play_req = Some(id);
+            a.worker.send(Command::Play {
+                profile,
+                stream_id: id,
+                kind: None,
+            });
+        }
     }
 }
 
-fn play(a: &SlintApp, row: &StreamRow, kind: Option<PlayerKind>) {
+fn play(a: &mut SlintApp, row: &StreamRow, kind: Option<PlayerKind>) {
+    a.play_req = Some(row.id);
     a.worker.send(Command::Play {
         profile: a.profile(),
         stream_id: row.id,

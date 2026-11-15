@@ -1,5 +1,6 @@
 // Main window. Area ownership: docs/slint-phase2.md. Keys go Dialog -> Player -> Browse -> Core.
 import { Theme } from "theme.slint";
+import { Palette } from "std-widgets.slint";
 import { Core } from "core.slint";
 import { ShellRail } from "shell-rail.slint";
 import { ShellHeader } from "shell-header.slint";
@@ -27,7 +28,9 @@ export component AppWindow inherits Window {
     default-font-size: Theme.fs-md;
 
     function move-cursor(d: int) { Core.cursor = max(0, min(Core.streams.length - 1, Core.cursor + d)); }
-    init => { keys.focus(); }
+    property <int> theme-mode: Theme.mode;
+    changed theme-mode => { Palette.color-scheme = Theme.mode == 2 ? ColorScheme.light : ColorScheme.dark; }
+    init => { keys.focus(); Palette.color-scheme = Theme.mode == 2 ? ColorScheme.light : ColorScheme.dark; }
 
     keys := FocusScope {
         key-pressed(e) => {

@@ -33,6 +33,9 @@ impl SlintApp {
         if let Some(i) = self.toasts.iter().position(|t| t.id == id) {
             self.toasts.remove(i);
         }
+        if self.toast_born.is_empty() {
+            self.toast_timer.stop();
+        }
     }
 
     fn expire_toasts(&mut self) {

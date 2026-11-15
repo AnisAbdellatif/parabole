@@ -19,6 +19,7 @@ pub struct StreamModel {
     source_names: RefCell<HashMap<SourceId, String>>,
     grid: RefCell<Weak<GridModel>>,
     on_image: RefCell<Option<ImageHook>>,
+    playing: Cell<Option<i64>>,
 }
 
 fn initials(name: &str) -> String {
@@ -39,6 +40,7 @@ impl StreamModel {
             source_names: Default::default(),
             grid: Default::default(),
             on_image: Default::default(),
+            playing: Cell::new(None),
         }
     }
 
@@ -54,6 +56,19 @@ impl StreamModel {
         self.notify.reset();
         if let Some(g) = self.grid.borrow().upgrade() {
             g.reset();
+        }
+    }
+
+    /// Marks the row with this stream id as playing and refreshes the old and new rows.
+    pub fn set_playing(&self, id: Option<i64>) {
+        let old = self.playing.replace(id);
+        if old == id {
+            return;
+        }
+        for (i, r) in self.rows.borrow().iter().enumerate() {
+            if Some(r.id) == old || Some(r.id) == id {
+                self.notify.row_changed(i);
+            }
         }
     }
 
@@ -159,6 +174,7 @@ impl Model for StreamModel {
             watched: classify(r.progress) == Watch::Watched,
             missing: r.missing,
             hidden: r.hidden,
+            playing: self.playing.get() == Some(r.id),
         })
     }
 

@@ -71,6 +71,8 @@ pub fn run() -> Result<()> {
             categories: Vec::new(),
             groups: Vec::new(),
             streams,
+            play_req: None,
+            playing_id: None,
             search_text: String::new(),
             search_applied: String::new(),
             search_timer: Default::default(),

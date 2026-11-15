@@ -86,6 +86,8 @@ pub struct SlintApp {
     pub categories: Vec<CategoryRow>,
     pub groups: Vec<StreamGroup>,
     pub streams: Rc<StreamModel>,
+    pub play_req: Option<i64>,
+    pub playing_id: Option<i64>,
     pub search_text: String,
     pub search_applied: String,
     pub search_timer: slint::Timer,
