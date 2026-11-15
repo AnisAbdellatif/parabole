@@ -1,8 +1,8 @@
 -- Keeps live streams near the live edge. Options: --script-opts=live-catchup-<key>=<value>; the app sets live-catchup-live=yes per live file
-local opts = { enabled = true, start_above = 4, stop_below = 2, speed = 1.07, seek_above = 20, seek_margin = 1 }
+local opts = { enabled = true, start_above = 4, stop_below = 2, speed = 1.07, seek_above = 20, seek_margin = 1, seek_cooldown = 10 }
 require("mp.options").read_options(opts, "live-catchup")
 
-local live, catching = false, false
+local live, catching, last_seek = false, false, -math.huge
 
 local function set_catching(on)
     if on == catching then return end
@@ -19,10 +19,13 @@ local function update_live()
 end
 
 local function on_cache(_, cache)
-    if not live or not cache then return end
+    -- paused: the cache keeps growing, and seeking now would blank the paused frame; resume re-checks below
+    if not live or not cache or mp.get_property_bool("pause") then return end
     if cache > opts.seek_above then
         local edge = mp.get_property_number("demuxer-cache-time")
-        if edge then
+        -- a decoder (or provider burst) that can't keep up refills the cache at once: seeking every second leaves only black frames
+        if edge and mp.get_time() - last_seek >= opts.seek_cooldown then
+            last_seek = mp.get_time()
             mp.msg.info(string.format("live-catchup: %.1fs behind, seeking to edge", cache))
             mp.commandv("seek", edge - opts.seek_margin, "absolute+exact")
         end
@@ -34,6 +37,9 @@ local function on_cache(_, cache)
     end
 end
 
-mp.register_event("start-file", function() catching = false end)
+mp.register_event("start-file", function() catching, last_seek = false, -math.huge end)
 mp.register_event("file-loaded", update_live)
 mp.observe_property("demuxer-cache-duration", "number", on_cache)
+mp.observe_property("pause", "bool", function(_, paused)
+    if paused == false then on_cache(nil, mp.get_property_number("demuxer-cache-duration")) end
+end)
