@@ -47,10 +47,11 @@ export component CommandPalette inherits Rectangle {
     }
     card := Rectangle {
         x: (parent.width - self.width) / 2;
-        y: parent.height * 0.16 + (root.t - 1.0) * 8px;
+        y: parent.height * 0.12 + (root.t - 1.0) * 8px;
         width: max(480px, parent.width * 0.58);
+        height: lay.preferred-height;
         opacity: root.t;
-        background: Theme.card.with-alpha(0.93);
+        background: Theme.card.with-alpha(0.98);
         border-radius: 14px;
         border-width: 1px;
         border-color: Theme.card-border-hover;
@@ -58,7 +59,7 @@ export component CommandPalette inherits Rectangle {
         drop-shadow-offset-y: 24px;
         drop-shadow-color: #000000cc;
         TouchArea { }
-        VerticalLayout {
+        lay := VerticalLayout {
             padding: 8px;
             spacing: 6px;
             HorizontalLayout {
@@ -86,7 +87,7 @@ export component CommandPalette inherits Rectangle {
             }
             Rectangle { height: 1px; background: Theme.divider; }
             list := ListView {
-                height: min(PaletteApi.items.length * 44px, 400px);
+                height: min(PaletteApi.items.length * 44px, 8 * 44px);
                 for it[i] in PaletteApi.items: PaletteRow {
                     kind: it.kind;
                     title: it.title;
