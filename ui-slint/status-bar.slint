@@ -30,6 +30,9 @@ export component StatusBar inherits Rectangle {
         if Core.playing-title != "": Rectangle {
             width: 60px;
             height: 22px;
+            accessible-role: button;
+            accessible-label: "Stop";
+            accessible-action-default => { Core.stop-playback(); }
             border-radius: 6px;
             background: stop.has-hover ? Theme.surface-hover : Theme.surface;
             stop := TouchArea { clicked => { Core.stop-playback(); } }

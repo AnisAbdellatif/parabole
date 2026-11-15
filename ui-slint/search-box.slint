@@ -18,6 +18,7 @@ export component SearchBox inherits Rectangle {
         cross-axis-alignment: center;
         Icon { source: Icons.search; tint: Theme.text-muted; size: 16px; }
         input := TextInput {
+            accessible-label: "Filter this tab";
             text <=> Core.search-text;
             color: Theme.text;
             font-size: Theme.fs-md;

@@ -6,9 +6,14 @@ import { Icon } from "icon.slint";
 // kind: 0 secondary, 1 primary, 2 danger.
 export component DButton inherits Rectangle {
     in property <string> text;
+    in property <string> label: root.text;
     in property <int> kind: 0;
     in property <bool> enabled: true;
     callback clicked();
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-enabled: root.enabled;
+    accessible-action-default => { if (root.enabled) { root.clicked(); } }
     height: 32px;
     min-width: label.preferred-width + 28px;
     max-width: label.preferred-width + 28px;
@@ -73,6 +78,11 @@ export component DField inherits Rectangle {
 export component DCheck inherits Rectangle {
     in property <string> text;
     in-out property <bool> checked: false;
+    accessible-role: checkbox;
+    accessible-label: root.text;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => { root.checked = !root.checked; }
     height: 24px;
     HorizontalLayout {
         spacing: 8px;
@@ -93,6 +103,7 @@ export component DCheck inherits Rectangle {
 
 // Drag fires changed(v) live; released(v) once when the drag (or a key press) ends.
 export component AccentSlider inherits Rectangle {
+    in property <string> label;
     in property <float> minimum: 0;
     in property <float> maximum: 1;
     in-out property <float> value;
@@ -107,6 +118,14 @@ export component AccentSlider inherits Rectangle {
         root.changed(root.value);
         root.released(root.value);
     }
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: Math.round(root.value * 100) / 100;
+    accessible-value-minimum: root.minimum;
+    accessible-value-maximum: root.maximum;
+    accessible-value-step: (root.maximum - root.minimum) / 20;
+    accessible-action-increment => { root.nudge(1); }
+    accessible-action-decrement => { root.nudge(-1); }
     height: 34px;
     horizontal-stretch: 1;
     Rectangle {
@@ -156,6 +175,11 @@ export component AccentSwitch inherits Rectangle {
     in-out property <bool> checked;
     callback toggled();
     function flip() { root.checked = !root.checked; root.toggled(); }
+    accessible-role: switch;
+    accessible-label: root.text;
+    accessible-checkable: true;
+    accessible-checked: root.checked;
+    accessible-action-default => { root.flip(); }
     height: 34px;
     HorizontalLayout {
         spacing: 10px;
@@ -216,6 +240,11 @@ export component Segmented inherits Rectangle {
         padding: 2px;
         spacing: 2px;
         for o[i] in root.options: Rectangle {
+            accessible-role: tab;
+            accessible-label: o;
+            accessible-item-selectable: true;
+            accessible-item-selected: i == root.current;
+            accessible-action-default => { root.changed(i); }
             border-radius: Theme.radius - 2px;
             background: i == root.current ? Theme.selected-bg : ta.has-hover ? Theme.surface-hover : transparent;
             Text {

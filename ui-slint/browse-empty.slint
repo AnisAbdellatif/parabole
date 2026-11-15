@@ -27,6 +27,9 @@ export component EmptyBox inherits Rectangle {
             Rectangle {
                 width: cta-text.preferred-width + 40px;
                 height: 34px;
+                accessible-role: button;
+                accessible-label: root.cta;
+                accessible-action-default => { root.clicked(); }
                 border-radius: 17px;
                 background: cta-ta.has-hover ? #7ff0de : Theme.accent;
                 cta-ta := TouchArea { clicked => { root.clicked(); } }

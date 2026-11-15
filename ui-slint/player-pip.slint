@@ -24,11 +24,12 @@ export component PipControls inherits Rectangle {
             cross-axis-alignment: center;
             y: 0px;
             height: 44px;
-            ret := IconBtn { icon: Icons.fullscreen; clicked => { PlayerApi.toggle-mini(); } }
-            cls := IconBtn { icon: Icons.close; clicked => { PlayerApi.stop(); } }
+            ret := IconBtn { icon: Icons.fullscreen; label: "Exit mini player"; clicked => { PlayerApi.toggle-mini(); } }
+            cls := IconBtn { icon: Icons.close; label: "Stop"; clicked => { PlayerApi.stop(); } }
         }
         pp := IconBtn {
             icon: PlayerApi.paused ? Icons.play : Icons.pause;
+            label: PlayerApi.paused ? "Play" : "Pause";
             x: (parent.width - self.width) / 2;
             y: (parent.height - self.height) / 2;
             clicked => { PlayerApi.toggle-pause(); }

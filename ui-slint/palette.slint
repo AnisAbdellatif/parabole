@@ -11,6 +11,11 @@ component PaletteRow inherits Rectangle {
     in property <string> subtitle;
     in property <bool> active;
     callback clicked();
+    accessible-role: list-item;
+    accessible-label: root.subtitle == "" ? root.title : root.title + ", " + root.subtitle;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.active;
+    accessible-action-default => { root.clicked(); }
     height: 44px;
     border-radius: Theme.radius;
     background: root.active ? Theme.selected-bg : transparent;

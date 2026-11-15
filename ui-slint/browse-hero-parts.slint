@@ -8,6 +8,9 @@ export component HeroBtn inherits Rectangle {
     in property <color> icon-tint: root.primary ? Theme.on-accent : Theme.text;
     in property <string> label;
     callback clicked();
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
     height: 34px;
     width: txt.preferred-width + (root.icon.width > 0 ? 54px : 32px);
     border-radius: 17px;

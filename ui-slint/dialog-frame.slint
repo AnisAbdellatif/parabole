@@ -3,6 +3,7 @@ import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { Icon } from "icon.slint";
 import { DialogApi } from "dialog-api.slint";
+import { Tip, TipAlign } from "tip.slint";
 
 export component DialogFrame inherits Rectangle {
     in property <string> title;
@@ -24,10 +25,14 @@ export component DialogFrame inherits Rectangle {
             padding: 16px;
             padding-bottom: 12px;
             Text { text: root.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; vertical-alignment: center; horizontal-stretch: 1; }
-            TouchArea {
+            close := TouchArea {
                 width: 24px;
+                accessible-role: button;
+                accessible-label: "Close";
+                accessible-action-default => { DialogApi.close(); }
                 clicked => { DialogApi.close(); }
                 Icon { source: Icons.close; tint: Theme.text-muted; size: 16px; }
+                Tip { text: "Close"; show: close.has-hover; align: TipAlign.end; anchor-w: close.width; anchor-h: close.height; }
             }
         }
         Rectangle { height: 1px; background: Theme.divider; }

@@ -10,9 +10,13 @@ export component IconBtn inherits Rectangle {
     in property <image> icon;
     in property <bool> on: false;
     in property <string> tip;
+    in property <string> label: root.tip;
     in property <TipAlign> tip-align: TipAlign.center;
     out property <bool> hovered: ta.has-hover;
     callback clicked();
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
     width: 32px;
     height: 32px;
     border-radius: Theme.radius;
@@ -40,7 +44,16 @@ export component IconBtn inherits Rectangle {
 // Thin accent bar; `changed` gets the fraction under the pointer while pressed or dragged.
 export component Bar inherits Rectangle {
     in property <float> frac;
+    in property <string> label;
     callback changed(float);
+    accessible-role: slider;
+    accessible-label: root.label;
+    accessible-value: Math.round(clamp(root.frac, 0, 1) * 100) + "%";
+    accessible-value-minimum: 0;
+    accessible-value-maximum: 100;
+    accessible-value-step: 5;
+    accessible-action-increment => { root.changed(clamp(root.frac + 0.05, 0, 1)); }
+    accessible-action-decrement => { root.changed(clamp(root.frac - 0.05, 0, 1)); }
     height: 16px;
     min-width: 20px;
     Rectangle {
@@ -76,6 +89,9 @@ export component Pill inherits Rectangle {
     in property <string> text;
     in property <bool> primary: false;
     callback clicked();
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { root.clicked(); }
     height: 30px;
     min-width: 72px;
     border-radius: 15px;
@@ -112,6 +128,11 @@ export component TrackMenu inherits IconBtn {
             VerticalLayout {
                 padding: 4px;
                 for t in root.tracks: Rectangle {
+                    accessible-role: list-item;
+                    accessible-label: t.label;
+                    accessible-item-selectable: true;
+                    accessible-item-selected: t.selected;
+                    accessible-action-default => { root.picked(t.id); }
                     height: 30px;
                     border-radius: 6px;
                     background: row.has-hover ? Theme.surface-hover : transparent;

@@ -77,6 +77,7 @@ export component PlayerControls inherits Rectangle {
             }
             if root.vol-on: Bar {
                 width: 80px;
+                label: "Volume";
                 frac: PlayerApi.volume / 130;
                 changed(f) => { PlayerApi.set-volume(f); }
             }

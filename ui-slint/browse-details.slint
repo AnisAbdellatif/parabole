@@ -55,6 +55,9 @@ export component DetailsPanel inherits Rectangle {
             y: 10px;
             width: 32px;
             height: 32px;
+            accessible-role: button;
+            accessible-label: "Close";
+            accessible-action-default => { BrowseApi.details-closed(); }
             clicked => { BrowseApi.details-closed(); }
             Icon { source: Icons.close; x: 8px; y: 8px; tint: Theme.text-muted; }
         }

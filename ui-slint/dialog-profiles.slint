@@ -73,7 +73,7 @@ component ProfileItem inherits Rectangle {
         if !root.renaming && root.confirm: DButton { text: "Cancel"; clicked => { DialogApi.profile-delete-cancel(); } }
         if !root.renaming && !root.confirm && !root.active: switch := DButton { text: "Switch"; clicked => { DialogApi.profile-switch(root.id); } }
         if !root.renaming && !root.confirm: DButton { text: "Rename"; clicked => { DialogApi.profile-rename-start(root.id); } }
-        if !root.renaming && !root.confirm: DButton { text: "⋯"; clicked => { menu.show(); } }
+        if !root.renaming && !root.confirm: DButton { text: "⋯"; label: "More actions"; clicked => { menu.show(); } }
     }
 }
 

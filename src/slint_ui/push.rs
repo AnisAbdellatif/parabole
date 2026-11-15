@@ -94,7 +94,7 @@ impl SlintApp {
             }
         };
         core.set_list_title(title.into());
-        core.set_list_subtitle(format!("{n} items").into());
+        core.set_list_subtitle(count(n, "item", "items").into());
         let empty = if self.sources.is_empty() {
             "Add a source to get started"
         } else if !self.search_applied.is_empty() {
@@ -117,15 +117,38 @@ impl SlintApp {
         core.set_has_sources(n > 0);
         core.set_syncing(!self.refreshing.is_empty());
         let text = if self.refreshing.is_empty() {
-            format!("{n} source{} synced", if n == 1 { "" } else { "s" })
+            format!("{} synced", count(n, "source", "sources"))
         } else {
             "Syncing…".into()
         };
         core.set_status_sources(text.into());
         let items: i64 = self.categories.iter().map(|c| c.count).sum();
         core.set_status_items(
-            format!("{items} items in {} categories", self.categories.len()).into(),
+            format!(
+                "{} in {}",
+                count(items, "item", "items"),
+                count(self.categories.len(), "category", "categories")
+            )
+            .into(),
         );
         self.push_empty();
+    }
+}
+
+/// "1 item", "3 items".
+fn count<T: std::fmt::Display + PartialEq + From<u8>>(n: T, one: &str, many: &str) -> String {
+    let word = if n == T::from(1) { one } else { many };
+    format!("{n} {word}")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::count;
+
+    #[test]
+    fn count_picks_singular_only_for_one() {
+        assert_eq!(count(1, "item", "items"), "1 item");
+        assert_eq!(count(0, "item", "items"), "0 items");
+        assert_eq!(count(2, "category", "categories"), "2 categories");
     }
 }

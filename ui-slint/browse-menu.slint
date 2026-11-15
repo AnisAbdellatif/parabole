@@ -32,6 +32,9 @@ export component ContextMenu inherits Rectangle {
                 for e in root.items: Rectangle {
                     height: e.kind == 2 ? 9px : e.kind == 1 ? 26px : 30px;
                     if e.kind == 0: Rectangle {
+                        accessible-role: list-item;
+                        accessible-label: e.label;
+                        accessible-action-default => { root.picked(e.id); }
                         border-radius: 6px;
                         background: ta.has-hover ? Theme.surface-hover : transparent;
                         ta := TouchArea { clicked => { root.picked(e.id); } }

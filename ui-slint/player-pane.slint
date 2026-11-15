@@ -43,6 +43,13 @@ component PaneChannels inherits VerticalLayout {
     list := ListView {
         vertical-stretch: 1;
         for it[i] in root.items: Rectangle {
+            accessible-role: list-item;
+            accessible-label: it.name;
+            accessible-item-selectable: true;
+            accessible-item-selected: it.playing;
+            accessible-item-index: i;
+            accessible-item-count: root.items.length;
+            accessible-action-default => { PlayerApi.pane-play(i); }
             height: 40px;
             border-radius: Theme.radius;
             background: it.playing ? Theme.selected-bg : ta.has-hover ? Theme.row-hover : transparent;
