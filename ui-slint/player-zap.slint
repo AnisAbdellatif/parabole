@@ -6,13 +6,15 @@ import { LogoTile } from "logo-tile.slint";
 // band-h: height between the top chrome and the controls. Neighbours shown per side:
 // clamp(floor((band-h - current - 2 gap) / (2 step)), 0, 2). The current card is the middle item
 // (carousel.rs builds the list symmetric around it).
+// Neighbours only when `neighbours` is set (fullscreen); docked and mini show the current card alone.
 export component ZapCarousel inherits Rectangle {
+    in property <bool> neighbours: true;
     private property <bool> open: PlayerApi.zap-open || PlayerApi.zap-text != "";
     private property <length> cur-h: 64px;
     private property <length> gap: 6px;
     private property <length> step: 50px;
     private property <int> cur: (PlayerApi.zap-items.length - 1) / 2;
-    private property <int> n: max(0, min(2, Math.floor((root.height - root.cur-h - 2 * root.gap) / (2 * root.step) * 1px / 1px)));
+    private property <int> n: !root.neighbours ? 0 : max(0, min(2, Math.floor((root.height - root.cur-h - 2 * root.gap) / (2 * root.step) * 1px / 1px)));
     width: 220px;
     x: -220px;
     opacity: 0;

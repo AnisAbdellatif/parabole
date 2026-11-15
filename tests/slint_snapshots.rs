@@ -118,6 +118,12 @@ impl Shots {
         api.set_zap_items(ModelRc::new(VecModel::from(items)));
         api.set_zap_open(true);
         self.shot("zap-carousel");
+        api.set_fullscreen(true);
+        self.shot("zap-fullscreen");
+        api.set_fullscreen(false);
+        api.set_mini(true);
+        self.shot("zap-mini");
+        api.set_mini(false);
         api.set_zap_open(false);
         api.set_active(false);
         self.p.pump(2);

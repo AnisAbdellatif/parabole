@@ -131,7 +131,12 @@ impl SlintApp {
                 SourceRow {
                     id: s.id as i32,
                     name: s.name.as_str().into(),
-                    kind: s.kind.as_str().into(),
+                    kind: match s.kind {
+                        SourceKind::Xtream => "Xtream",
+                        SourceKind::M3uUrl => "M3U link",
+                        SourceKind::M3uFile => "M3U file",
+                    }
+                    .into(),
                     refreshed: s
                         .last_refresh
                         .map(|t| ago(t, now))

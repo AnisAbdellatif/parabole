@@ -83,7 +83,11 @@ export component VideoSurface inherits Rectangle {
         opacity: root.chrome-on ? 1 : 0;
         animate opacity { duration: Theme.motion * 1.5; }
     }
-    if !root.compact: ZapCarousel { y: top.height; height: max(0px, ctl.y - top.height); }
+    ZapCarousel {
+        y: root.compact ? 0px : top.height;
+        height: root.compact ? parent.height : max(0px, ctl.y - top.height);
+        neighbours: PlayerApi.fullscreen;
+    }
     if root.compact: PipControls { width: parent.width; height: parent.height; }
     if PlayerApi.next-label != "": NextCard { width: parent.width; height: parent.height; }
 }
