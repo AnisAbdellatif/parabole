@@ -1,6 +1,6 @@
 //! Lazy list model: rows stay as `StreamRow`; `StreamItem`s are built per visible row.
 use super::browse::GridModel;
-use super::images::Images;
+use super::images::{Images, Size};
 use super::{StreamItem, TileItem};
 use crate::db::progress::{Watch, classify};
 use crate::model::{SourceId, StreamRow};
@@ -88,7 +88,10 @@ impl StreamModel {
     pub fn tile(&self, i: usize) -> Option<TileItem> {
         let rows = self.rows.borrow();
         let r = rows.get(i)?;
-        let poster = r.logo.as_deref().and_then(|u| self.images.get(u));
+        let poster = r
+            .logo
+            .as_deref()
+            .and_then(|u| self.images.get(u, Size::Poster));
         Some(TileItem {
             index: i as i32,
             name: r.name.as_str().into(),
@@ -158,7 +161,10 @@ impl Model for StreamModel {
     fn row_data(&self, i: usize) -> Option<StreamItem> {
         let rows = self.rows.borrow();
         let r = rows.get(i)?;
-        let logo = r.logo.as_deref().and_then(|u| self.images.get(u));
+        let logo = r
+            .logo
+            .as_deref()
+            .and_then(|u| self.images.get(u, Size::Logo));
         Some(StreamItem {
             name: r.name.as_str().into(),
             meta: self.meta(r).into(),

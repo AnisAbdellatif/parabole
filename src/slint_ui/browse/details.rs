@@ -1,5 +1,6 @@
 //! Movie/series details window and provider-info cache (ports `ui/details_view.rs`).
 use crate::model::{MediaInfo, MediaKind, SourceId, SourceKind, StreamRow};
+use crate::slint_ui::images::Size;
 use crate::slint_ui::state::{SlintApp, with_app};
 use crate::slint_ui::{AppWindow, BrowseApi, FieldItem, InfoView};
 use crate::worker::Command;
@@ -130,14 +131,14 @@ pub fn view(a: &SlintApp, key: &Key, fallback_poster: Option<&str>) -> InfoView 
             v.state = 2;
             v.fields = ModelRc::new(VecModel::from(fields(info)));
             let url = info.cover.as_deref().or(fallback_poster);
-            if let Some(img) = url.and_then(|u| a.images.get(u)) {
+            if let Some(img) = url.and_then(|u| a.images.get(u, Size::Poster)) {
                 v.poster = img;
                 v.has_poster = true;
             }
         }
         None if st.loading.contains(key) => v.state = 1,
         None => {
-            if let Some(img) = fallback_poster.and_then(|u| a.images.get(u)) {
+            if let Some(img) = fallback_poster.and_then(|u| a.images.get(u, Size::Poster)) {
                 v.poster = img;
                 v.has_poster = true;
             }
