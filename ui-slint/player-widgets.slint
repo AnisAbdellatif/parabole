@@ -1,0 +1,120 @@
+// Small controls for the player: icon button, thin bar, pill button, track menu.
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+import { TrackItem } from "types.slint";
+
+export component IconBtn inherits Rectangle {
+    in property <image> icon;
+    in property <bool> on: false;
+    in property <string> tip;
+    callback clicked();
+    width: 32px;
+    height: 32px;
+    border-radius: Theme.radius;
+    background: ta.has-hover ? Theme.surface-hover : transparent;
+    Icon {
+        source: root.icon;
+        size: 20px;
+        x: (parent.width - self.width) / 2;
+        y: (parent.height - self.height) / 2;
+        tint: root.on ? Theme.accent : ta.has-hover ? Theme.text : Theme.text-muted;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Thin accent bar; `changed` gets the fraction under the pointer while pressed or dragged.
+export component Bar inherits Rectangle {
+    in property <float> frac;
+    callback changed(float);
+    height: 16px;
+    min-width: 20px;
+    Rectangle {
+        y: (parent.height - 4px) / 2;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.border;
+        Rectangle {
+            width: parent.width * clamp(root.frac, 0, 1);
+            border-radius: 2px;
+            background: Theme.accent;
+        }
+    }
+    Rectangle {
+        visible: ta.has-hover || ta.pressed;
+        width: 10px;
+        height: 10px;
+        border-radius: 5px;
+        background: Theme.text;
+        x: root.width * clamp(root.frac, 0, 1) - 5px;
+        y: (root.height - 10px) / 2;
+    }
+    ta := TouchArea {
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down) { root.changed(clamp(self.mouse-x / self.width, 0, 1)); }
+        }
+        moved => { if (self.pressed) { root.changed(clamp(self.mouse-x / self.width, 0, 1)); } }
+    }
+}
+
+export component Pill inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary: false;
+    callback clicked();
+    height: 30px;
+    min-width: 72px;
+    border-radius: 15px;
+    background: root.primary ? Theme.accent : ta.has-hover ? Theme.surface-hover : Theme.surface;
+    Text {
+        text: root.text;
+        color: root.primary ? Theme.on-accent : Theme.text;
+        font-size: 12px;
+        font-weight: Theme.medium;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+// Icon button opening a popup list of tracks; hidden when there are none.
+export component TrackMenu inherits IconBtn {
+    in property <[TrackItem]> tracks;
+    in property <bool> off-marks-on: false;
+    callback picked(int);
+    visible: tracks.length > 0;
+    width: tracks.length > 0 ? 32px : 0px;
+    on: off-marks-on && tracks.length > 0 && tracks[0].id == -1 && !tracks[0].selected;
+    clicked => { popup.show(); }
+    popup := PopupWindow {
+        x: 0px;
+        y: -self.height - 4px;
+        width: 240px;
+        Rectangle {
+            background: Theme.surface;
+            border-radius: Theme.radius;
+            border-width: 1px;
+            border-color: Theme.border;
+            VerticalLayout {
+                padding: 4px;
+                for t in root.tracks: Rectangle {
+                    height: 30px;
+                    border-radius: 6px;
+                    background: row.has-hover ? Theme.surface-hover : transparent;
+                    Text {
+                        x: 10px;
+                        width: parent.width - 20px;
+                        text: (t.selected ? "✓ " : "   ") + t.label;
+                        color: t.selected ? Theme.accent : Theme.text;
+                        font-size: 12px;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                    row := TouchArea { clicked => { root.picked(t.id); } }
+                }
+            }
+        }
+    }
+}

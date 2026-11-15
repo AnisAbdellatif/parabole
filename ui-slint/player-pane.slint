@@ -1,4 +1,85 @@
-// Docked embedded-player pane. Owned by the player area; zero width until it has content.
+// Docked embedded-player pane (right or bottom) and the fullscreen/mini overlay.
+// Owned by the player area; zero size until a session is active.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { VideoSurface } from "player-surface.slint";
+
+component PaneInfo inherits VerticalLayout {
+    spacing: 4px;
+    Text { text: PlayerApi.title; color: Theme.text; font-size: 16px; font-weight: Theme.semibold; overflow: elide; }
+    Text { text: PlayerApi.meta; color: Theme.text-muted; font-size: 12px; overflow: elide; }
+    Rectangle { height: 8px; }
+    Text {
+        text: "Space pause · F fullscreen · PgUp/PgDn change channel · I stats" + (PlayerApi.is-live ? " · Ctrl+L go live" : "");
+        color: Theme.text-muted;
+        font-size: 12px;
+        wrap: word-wrap;
+    }
+    Rectangle { vertical-stretch: 1; }
+}
+
 export component PlayerPane inherits Rectangle {
-    width: 0px;
+    private property <bool> shown: PlayerApi.active && !PlayerApi.dock-bottom && !PlayerApi.fullscreen && !PlayerApi.mini;
+    width: shown ? PlayerApi.pane-w : 0px;
+    background: Theme.panel;
+    clip: true;
+    if shown: Rectangle {
+        Rectangle { x: 0px; width: 1px; background: Theme.divider; }
+        VerticalLayout {
+            padding: 16px;
+            spacing: 16px;
+            VideoSurface {
+                docked: true;
+                height: self.width * 9 / 16;
+            }
+            PaneInfo { }
+        }
+        TouchArea {
+            x: 0px;
+            width: 6px;
+            mouse-cursor: col-resize;
+            moved => {
+                if (self.pressed) { PlayerApi.pane-w = clamp(PlayerApi.pane-w - (self.mouse-x - self.pressed-x), 240px, 900px); }
+            }
+        }
+    }
+}
+
+export component PlayerPaneBottom inherits Rectangle {
+    private property <bool> shown: PlayerApi.active && PlayerApi.dock-bottom && !PlayerApi.fullscreen && !PlayerApi.mini;
+    height: shown ? PlayerApi.pane-h : 0px;
+    background: Theme.panel;
+    clip: true;
+    if shown: Rectangle {
+        Rectangle { y: 0px; height: 1px; background: Theme.divider; }
+        HorizontalLayout {
+            padding: 16px;
+            spacing: 12px;
+            VideoSurface {
+                docked: true;
+                width: min(self.height * 16 / 9, parent.width * 0.5);
+            }
+            PaneInfo { }
+        }
+        TouchArea {
+            y: 0px;
+            height: 6px;
+            mouse-cursor: row-resize;
+            moved => {
+                if (self.pressed) { PlayerApi.pane-h = clamp(PlayerApi.pane-h - (self.mouse-y - self.pressed-y), 180px, 700px); }
+            }
+        }
+    }
+}
+
+// Covers the whole window in fullscreen and mini mode.
+export component PlayerOverlay inherits Rectangle {
+    private property <bool> shown: PlayerApi.active && (PlayerApi.fullscreen || PlayerApi.mini);
+    visible: shown;
+    background: black;
+    if shown: VideoSurface {
+        compact: PlayerApi.mini;
+        width: parent.width;
+        height: parent.height;
+    }
 }

@@ -1,19 +1,19 @@
 //! Embedded player UI: pane/fullscreen view, overlay controls, retry and resume handling.
 
 mod alternate;
-mod autonext;
-mod controls;
+pub(crate) mod autonext;
+pub(crate) mod controls;
 mod dock;
 mod fullscreen;
 mod keys;
 mod mini;
 mod nerd_stats;
 mod pane;
-mod session;
-mod track_memory;
+pub(crate) mod session;
+pub(crate) mod track_memory;
 mod video;
 mod widgets;
-mod zap;
+pub(crate) mod zap;
 
 use super::App;
 use crate::model::MediaKind;
@@ -229,7 +229,9 @@ impl App {
             }
             return;
         }
-        track_memory::tick(&self.db, player, s, ctx);
+        if let Some(d) = track_memory::tick(&self.db, player, s) {
+            ctx.request_repaint_after(d);
+        }
         if !s.is_live() {
             if s.last_save.elapsed() >= SAVE_EVERY {
                 self.save_position();

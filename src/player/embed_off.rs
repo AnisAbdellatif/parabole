@@ -40,3 +40,6 @@ impl EmbeddedPlayer {
         Stats::default()
     }
 }
+
+/// Same type as the real player so toolkit-neutral callers compile without libmpv.
+pub type MpvCore = EmbeddedPlayer;

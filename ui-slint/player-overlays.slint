@@ -1,0 +1,65 @@
+// Overlays drawn on the video: corner tag, nerd stats, zap digits, auto-next card.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { Pill } from "player-widgets.slint";
+
+export component VideoTag inherits Rectangle {
+    visible: PlayerApi.tag != "";
+    x: 12px;
+    y: 10px;
+    height: 22px;
+    width: label.preferred-width + 16px;
+    border-radius: 6px;
+    background: PlayerApi.is-live ? Theme.live-bg : Theme.info-bg;
+    label := Text {
+        text: PlayerApi.tag;
+        color: PlayerApi.is-live ? Theme.live-fg : Theme.info-fg;
+        font-size: 11px;
+        font-weight: Theme.semibold;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+}
+
+export component NerdStats inherits Rectangle {
+    x: 12px;
+    y: 40px;
+    width: row.preferred-width + 20px;
+    height: row.preferred-height + 20px;
+    border-radius: Theme.radius;
+    background: #000000b4;
+    row := HorizontalLayout {
+        padding: 10px;
+        spacing: 12px;
+        Text { text: PlayerApi.stats-labels; color: Theme.text-muted; font-size: 11.5px; }
+        Text { text: PlayerApi.stats-values; color: Theme.text; font-size: 11.5px; }
+    }
+}
+
+export component ZapDigits inherits Text {
+    visible: PlayerApi.zap-text != "";
+    text: PlayerApi.zap-text;
+    color: white;
+    font-size: 56px;
+    font-weight: Theme.semibold;
+    horizontal-alignment: right;
+}
+
+export component NextCard inherits Rectangle {
+    background: #000000d7;
+    TouchArea { }
+    VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+        Text { text: "Next episode"; color: Theme.text-muted; font-size: 12px; horizontal-alignment: center; }
+        Text { text: PlayerApi.next-label; color: Theme.text; font-size: 15px; font-weight: Theme.semibold; horizontal-alignment: center; overflow: elide; }
+        Text { text: "Playing in " + PlayerApi.next-secs + "s"; color: Theme.text-muted; font-size: 12px; horizontal-alignment: center; }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 8px;
+            padding-top: 10px;
+            Pill { text: "Cancel"; clicked => { PlayerApi.next-cancel(); } }
+            Pill { text: "Play now"; primary: true; clicked => { PlayerApi.next-now(); } }
+        }
+    }
+}

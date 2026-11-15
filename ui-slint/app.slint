@@ -6,14 +6,14 @@ import { Sidebar } from "sidebar.slint";
 import { BrowseHost } from "browse-host.slint";
 import { StatusBar } from "status-bar.slint";
 import { Toasts } from "toasts.slint";
-import { PlayerPane } from "player-pane.slint";
+import { PlayerPane, PlayerPaneBottom, PlayerOverlay } from "player-pane.slint";
 import { DialogHost } from "dialog-host.slint";
 import { PlayerApi } from "player-api.slint";
 import { BrowseApi } from "browse-api.slint";
 import { DialogApi } from "dialog-api.slint";
 
 export { Core, Theme, PlayerApi, BrowseApi, DialogApi }
-export { StreamItem, SidebarItem, ToastItem } from "types.slint";
+export { StreamItem, SidebarItem, ToastItem, TrackItem } from "types.slint";
 
 export component AppWindow inherits Window {
     title: "IPTV Player";
@@ -54,9 +54,12 @@ export component AppWindow inherits Window {
                 BrowseHost { interacted => { keys.focus(); } }
                 PlayerPane { }
             }
+            PlayerPaneBottom { }
             StatusBar { }
         }
     }
+
+    PlayerOverlay { x: 0px; y: 0px; width: parent.width; height: parent.height; }
 
     DialogHost { }
 

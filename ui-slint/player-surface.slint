@@ -1,0 +1,73 @@
+// The video itself plus everything drawn over it. One instance exists at a time.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { PlayerControls } from "player-controls.slint";
+import { VideoTag, NerdStats, ZapDigits, NextCard } from "player-overlays.slint";
+
+export component VideoSurface inherits Rectangle {
+    in property <bool> compact: false;
+    in property <bool> docked: false;
+    property <bool> shown: true;
+    property <duration> last-move: 0ms;
+    background: black;
+    clip: true;
+    border-radius: root.docked ? Theme.radius-card : 0px;
+
+    init => { PlayerApi.video-w = self.width; PlayerApi.video-h = self.height; }
+    changed width => { PlayerApi.video-w = self.width; }
+    changed height => { PlayerApi.video-h = self.height; }
+
+    Image {
+        source: PlayerApi.frame;
+        image-fit: fill;
+        width: parent.width;
+        height: parent.height;
+    }
+    ta := TouchArea {
+        changed has-hover => { PlayerApi.hover = self.has-hover || ctl.hovered; }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.move || e.kind == PointerEventKind.down) {
+                root.shown = true;
+                root.last-move = animation-tick();
+            }
+        }
+        double-clicked => { if (PlayerApi.mini) { PlayerApi.toggle-mini(); } else { PlayerApi.toggle-fullscreen(); } }
+    }
+    Timer {
+        interval: 500ms;
+        running: root.shown && !PlayerApi.paused && PlayerApi.error == "";
+        triggered => { if (animation-tick() - root.last-move > 3s) { root.shown = false; } }
+    }
+    VideoTag { visible: !root.compact; }
+    if PlayerApi.show-stats: NerdStats { }
+    ZapDigits { x: parent.width - self.preferred-width - 20px; y: 16px; }
+    if PlayerApi.error != "": Text {
+        text: PlayerApi.error;
+        color: Theme.error;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width - 32px;
+        x: 16px;
+        height: parent.height;
+    }
+    if PlayerApi.error == "" && PlayerApi.buffering: Text {
+        text: "Loading…";
+        color: Theme.text-muted;
+        font-size: 13px;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width;
+        height: parent.height;
+    }
+    ctl := PlayerControls {
+        compact: root.compact;
+        docked: root.docked;
+        x: 0px;
+        y: parent.height - self.height;
+        width: parent.width;
+        opacity: (root.shown || PlayerApi.paused || PlayerApi.error != "") ? 1 : 0;
+        animate opacity { duration: 300ms; }
+    }
+    if PlayerApi.next-label != "": NextCard { width: parent.width; height: parent.height; }
+}
