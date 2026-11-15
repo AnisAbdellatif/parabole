@@ -26,8 +26,8 @@ pub fn install_mpv_script(db: &std::path::Path) {
 
 /// Without a cache dir the egui_extras http loader still works, just uncached.
 fn install_image_cache(ctx: &egui::Context) {
-    if let Some(dirs) = ProjectDirs::from("dev", "iptv-player", "IPTV Player") {
-        let _ = crate::imgcache::install(ctx, dirs.cache_dir().join("images"));
+    if let Some(dir) = crate::imgcache::default_dir() {
+        let _ = crate::imgcache::install(ctx, dir);
     }
 }
 

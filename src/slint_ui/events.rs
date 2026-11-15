@@ -1,0 +1,61 @@
+//! Worker events, drained on the UI thread (mirrors `ui/events.rs`).
+use super::Core;
+use super::state::with_app;
+use crate::player::PlayerKind;
+use crate::worker::{Command, Event};
+use slint::ComponentHandle;
+
+pub fn drain() {
+    with_app(|a| {
+        while let Ok(ev) = a.worker.rx.try_recv() {
+            match ev {
+                Event::SourceChanged => a.reload_sources(),
+                Event::RefreshStarted(id) => {
+                    a.refreshing.insert(id);
+                    a.push_status();
+                }
+                Event::RefreshDone(id, res) => {
+                    a.refreshing.remove(&id);
+                    if let Err(e) = res {
+                        a.toast(format!("Refresh failed: {e}"));
+                    }
+                    a.reload_sources();
+                }
+                Event::Playing { title, kind, .. } => set_playing(a, &title, kind_name(kind)),
+                Event::PlayerStopped => set_playing(a, "", ""),
+                Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
+                Event::UrlReady(_) => {} // Gap: no clipboard crate in deps
+                Event::PlayEmbedded(play) => {
+                    a.toast("Embedded player not yet in Slint UI; using mpv");
+                    a.worker.send(Command::LaunchRequest {
+                        req: play.req,
+                        kind: PlayerKind::Mpv,
+                        track: play.track,
+                        stream_id: play.stream_id,
+                    });
+                }
+                Event::InfoLoaded { .. }
+                | Event::SeriesLoaded { .. }
+                | Event::TestResult(_)
+                | Event::AccountChecked(..) => {}
+            }
+        }
+    });
+}
+
+fn kind_name(kind: PlayerKind) -> &'static str {
+    match kind {
+        PlayerKind::Embedded => "the built-in player",
+        PlayerKind::Mpv => "mpv",
+        PlayerKind::Vlc => "VLC",
+        PlayerKind::Custom => "custom player",
+    }
+}
+
+fn set_playing(a: &super::state::SlintApp, title: &str, kind: &str) {
+    if let Some(w) = a.win.upgrade() {
+        let core = w.global::<Core>();
+        core.set_playing_title(title.into());
+        core.set_playing_kind(kind.into());
+    }
+}
