@@ -23,6 +23,8 @@ struct Video {
     size: (i32, i32),
     dirty: Arc<AtomicBool>,
     image_size: (i32, i32),
+    /// Bumped per rendered frame; bound in the `.slint` so Slint repaints the `Image` (the texture changes in place).
+    ticks: i32,
 }
 
 /// GL state mpv's renderer may change and femtovg relies on.
@@ -131,6 +133,7 @@ impl Video {
             size,
             dirty,
             image_size: (0, 0),
+            ticks: 0,
         })
     }
 
@@ -151,6 +154,7 @@ impl Video {
             let _ = r.render::<()>(self.fbo.0.get() as i32, used.0, used.1, true);
         }
         saved.restore(&self.gl);
+        self.ticks = self.ticks.wrapping_add(1);
         if self.image_size == used {
             return None;
         }
@@ -216,6 +220,7 @@ pub fn install(
                 if let Some(img) = v.frame(used) {
                     api.set_frame(img);
                 }
+                api.set_frame_tick(v.ticks);
             }
             RenderingState::RenderingTeardown => {
                 if let Some(v) = video.take() {

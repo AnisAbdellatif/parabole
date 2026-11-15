@@ -8,6 +8,7 @@ export global PlayerApi {
     // Current embedded session; the pane is hidden while false.
     in property <bool> active: false;
     in property <image> frame;
+    in property <int> frame-tick;
     // Video box size in logical px, written by whichever surface is showing; Rust renders at physical size.
     in-out property <length> video-w: 0px;
     in-out property <length> video-h: 0px;

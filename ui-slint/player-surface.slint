@@ -25,6 +25,8 @@ export component VideoSurface inherits Rectangle {
     Image {
         source: PlayerApi.frame;
         image-fit: fill;
+        // Dirties the Image per rendered frame: the texture changes in place, which Slint cannot see (X11 GL).
+        opacity: 0.999 + mod(PlayerApi.frame-tick, 2) * 0.001;
         width: parent.width;
         height: parent.height;
     }
