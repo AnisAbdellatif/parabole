@@ -21,9 +21,18 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 
 ## Gaps
 (each agent appends skipped features here)
+- Phase 1: edit mode, alternates, search filter chips, series/details views, row context menu, sort selector (saved sort is applied, not changeable), playing-row highlight, window-size/sidebar persistence.
+- Phase 1: `UrlReady` (copy URL) ignored: no clipboard crate in deps. `PlayEmbedded` falls back to external mpv with a toast.
+- Phase 1: `InfoLoaded`/`SeriesLoaded`/`TestResult`/`AccountChecked` ignored (phase 2).
+- Phase 1: persisted state is saved only on window close.
 
 ## Comparison
 (filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
 
 ## Dev-experience notes
 (each agent appends 2–5 terse bullets: what was easier or harder than egui, and any Slint pitfalls hit)
+- Phase 1: a lazy `Model` impl (`StreamModel`) gives virtualised lists for free; rows stay as `StreamRow` and `StreamItem` is built per visible row.
+- Phase 1: all UI state lives behind one `thread_local` + `with_app`; callbacks and worker events re-enter it, so `try_borrow_mut` guards against re-entrancy.
+- Phase 1: `ListView.viewport-y` is deprecated in 1.18; use `content-y`.
+- Phase 1: images decode off-thread into `SharedPixelBuffer` (Send); `slint::Image` is not Send, so it is built on the UI thread.
+- Phase 1: setting `HOME` breaks rustup; build first, then run the binary with `HOME=/tmp/...`.
