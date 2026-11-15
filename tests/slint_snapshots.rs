@@ -104,9 +104,7 @@ impl Shots {
         api.set_title("Channel One".into());
         api.set_tag("LIVE".into());
         api.set_tech("1080p · 5.1".into());
-        api.set_meta("News".into());
-        self.shot("player-chrome");
-        self.check_control_alignment();
+        api.set_meta("Live channel".into());
         let card = |name: &str, n: &str, playing| StreamItem {
             name: name.into(),
             meta: n.into(),
@@ -114,6 +112,26 @@ impl Shots {
             playing,
             ..Default::default()
         };
+        let names = [
+            "World News",
+            "Channel Two",
+            "Channel One",
+            "Daily Brief",
+            "Market Watch",
+            "Sports Extra",
+            "Movie Classics",
+            "Kids Zone",
+            "Weather Now",
+        ];
+        let pane: Vec<_> = names
+            .iter()
+            .enumerate()
+            .map(|(i, n)| card(n, &(i + 1).to_string(), i == 2))
+            .collect();
+        api.set_pane_items(ModelRc::new(VecModel::from(pane)));
+        api.set_pane_current(2);
+        self.shot("player-chrome");
+        self.check_control_alignment();
         let items = vec![
             card("World News", "1", false),
             card("Channel Two", "2", false),

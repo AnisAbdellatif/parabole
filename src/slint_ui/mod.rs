@@ -71,6 +71,10 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     state.appearance.apply(&win);
     win.global::<BrowseApi>()
         .set_sidebar_w(state.sidebar_width.clamp(200.0, 460.0));
+    let api = win.global::<PlayerApi>();
+    api.set_dock_bottom(state.player_dock_bottom);
+    api.set_pane_w(state.player_pane_w);
+    api.set_pane_h(state.player_pane_h);
     let profile = state.profile.unwrap_or_default();
     APP.with(|a| {
         *a.borrow_mut() = Some(SlintApp {
@@ -115,6 +119,10 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
         with_app(|a| {
             if let Some(w) = a.win.upgrade() {
                 a.state.sidebar_width = w.global::<BrowseApi>().get_sidebar_w();
+                let api = w.global::<PlayerApi>();
+                a.state.player_dock_bottom = api.get_dock_bottom();
+                a.state.player_pane_w = api.get_pane_w();
+                a.state.player_pane_h = api.get_pane_h();
             }
             let _ = a.state.save(&a.state_path);
             a.worker.send(Command::Quit);

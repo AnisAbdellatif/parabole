@@ -39,6 +39,8 @@ pub struct PlayerArea {
     windowed: Option<pip::Geometry>,
     zap_items: Rc<slint::VecModel<StreamItem>>,
     zap_timer: slint::Timer,
+    /// Stream ids behind `PlayerApi.pane-items`, same order.
+    pane_ids: Vec<i64>,
     timer: slint::Timer,
     audio: Rc<slint::VecModel<TrackItem>>,
     subs: Rc<slint::VecModel<TrackItem>>,

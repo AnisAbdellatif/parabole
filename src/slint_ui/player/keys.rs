@@ -1,12 +1,12 @@
 //! `PlayerApi.key`, ported from `ui/player/keys.rs` and `zap.rs`.
 use super::super::state::{SlintApp, with_app};
-use super::super::{Core, PlayerApi};
+use super::super::{Core, KeyHint, PlayerApi};
 use super::{carousel, controls, playback};
 use crate::model::{MediaKind, StreamRow};
 use crate::player::PlayerKind;
 use crate::worker::Command;
 use slint::platform::Key;
-use slint::{ComponentHandle, Model};
+use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::time::Instant;
 
 const SEEK_S: f64 = 10.0;
@@ -27,6 +27,59 @@ pub fn connect(win: &super::super::AppWindow) {
         };
         with_app(|a| handle(a, &e)).unwrap_or(false)
     });
+    win.global::<PlayerApi>().on_pane_play(|i| {
+        with_app(|a| {
+            let id = usize::try_from(i)
+                .ok()
+                .and_then(|i| a.player.pane_ids.get(i).copied());
+            if let Some(id) = id {
+                zap_to_id(a, id);
+            }
+        });
+    });
+}
+
+/// Shortcut help rows; keep in step with `handle_keys`.
+fn help(live: bool) -> Vec<KeyHint> {
+    let cmd = if cfg!(target_os = "macos") {
+        "⌘"
+    } else {
+        "Ctrl+"
+    };
+    let mut rows = vec![
+        ("Space".to_string(), "Play / pause".to_string()),
+        ("↑ ↓".into(), format!("Volume ±{VOL_STEP}")),
+        ("M".into(), "Mute".into()),
+        ("F".into(), "Fullscreen".into()),
+        ("P".into(), "Mini player".into()),
+        ("I".into(), "Stats".into()),
+        ("Esc".into(), "Leave fullscreen / mini".into()),
+    ];
+    if live {
+        rows.extend([
+            ("PgUp PgDn".into(), "Channel up / down".into()),
+            (format!("{cmd}↑ {cmd}↓"), "Channel up / down".into()),
+            ("0–9 Enter".into(), "Channel by number".into()),
+            ("L".into(), "Previous channel".into()),
+            (format!("{cmd}L"), "Go live".into()),
+        ]);
+    } else {
+        rows.insert(1, ("← →".into(), format!("Seek ±{SEEK_S} s")));
+    }
+    rows.into_iter()
+        .map(|(keys, action)| KeyHint {
+            keys: keys.into(),
+            action: action.into(),
+        })
+        .collect()
+}
+
+pub fn push_help(a: &SlintApp) {
+    let live = a.player.session.as_ref().is_some_and(|s| s.is_live());
+    if let Some(w) = a.win.upgrade() {
+        let rows = ModelRc::new(VecModel::from(help(live)));
+        w.global::<PlayerApi>().set_help_keys(rows);
+    }
 }
 
 fn is(e: &Pressed, k: Key) -> bool {
@@ -59,11 +112,25 @@ fn select_row(a: &SlintApp, i: usize) {
     }
 }
 
+/// Every channel change goes through here: select the row, open the carousel, play.
+fn zap_to_row(a: &mut SlintApp, i: usize, stream_id: i64) {
+    select_row(a, i);
+    carousel::show(a, i);
+    play_embedded(a, stream_id);
+}
+
 fn zap(a: &mut SlintApp, step: isize) {
     if let Some((i, row)) = neighbor_row(a, step) {
-        select_row(a, i);
-        carousel::show(a, i);
-        play_embedded(a, row.id);
+        zap_to_row(a, i, row.id);
+    }
+}
+
+fn zap_to_id(a: &mut SlintApp, stream_id: i64) {
+    let at =
+        (0..a.streams.row_count()).find(|&i| a.streams.row(i).is_some_and(|r| r.id == stream_id));
+    match at {
+        Some(i) => zap_to_row(a, i, stream_id),
+        None => play_embedded(a, stream_id),
     }
 }
 
@@ -84,11 +151,7 @@ fn row_for_number(a: &SlintApp, n: i64) -> Option<(usize, StreamRow)> {
 
 pub fn zap_to_number(a: &mut SlintApp, n: i64) {
     match row_for_number(a, n) {
-        Some((i, row)) => {
-            select_row(a, i);
-            carousel::show(a, i);
-            play_embedded(a, row.id);
-        }
+        Some((i, row)) => zap_to_row(a, i, row.id),
         None => a.toast(format!("No live channel {n}")),
     }
 }

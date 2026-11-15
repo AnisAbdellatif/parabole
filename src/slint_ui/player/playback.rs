@@ -36,6 +36,8 @@ pub fn on_embed_play(a: &mut SlintApp, play: EmbedPlay) {
             a.playing_id = play.stream_id;
             a.streams.set_playing(a.playing_id);
             a.player.session = Some(Session::new(play));
+            carousel::fill_pane(a);
+            super::keys::push_help(a);
             a.player.timer.start(slint::TimerMode::Repeated, TICK, || {
                 with_app(tick);
             });
@@ -59,6 +61,7 @@ pub fn stop_embedded(a: &mut SlintApp) {
         core.stop();
     }
     a.player.session = None;
+    carousel::fill_pane(a);
     a.player.timer.stop();
     a.player.zap.cancel();
     carousel::close(a);

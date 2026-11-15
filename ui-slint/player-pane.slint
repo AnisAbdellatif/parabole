@@ -3,19 +3,75 @@
 import { Theme } from "theme.slint";
 import { PlayerApi } from "player-api.slint";
 import { VideoSurface } from "player-surface.slint";
+import { LogoTile } from "logo-tile.slint";
+import { StreamItem } from "types.slint";
+import { ListView } from "std-widgets.slint";
 
 component PaneInfo inherits VerticalLayout {
     spacing: 4px;
     Text { text: PlayerApi.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; overflow: elide; }
     Text { text: PlayerApi.meta; color: Theme.text-muted; font-size: Theme.fs-sm; overflow: elide; }
-    Rectangle { height: 8px; }
-    Text {
-        text: "Space pause · F fullscreen · PgUp/PgDn change channel · I stats" + (PlayerApi.is-live ? " · Ctrl+L go live" : "");
-        color: Theme.text-muted;
+    if PlayerApi.tech != "": Text { text: PlayerApi.tech; color: Theme.text-dim; font-size: Theme.fs-sm; overflow: elide; }
+    if !PlayerApi.is-live && PlayerApi.dur-text != "": Text {
+        text: PlayerApi.pos-text + " / " + PlayerApi.dur-text;
+        color: Theme.text-dim;
         font-size: Theme.fs-sm;
-        wrap: word-wrap;
     }
-    Rectangle { vertical-stretch: 1; }
+}
+
+// Live channels around the playing one; a click zaps.
+component PaneChannels inherits VerticalLayout {
+    in property <int> current: PlayerApi.pane-current;
+    in property <[StreamItem]> items: PlayerApi.pane-items;
+    spacing: 6px;
+    // Centres the playing row; the list is rebuilt on every zap, often with the same index.
+    function reveal() {
+        if (root.current < 0) { return; }
+        let room = max(0px, root.items.length * 40px - list.visible-height);
+        list.content-y = -clamp(root.current * 40px - (list.visible-height - 40px) / 2, 0px, room);
+    }
+    init => { root.reveal(); }
+    changed current => { root.reveal(); }
+    changed items => { root.reveal(); }
+    Text {
+        text: "CHANNELS";
+        color: Theme.text-dim;
+        font-size: Theme.fs-xs;
+        font-weight: Theme.semibold;
+        letter-spacing: 1.2px;
+    }
+    list := ListView {
+        vertical-stretch: 1;
+        for it[i] in root.items: Rectangle {
+            height: 40px;
+            border-radius: Theme.radius;
+            background: it.playing ? Theme.selected-bg : ta.has-hover ? Theme.row-hover : transparent;
+            if it.playing: Rectangle {
+                x: 0px;
+                y: 8px;
+                width: 3px;
+                height: parent.height - 16px;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 10px;
+                cross-axis-alignment: center;
+                LogoTile { width: 28px; height: 28px; initials: it.initials; logo: it.logo; has-logo: it.has-logo; }
+                Text {
+                    horizontal-stretch: 1;
+                    text: it.name;
+                    color: it.playing ? Theme.text : Theme.text-muted;
+                    font-size: Theme.fs-sm;
+                    overflow: elide;
+                }
+                if it.meta != "": Text { text: it.meta; color: Theme.text-dim; font-size: Theme.fs-xs; }
+            }
+            ta := TouchArea { mouse-cursor: pointer; clicked => { PlayerApi.pane-play(i); } }
+        }
+    }
 }
 
 export component PlayerPane inherits Rectangle {
@@ -33,6 +89,8 @@ export component PlayerPane inherits Rectangle {
                 height: self.width * 9 / 16;
             }
             PaneInfo { }
+            if PlayerApi.is-live: PaneChannels { vertical-stretch: 1; }
+            if !PlayerApi.is-live: Rectangle { vertical-stretch: 1; }
         }
         TouchArea {
             x: 0px;
@@ -59,7 +117,12 @@ export component PlayerPaneBottom inherits Rectangle {
                 docked: true;
                 width: min(self.height * 16 / 9, parent.width * 0.5);
             }
-            PaneInfo { }
+            VerticalLayout {
+                spacing: 12px;
+                PaneInfo { }
+                if PlayerApi.is-live: PaneChannels { vertical-stretch: 1; }
+                if !PlayerApi.is-live: Rectangle { vertical-stretch: 1; }
+            }
         }
         TouchArea {
             y: 0px;

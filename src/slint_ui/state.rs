@@ -59,6 +59,9 @@ pub struct Persisted {
     pub sel: Option<Sel>,
     pub sidebar_width: f32,
     pub appearance: Appearance,
+    pub player_dock_bottom: bool,
+    pub player_pane_w: f32,
+    pub player_pane_h: f32,
 }
 
 impl Default for Persisted {
@@ -70,6 +73,9 @@ impl Default for Persisted {
             sel: None,
             sidebar_width: 260.0,
             appearance: Appearance::default(),
+            player_dock_bottom: false,
+            player_pane_w: 420.0,
+            player_pane_h: 300.0,
         }
     }
 }
@@ -152,5 +158,12 @@ mod tests {
         std::fs::write(&p, b"{}").unwrap();
         assert_eq!(Persisted::load(&p).sidebar_width, 260.0);
         std::fs::remove_file(&p).unwrap();
+    }
+
+    #[test]
+    fn old_state_file_gets_pane_defaults() {
+        let s: Persisted = serde_json::from_str(r#"{"tab":"Live"}"#).unwrap();
+        assert_eq!((s.player_pane_w, s.player_pane_h), (420.0, 300.0));
+        assert!(!s.player_dock_bottom);
     }
 }
