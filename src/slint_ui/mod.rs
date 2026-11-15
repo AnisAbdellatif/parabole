@@ -7,6 +7,7 @@ mod dialogs;
 mod events;
 mod fonts;
 mod images;
+mod palette;
 mod player;
 mod push;
 mod state;
@@ -87,10 +88,12 @@ pub fn run() -> Result<()> {
             player: Default::default(),
             browse: Default::default(),
             dialogs: Default::default(),
+            palette: Default::default(),
         });
     });
     callbacks::connect(&win);
     dialogs::connect(&win);
+    palette::connect(&win);
     player::connect(&win);
     browse::connect(&win);
     wiring::connect(&win);

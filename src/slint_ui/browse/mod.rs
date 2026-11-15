@@ -19,6 +19,7 @@ use crate::worker::Event;
 pub use filters::load_sort;
 pub use grid::GridModel;
 pub use rows::{RowAction, run as row_action};
+pub use series::open as open_series;
 use slint::{ComponentHandle, ModelRc, VecModel};
 use std::cell::Cell;
 use std::rc::Rc;

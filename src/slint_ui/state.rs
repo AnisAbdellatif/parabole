@@ -100,6 +100,7 @@ pub struct SlintApp {
     pub player: super::player::PlayerArea,
     pub browse: super::browse::BrowseArea,
     pub dialogs: super::dialogs::DialogArea,
+    pub palette: super::palette::PaletteArea,
 }
 
 thread_local! {

@@ -1,4 +1,5 @@
 //! Dialog area. Ownership and spec: docs/slint-phase2.md.
+pub(crate) mod appearance;
 mod group;
 mod profiles;
 mod settings;
@@ -33,6 +34,7 @@ pub fn connect(win: &AppWindow) {
     settings::connect(win);
     profiles::connect(win);
     group::connect(win);
+    appearance::connect(win);
 }
 
 impl SlintApp {
@@ -41,6 +43,7 @@ impl SlintApp {
             "sources" => self.load_sources_dialog(),
             "settings" => self.load_settings_dialog(),
             "profiles" => self.load_profiles_dialog(),
+            "appearance" => self.load_appearance_dialog(),
             "group" => {}
             _ => return,
         }

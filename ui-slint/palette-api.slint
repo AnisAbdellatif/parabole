@@ -1,0 +1,33 @@
+// Command palette state and callbacks. Rust: win.global::<PaletteApi>().
+import { Core } from "core.slint";
+
+// kind: 0 channel, 1 movie, 2 series, 3 category, 4 action.
+export struct PaletteItem {
+    kind: int,
+    title: string,
+    subtitle: string,
+}
+
+export global PaletteApi {
+    in-out property <bool> open: false;
+    in-out property <string> query;
+    in property <[PaletteItem]> items;
+    in-out property <int> cursor: 0;
+    callback edited(string);
+    callback activate(int);
+    public function close() { root.open = false; }
+    // Tried first of all; return true when handled.
+    callback key(KeyEvent) -> bool;
+    key(e) => {
+        if ((e.modifiers.meta || e.modifiers.control) && e.text == "k") {
+            if (root.open) { root.close(); } else { Core.open-palette(); }
+            return true;
+        }
+        if (!root.open) { return false; }
+        if (e.text == Key.Escape) { root.close(); return true; }
+        if (e.text == Key.DownArrow) { root.cursor = max(0, min(root.items.length - 1, root.cursor + 1)); return true; }
+        if (e.text == Key.UpArrow) { root.cursor = max(0, root.cursor - 1); return true; }
+        if (e.text == Key.Return) { if (root.items.length > 0) { root.activate(root.cursor); } return true; }
+        false
+    }
+}

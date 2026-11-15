@@ -4,6 +4,7 @@ import { SourcesDialog } from "dialog-sources.slint";
 import { SettingsDialog } from "dialog-settings.slint";
 import { ProfilesDialog } from "dialog-profiles.slint";
 import { GroupDialog } from "dialog-group.slint";
+import { AppearanceDialog } from "dialog-appearance.slint";
 
 export component DialogHost inherits Rectangle {
     callback closed();
@@ -25,6 +26,7 @@ export component DialogHost inherits Rectangle {
                 if DialogApi.open == "sources": SourcesDialog { max-body: 600px; }
                 if DialogApi.open == "settings": SettingsDialog { max-body: 600px; }
                 if DialogApi.open == "profiles": ProfilesDialog { max-body: 600px; }
+                if DialogApi.open == "appearance": AppearanceDialog { max-body: 600px; }
                 if DialogApi.open == "group": GroupDialog { max-body: 600px; }
             }
         }
