@@ -50,14 +50,28 @@ impl Sel {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct Persisted {
     pub profile: Option<ProfileId>,
     pub tab: MediaKind,
     pub source: Option<SourceId>,
     pub sel: Option<Sel>,
+    pub sidebar_width: f32,
     pub appearance: Appearance,
+}
+
+impl Default for Persisted {
+    fn default() -> Self {
+        Self {
+            profile: None,
+            tab: MediaKind::default(),
+            source: None,
+            sel: None,
+            sidebar_width: 260.0,
+            appearance: Appearance::default(),
+        }
+    }
 }
 
 impl Persisted {
@@ -135,6 +149,8 @@ mod tests {
         let p = std::env::temp_dir().join(format!("slint-state-{}.json", std::process::id()));
         std::fs::write(&p, b"{not json").unwrap();
         assert!(Persisted::load(&p).sel.is_none());
+        std::fs::write(&p, b"{}").unwrap();
+        assert_eq!(Persisted::load(&p).sidebar_width, 260.0);
         std::fs::remove_file(&p).unwrap();
     }
 }

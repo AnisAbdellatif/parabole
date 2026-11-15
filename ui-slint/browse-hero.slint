@@ -3,21 +3,18 @@ import { Core } from "core.slint";
 import { StreamItem } from "types.slint";
 import { Icons } from "icons.slint";
 import { BrowseApi } from "browse-api.slint";
-import { HeroBtn, LiveChip } from "browse-hero-parts.slint";
+import { HeroBtn } from "browse-hero-parts.slint";
 
-// Banner for the focused row: ambient glow for Live, cross-faded backdrop for Movies/Series.
+// Banner for the focused Movies/Series row: cross-faded backdrop, info and actions.
 export component Hero inherits Rectangle {
     property <int> fidx: (BrowseApi.grid-view && BrowseApi.hover-index >= 0) ? BrowseApi.hover-index : Core.cursor;
     property <bool> fresh: BrowseApi.hero.index == root.fidx;
-    property <bool> live: Core.tab == 0;
-    property <bool> show-bd: !root.live && root.fresh && BrowseApi.hero.has-backdrop;
+    property <bool> show-bd: root.fresh && BrowseApi.hero.has-backdrop;
     property <image> bd: BrowseApi.hero.backdrop;
     property <image> img-a;
     property <image> img-b;
     property <bool> a-on: true;
     property <duration> fade: Theme.motion * 2.5;
-    property <color> glow: (root.fresh && BrowseApi.hero.has-color) ? BrowseApi.hero.color.with-alpha(0.55) : Theme.accent.with-alpha(0.28);
-    animate glow { duration: root.fade; }
     clip: true;
     background: Theme.bg;
 
@@ -29,9 +26,6 @@ export component Hero inherits Rectangle {
         }
     }
 
-    if root.live: Rectangle {
-        background: @radial-gradient(circle, root.glow 0%, Theme.bg 80%);
-    }
     Image {
         source: root.img-a;
         width: parent.width;
@@ -56,35 +50,13 @@ export component Hero inherits Rectangle {
         padding-left: 24px;
         padding-right: 24px;
         padding-bottom: 18px;
-        spacing: 18px;
         alignment: start;
-        if root.live: VerticalLayout {
-            alignment: end;
-            Rectangle {
-                width: 96px;
-                height: 96px;
-                border-radius: Theme.radius-card;
-                background: Theme.poster-bg;
-                clip: true;
-                if !root.item.has-logo: Text { text: root.item.initials; color: Theme.text-faint; font-size: Theme.fs-hero; font-weight: Theme.semibold; }
-                if root.item.has-logo: Image { source: root.item.logo; width: parent.width; height: parent.height; image-fit: contain; }
-            }
-        }
         VerticalLayout {
             alignment: end;
             spacing: 8px;
-            HorizontalLayout {
-                spacing: 8px;
-                alignment: start;
-                height: 20px;
-                if root.live: LiveChip { }
-                if root.live && root.item.playing: LiveChip { text: "PLAYING"; }
-                if root.live: Text { text: Core.list-title; color: Theme.text-muted; font-size: Theme.fs-sm; vertical-alignment: center; overflow: elide; }
-            }
             Text { text: root.item.name; color: Theme.text; font-size: Theme.fs-hero; font-weight: Theme.semibold; overflow: elide; }
-            if root.live: Text { text: root.item.meta; color: Theme.text-muted; font-size: Theme.fs-md; overflow: elide; }
-            if !root.live && root.fresh && BrowseApi.hero.meta != "": Text { text: BrowseApi.hero.meta; color: Theme.text-muted; font-size: Theme.fs-md; }
-            if !root.live && root.fresh && BrowseApi.hero.plot != "": Text {
+            if root.fresh && BrowseApi.hero.meta != "": Text { text: BrowseApi.hero.meta; color: Theme.text-muted; font-size: Theme.fs-md; }
+            if root.fresh && BrowseApi.hero.plot != "": Text {
                 text: BrowseApi.hero.plot;
                 color: Theme.text-row;
                 font-size: Theme.fs-md;
@@ -93,7 +65,7 @@ export component Hero inherits Rectangle {
                 max-height: Theme.fs-md * 3;
                 width: min(620px, root.width - 48px);
             }
-            if !root.live && root.item.progress > 0 && !root.item.watched: Rectangle {
+            if root.item.progress > 0 && !root.item.watched: Rectangle {
                 width: 220px;
                 height: 3px;
                 background: #ffffff30;
@@ -105,7 +77,7 @@ export component Hero inherits Rectangle {
                 HeroBtn {
                     primary: true;
                     icon: Icons.play;
-                    label: root.live ? (root.item.playing ? "Watching" : "Watch") : (root.fresh ? BrowseApi.hero.action : "Play");
+                    label: root.fresh ? BrowseApi.hero.action : "Play";
                     clicked => { Core.stream-activated(root.fidx); }
                 }
                 HeroBtn {
@@ -114,7 +86,7 @@ export component Hero inherits Rectangle {
                     label: root.item.favorite ? "Favorited" : "Favorite";
                     clicked => { Core.favorite-toggled(root.fidx); }
                 }
-                if !root.live: HeroBtn {
+                HeroBtn {
                     icon: Icons.info;
                     label: "Details";
                     clicked => { BrowseApi.hero-details(root.fidx); }

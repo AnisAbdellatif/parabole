@@ -145,6 +145,28 @@ async fn sidebar(win: &AppWindow) {
     wait_until("sidebar: stream rows change", || titles(win) != before).await;
 }
 
+async fn sidebar_filter(win: &AppWindow) {
+    let api = win.global::<BrowseApi>();
+    let rows = || api.get_side_rows().iter().collect::<Vec<_>>();
+    let all = rows().len();
+    let label = rows()
+        .iter()
+        .rev()
+        .find(|r| r.kind == 3)
+        .map(|r| r.label.to_string())
+        .expect("sidebar filter: a category row");
+    click(win, "SideFilter::input", 0).await;
+    type_text(win, &label.to_uppercase());
+    wait_until("sidebar filter: rows reduced", || {
+        let r = rows();
+        r.len() < all && r.iter().any(|r| r.label == label.as_str())
+    })
+    .await;
+    press(win, Key::Escape);
+    wait_until("sidebar filter: Esc restores rows", || rows().len() == all).await;
+    assert!(api.get_side_filter().is_empty(), "sidebar filter: cleared");
+}
+
 async fn palette(win: &AppWindow) {
     let api = win.global::<PaletteApi>();
     open_palette(win, "palette").await;
@@ -331,6 +353,7 @@ fn behaviour() {
             startup(&win).await;
             sources_dialog(&win).await;
             sidebar(&win).await;
+            sidebar_filter(&win).await;
             palette(&win).await;
             appearance(&win, &dir).await;
             dialog_focus(&win).await;

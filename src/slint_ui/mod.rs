@@ -69,6 +69,8 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     core.set_tab(state.tab as i32);
     core.set_mod_label(push::MOD_LABEL.into());
     state.appearance.apply(&win);
+    win.global::<BrowseApi>()
+        .set_sidebar_w(state.sidebar_width.clamp(200.0, 460.0));
     let profile = state.profile.unwrap_or_default();
     APP.with(|a| {
         *a.borrow_mut() = Some(SlintApp {
@@ -111,6 +113,9 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     });
     win.window().on_close_requested(|| {
         with_app(|a| {
+            if let Some(w) = a.win.upgrade() {
+                a.state.sidebar_width = w.global::<BrowseApi>().get_sidebar_w();
+            }
             let _ = a.state.save(&a.state_path);
             a.worker.send(Command::Quit);
         });
