@@ -56,12 +56,33 @@ Dev experience:
 - A custom `Platform` with a manual clock and queue-backed event loop proxy makes `Timer`s, worker events and animations fully deterministic for snapshots.
 - A `slint` dev-dependency needs `std`, `compat-1-2` and `software-renderer-path` (path rendering) next to `renderer-software`, otherwise the default `cargo test` build fails.
 
+## Ambient redesign (summary)
+Branches `exp/ambient-{s1,hero,palette,player}` plus the follow-ups (vcenter, headless, polish) are merged into `exp/slint-ui`. The UI no longer mirrors egui:
+- runtime theme (accent, dark/OLED/light, density, radius, font scale, reduce-motion), with a live Appearance dialog;
+- icon rail shell and sliding selection pill;
+- living rows (equalizer on the playing row);
+- ambient hero (logo-colour glow for Live, blurred backdrop for VOD) and poster wall focus;
+- Cmd+K palette (streams, categories, actions, profile switch);
+- player chrome scrims and real PiP;
+- zap carousel: neighbours only in fullscreen, the current card alone in docked and mini.
+
+Slint features that carried it:
+- states and transitions;
+- `transform-scale`;
+- drop shadows;
+- radial and linear gradients;
+- `always-on-top`/`no-frame` (PiP);
+- `cross-axis-alignment`;
+- the fontique fallback;
+- the testing backend plus the software renderer for headless tests.
+
 ## Comparison
 Measured 2026-11-15 on an M-series Mac, macOS, both builds with embedded mpv. The runtime numbers come from a copy of the real DB (290,693 streams, 906 categories, auto-refresh off). The script is `/tmp/cmp/measure.sh` (not committed).
 
 | | egui | Slint |
 |---|---|---|
-| UI code | 6,673 lines Rust (60 files) | 4,570 Rust (33) + 2,681 `.slint` (38) = 7,251 |
+| UI code | 6,673 lines Rust (60 files) | parity port: 4,570 Rust (33) + 2,681 `.slint` (38) = 7,251; after Ambient: 5,840 Rust (45) + 3,734 `.slint` (48) = 9,574 |
+| Headless UI tests | none | 923 lines: behaviour (testing backend, 1.7 s) + 13 PNG snapshots (software renderer, 14 s) |
 | Clean release build | 83 s | 145 s |
 | Incremental debug build, one UI file touched | 1 s | 4 s (`.slint`), 3 s (Rust glue) |
 | Crates in the dependency graph | 350 | 497 |
