@@ -12,8 +12,8 @@ export component HeroBtn inherits Rectangle {
     width: txt.preferred-width + (root.icon.width > 0 ? 54px : 32px);
     border-radius: 17px;
     border-width: root.primary ? 0px : 1px;
-    border-color: #ffffff30;
-    background: root.primary ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent) : (ta.has-hover ? #ffffff30 : #ffffff1c);
+    border-color: Theme.border;
+    background: root.primary ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent) : (ta.has-hover ? Theme.surface-hover : Theme.surface);
     animate background { duration: Theme.motion; }
     ta := TouchArea { clicked => { root.clicked(); } }
     HorizontalLayout {
