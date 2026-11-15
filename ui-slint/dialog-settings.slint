@@ -1,0 +1,25 @@
+import { ComboBox } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DCheck, DField, DialogFrame, FormRow } from "dialog-kit.slint";
+
+export component SettingsDialog inherits DialogFrame {
+    title: "Settings";
+    card-width: 560px;
+    FormRow { label: "Default player"; ComboBox { model: DialogApi.player-kinds; current-index <=> DialogApi.set-default; } }
+    FormRow { label: "Live player"; ComboBox { model: DialogApi.player-kinds-opt; current-index <=> DialogApi.set-live; } }
+    FormRow { label: "Movie player"; ComboBox { model: DialogApi.player-kinds-opt; current-index <=> DialogApi.set-movie; } }
+    FormRow { label: "Episode player"; ComboBox { model: DialogApi.player-kinds-opt; current-index <=> DialogApi.set-episode; } }
+    FormRow { label: "Live latency"; DCheck { text: "Low-latency buffering"; checked <=> DialogApi.set-low-latency; } }
+    FormRow { label: ""; DCheck { text: "Catch up to the live edge"; checked <=> DialogApi.set-catchup; } }
+    FormRow { label: "mpv path"; DField { text <=> DialogApi.set-mpv-path; } }
+    FormRow { label: "VLC path"; DField { text <=> DialogApi.set-vlc-path; } }
+    FormRow { label: "Custom command"; DField { placeholder: "{url} {title} {user_agent} {referrer}"; text <=> DialogApi.set-template; } }
+    FormRow { label: "Extra mpv args"; DField { text <=> DialogApi.set-mpv-args; } }
+    HorizontalLayout {
+        spacing: 12px;
+        DButton { text: "Detect"; clicked => { DialogApi.settings-detect(); } }
+        Text { text: DialogApi.set-detected; color: Theme.text-dim; font-size: 12px; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+    }
+    HorizontalLayout { alignment: start; DButton { text: "Save"; kind: 1; clicked => { DialogApi.settings-save(); } } }
+}

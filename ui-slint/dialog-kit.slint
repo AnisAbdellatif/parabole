@@ -1,0 +1,138 @@
+// Shared dialog widgets, styled after src/ui/kit.rs and src/ui/theme/widgets.rs.
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { DialogApi } from "dialog-api.slint";
+
+// kind: 0 secondary, 1 primary, 2 danger.
+export component DButton inherits Rectangle {
+    in property <string> text;
+    in property <int> kind: 0;
+    in property <bool> enabled: true;
+    callback clicked();
+    height: 32px;
+    min-width: label.preferred-width + 28px;
+    max-width: label.preferred-width + 28px;
+    border-radius: Theme.radius;
+    border-width: root.kind == 0 ? 1px : 0px;
+    border-color: Theme.border;
+    opacity: root.enabled ? 1.0 : 0.45;
+    background: root.kind == 1 ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent)
+        : root.kind == 2 ? (ta.has-hover ? Theme.error.darker(0.1) : Theme.error.darker(0.3))
+        : (ta.has-hover ? Theme.surface-hover : Theme.surface);
+    label := Text {
+        text: root.text;
+        color: root.kind == 1 ? Theme.on-accent : Theme.text;
+        font-size: 13px;
+        font-weight: Theme.medium;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+    }
+    ta := TouchArea { enabled: root.enabled; clicked => { root.clicked(); } }
+}
+
+export component DField inherits Rectangle {
+    in-out property <string> text <=> input.text;
+    in property <string> placeholder;
+    in property <bool> password: false;
+    in property <bool> multiline: false;
+    in property <int> rows: 2;
+    in property <InputType> input-type: InputType.text;
+    callback edited(string);
+    callback accepted();
+    public function focus-input() { input.focus(); }
+    height: root.multiline ? root.rows * 20px + 16px : 34px;
+    background: Theme.input-bg;
+    border-radius: Theme.radius;
+    border-width: 1px;
+    border-color: input.has-focus ? Theme.selected-border : Theme.border;
+    input := TextInput {
+        x: 10px;
+        y: root.multiline ? 8px : 0px;
+        width: parent.width - 20px;
+        height: root.multiline ? parent.height - 16px : parent.height;
+        color: Theme.text;
+        font-size: 13px;
+        single-line: !root.multiline;
+        wrap: root.multiline ? TextWrap.word-wrap : TextWrap.no-wrap;
+        vertical-alignment: root.multiline ? TextVerticalAlignment.top : TextVerticalAlignment.center;
+        input-type: root.password ? InputType.password : root.input-type;
+        selection-background-color: Theme.selected-border;
+        edited => { root.edited(self.text); }
+        accepted => { root.accepted(); }
+        if self.text == "" && !self.has-focus: Text {
+            text: root.placeholder;
+            color: Theme.text-faint;
+            font-size: 13px;
+            x: 0px;
+            horizontal-alignment: left;
+            y: root.multiline ? 0px : (parent.height - self.height) / 2;
+        }
+    }
+}
+
+export component DCheck inherits Rectangle {
+    in property <string> text;
+    in-out property <bool> checked: false;
+    height: 24px;
+    HorizontalLayout {
+        spacing: 8px;
+        Rectangle {
+            width: 18px;
+            height: 18px;
+            y: (parent.height - self.height) / 2;
+            border-radius: 5px;
+            border-width: 1px;
+            border-color: root.checked ? Theme.accent : Theme.border;
+            background: root.checked ? Theme.accent : Theme.input-bg;
+            if root.checked: Icon { source: Icons.check; tint: Theme.on-accent; size: 12px; x: 3px; y: 3px; }
+        }
+        Text { text: root.text; color: Theme.text; font-size: 13px; vertical-alignment: center; }
+    }
+    TouchArea { clicked => { root.checked = !root.checked; } }
+}
+
+// Label column plus the field(s) in @children.
+export component FormRow inherits HorizontalLayout {
+    in property <string> label;
+    spacing: 12px;
+    Text { text: root.label; color: Theme.text-muted; font-size: 13px; width: 124px; vertical-alignment: top; y: 8px; }
+    @children
+}
+
+export component DialogFrame inherits Rectangle {
+    in property <string> title;
+    in property <length> card-width: 560px;
+    in property <length> max-body: 560px;
+    width: root.card-width;
+    background: Theme.card;
+    border-radius: Theme.radius-card;
+    border-width: 1px;
+    border-color: Theme.card-border-hover;
+    drop-shadow-blur: 32px;
+    drop-shadow-offset-y: 12px;
+    drop-shadow-color: #000000a0;
+    TouchArea { }
+    VerticalLayout {
+        HorizontalLayout {
+            padding: 16px;
+            padding-bottom: 12px;
+            Text { text: root.title; color: Theme.text; font-size: 16px; font-weight: Theme.semibold; vertical-alignment: center; horizontal-stretch: 1; }
+            TouchArea {
+                width: 24px;
+                clicked => { DialogApi.close(); }
+                Icon { source: Icons.close; tint: Theme.text-muted; size: 16px; }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.divider; }
+        Flickable {
+            height: min(body.preferred-height, root.max-body);
+            content-height: body.preferred-height;
+            body := VerticalLayout {
+                padding: 16px;
+                spacing: 12px;
+                @children
+            }
+        }
+    }
+}

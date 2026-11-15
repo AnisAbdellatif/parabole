@@ -1,0 +1,67 @@
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DField, DialogFrame } from "dialog-kit.slint";
+
+component ProfileItem inherits Rectangle {
+    in property <int> id;
+    in property <string> name;
+    in property <bool> renaming;
+    in property <bool> confirm;
+    in property <bool> can-delete;
+    in property <[string]> others;
+    height: 48px;
+    background: Theme.surface;
+    border-radius: Theme.radius;
+    copy := PopupWindow {
+        x: root.width - 260px;
+        y: root.height;
+        width: 240px;
+        Rectangle { background: Theme.toast-bg; border-radius: Theme.radius; border-width: 1px; border-color: Theme.toast-border; }
+        VerticalLayout {
+            padding: 4px;
+            for n[i] in root.others: Rectangle {
+                height: 30px;
+                border-radius: 6px;
+                background: t.has-hover ? Theme.surface-hover : transparent;
+                Text { x: 10px; text: n; color: Theme.text; vertical-alignment: center; }
+                t := TouchArea { clicked => { DialogApi.profile-copy-favorites(root.id, i); } }
+            }
+        }
+    }
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        padding-top: 7px;
+        padding-bottom: 7px;
+        spacing: 8px;
+        if root.renaming: DField {
+            text <=> DialogApi.profile-rename-text;
+            horizontal-stretch: 1;
+            accepted => { DialogApi.profile-rename-save(root.id); }
+        }
+        if root.renaming: DButton { text: "Save"; kind: 1; clicked => { DialogApi.profile-rename-save(root.id); } }
+        if root.renaming: DButton { text: "Cancel"; clicked => { DialogApi.profile-rename-cancel(); } }
+        if !root.renaming: Text { text: root.name; color: Theme.text; font-weight: Theme.semibold; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+        if !root.renaming: DButton { text: "Rename"; clicked => { DialogApi.profile-rename-start(root.id); } }
+        if !root.renaming: DButton { text: "Duplicate"; clicked => { DialogApi.profile-duplicate(root.id); } }
+        if !root.renaming && root.others.length > 0: DButton { text: "Copy favorites from…"; clicked => { copy.show(); } }
+        if !root.renaming && root.confirm: DButton { text: "Really delete"; kind: 2; clicked => { DialogApi.profile-delete(root.id); } }
+        if !root.renaming && root.confirm: DButton { text: "Cancel"; clicked => { DialogApi.profile-delete-cancel(); } }
+        if !root.renaming && !root.confirm && root.can-delete: DButton { text: "Delete"; clicked => { DialogApi.profile-delete(root.id); } }
+    }
+}
+
+export component ProfilesDialog inherits DialogFrame {
+    title: "Profiles";
+    card-width: 720px;
+    for p in DialogApi.profile-rows: ProfileItem {
+        id: p.id; name: p.name; renaming: p.renaming; confirm: p.confirm;
+        can-delete: p.can-delete; others: p.others;
+    }
+    Rectangle { height: 1px; background: Theme.divider; }
+    HorizontalLayout {
+        spacing: 8px;
+        DField { placeholder: "New profile name"; text <=> DialogApi.profile-new-name; horizontal-stretch: 1; accepted => { DialogApi.profile-create(); } }
+        DButton { text: "Create"; kind: 1; enabled: DialogApi.profile-new-name != ""; clicked => { DialogApi.profile-create(); } }
+    }
+}

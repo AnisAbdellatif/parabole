@@ -1,6 +1,6 @@
 //! User-agent preset picker for the source form.
 
-const PRESETS: [(&str, &str); 4] = [
+pub(crate) const PRESETS: [(&str, &str); 4] = [
     ("IPTV Smarters Pro", "IPTVSmartersPro"),
     ("TiviMate", "TiviMate/4.7.0 (Android 11)"),
     ("OkHttp", "okhttp/4.9.0"),
@@ -8,7 +8,7 @@ const PRESETS: [(&str, &str); 4] = [
 ];
 
 /// Whether `ua` must be edited as free text (neither empty nor a preset).
-pub(super) fn is_custom(ua: &str) -> bool {
+pub(crate) fn is_custom(ua: &str) -> bool {
     let ua = ua.trim();
     !ua.is_empty() && !PRESETS.iter().any(|(_, v)| *v == ua)
 }

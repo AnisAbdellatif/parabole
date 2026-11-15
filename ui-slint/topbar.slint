@@ -3,6 +3,8 @@ import { Core } from "core.slint";
 import { ComboBox } from "std-widgets.slint";
 import { Tabs } from "tabs.slint";
 import { SearchBox } from "search-box.slint";
+import { DButton } from "dialog-kit.slint";
+import { DialogApi } from "dialog-api.slint";
 
 export component TopBar inherits Rectangle {
     callback escaped();
@@ -29,5 +31,8 @@ export component TopBar inherits Rectangle {
             min-width: 146px;
             escaped => { root.escaped(); }
         }
+        DButton { y: (parent.height - self.height) / 2; text: "Sources"; clicked => { DialogApi.open-dialog("sources"); } }
+        DButton { y: (parent.height - self.height) / 2; text: "Profiles"; clicked => { DialogApi.open-dialog("profiles"); } }
+        DButton { y: (parent.height - self.height) / 2; text: "Settings"; clicked => { DialogApi.open-dialog("settings"); } }
     }
 }

@@ -1,0 +1,15 @@
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DField, DialogFrame } from "dialog-kit.slint";
+
+export component GroupDialog inherits DialogFrame {
+    title: DialogApi.group-id >= 0 ? "Rename group" : "New group";
+    card-width: 420px;
+    init => { name.focus-input(); }
+    name := DField { text <=> DialogApi.group-name; accepted => { DialogApi.group-save(); } }
+    HorizontalLayout {
+        spacing: 8px;
+        alignment: start;
+        DButton { text: "Save"; kind: 1; clicked => { DialogApi.group-save(); } }
+        DButton { text: "Cancel"; clicked => { DialogApi.close(); } }
+    }
+}
