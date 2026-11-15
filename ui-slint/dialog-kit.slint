@@ -111,11 +111,16 @@ export component AccentSlider inherits Rectangle {
     height: 34px;
     horizontal-stretch: 1;
     Rectangle {
+        x: 0px;
+        width: parent.width;
         y: (parent.height - 4px) / 2;
         height: 4px;
         border-radius: 2px;
         background: Theme.border;
         Rectangle {
+            x: 0px;
+            y: 0px;
+            height: parent.height;
             width: thumb.x + 7px;
             border-radius: 2px;
             background: Theme.accent;
