@@ -1,10 +1,8 @@
-// Bar above the browse area: search, source filter, sort.
+// Bar above the browse area: search and source filter.
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
-import { ComboBox } from "std-widgets.slint";
 import { SearchBox } from "search-box.slint";
-import { BrowseApi } from "browse-api.slint";
-import { ContextMenu } from "browse-menu.slint";
+import { DropPill } from "drop-pill.slint";
 
 export component ShellHeader inherits Rectangle {
     callback escaped();
@@ -25,35 +23,14 @@ export component ShellHeader inherits Rectangle {
             escaped => { root.escaped(); }
         }
         Rectangle { horizontal-stretch: 1; }
-        ComboBox {
-            width: 170px;
-            model: Core.source-names;
-            current-index: Core.source-index;
-            selected(_) => { Core.source-selected(self.current-index); }
-        }
-        if BrowseApi.sort-visible: sort-btn := Rectangle {
-            width: sort-text.preferred-width + 28px;
-            height: 32px;
-            background: sort-ta.has-hover ? Theme.surface-hover : Theme.surface;
-            border-radius: Theme.radius;
-            border-width: 1px;
-            border-color: Theme.border;
-            sort-ta := TouchArea {
-                clicked => { menu.open(sort-btn.absolute-position.x + sort-btn.width - 180px, sort-btn.absolute-position.y + sort-btn.height + 4px); }
-            }
-            sort-text := Text {
-                x: 12px;
-                text: BrowseApi.sort-label + " ▾";
-                color: Theme.text;
-                font-size: Theme.fs-md;
-                vertical-alignment: center;
-                height: parent.height;
+        DropPill {
+            label: Core.source-index >= 0 && Core.source-index < Core.source-names.length ? Core.source-names[Core.source-index] : "";
+            options: Core.source-names;
+            current: Core.source-index;
+            picked(i) => {
+                Core.source-index = i;
+                Core.source-selected(i);
             }
         }
-    }
-    menu := ContextMenu {
-        items: BrowseApi.sort-items;
-        menu-width: 180px;
-        picked(id) => { BrowseApi.sort-picked(id); }
     }
 }

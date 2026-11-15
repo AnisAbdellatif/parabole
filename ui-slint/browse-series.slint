@@ -4,6 +4,7 @@ import { Icons } from "icons.slint";
 import { Icon } from "icon.slint";
 import { BrowseApi } from "browse-api.slint";
 import { ContextMenu } from "browse-menu.slint";
+import { DropPill } from "drop-pill.slint";
 import { InfoBody } from "browse-details.slint";
 import { EmptyBox } from "browse-empty.slint";
 
@@ -48,16 +49,9 @@ export component SeriesPage inherits Rectangle {
             HorizontalLayout {
                 height: 32px;
                 alignment: start;
-                season-btn := Rectangle {
-                    width: season-text.preferred-width + 28px;
-                    border-radius: Theme.radius;
-                    border-width: 1px;
-                    border-color: Theme.border;
-                    background: season-ta.has-hover ? Theme.surface-hover : Theme.surface;
-                    season-ta := TouchArea {
-                        clicked => { menu.open(season-btn.absolute-position.x, season-btn.absolute-position.y + season-btn.height + 4px); }
-                    }
-                    season-text := Text { x: 12px; text: BrowseApi.season-label + " ▾"; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; }
+                season-btn := DropPill {
+                    label: BrowseApi.season-label;
+                    clicked => { menu.open(season-btn.absolute-position.x, season-btn.absolute-position.y + season-btn.height + 4px); }
                 }
             }
             ListView {

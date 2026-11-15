@@ -2,6 +2,7 @@
 use super::groups::request_dialog;
 use crate::model::{MediaKind, Source};
 use crate::slint_ui::callbacks::clear_search;
+use crate::slint_ui::push::MOD_LABEL;
 use crate::slint_ui::state::{Sel, SlintApp, with_app};
 use crate::slint_ui::{AppWindow, BrowseApi};
 use crate::worker::Command;
@@ -64,10 +65,8 @@ impl SlintApp {
         }
         match &self.state.sel {
             Some(Sel::Favorites) => {
-                return Content::new(
-                    "No favorites yet",
-                    "Star an item, or press Ctrl+D on the selected row.",
-                );
+                let body = format!("Star an item, or press {MOD_LABEL}D on the selected row.");
+                return Content::new("No favorites yet", body);
             }
             Some(Sel::Recent) => {
                 return Content::new("Nothing watched yet", "What you play shows up here.");

@@ -4,6 +4,13 @@ use super::state::{Sel, SlintApp};
 use crate::model::StreamRow;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 
+/// Shortcut modifier prefix shown in labels: `MOD_LABEL` + "F".
+pub const MOD_LABEL: &str = if cfg!(target_os = "macos") {
+    "⌘"
+} else {
+    "Ctrl+"
+};
+
 impl SlintApp {
     pub fn push_profiles(&self) {
         let Some(win) = self.win.upgrade() else {

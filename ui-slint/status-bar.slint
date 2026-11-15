@@ -1,5 +1,7 @@
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
 
 export component StatusBar inherits Rectangle {
     height: Theme.statusbar-h;
@@ -26,14 +28,14 @@ export component StatusBar inherits Rectangle {
             overflow: elide;
         }
         if Core.playing-title != "": Rectangle {
-            width: 56px;
+            width: 60px;
             height: 22px;
             border-radius: 6px;
             background: stop.has-hover ? Theme.surface-hover : Theme.surface;
             stop := TouchArea { clicked => { Core.stop-playback(); } }
-            Text { text: "■ Stop"; color: Theme.text; font-size: Theme.fs-sm; horizontal-alignment: center; vertical-alignment: center; }
+            Icon { x: 8px; source: Icons.stop; size: 12px; tint: Theme.text; }
+            Text { x: 26px; height: parent.height; text: "Stop"; color: Theme.text; font-size: Theme.fs-sm; vertical-alignment: center; }
         }
         Rectangle { horizontal-stretch: 1; }
-        Text { text: "Profile: " + Core.profile-name; color: Theme.text-muted; font-size: Theme.fs-sm; vertical-alignment: center; }
     }
 }

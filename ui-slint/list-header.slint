@@ -1,18 +1,21 @@
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
 import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+import { DropPill } from "drop-pill.slint";
 
 export component ListHeader inherits Rectangle {
     height: 58px + (BrowseApi.chips.length > 0 ? 38px : 0px);
     VerticalLayout {
         padding-left: 24px;
         padding-right: 24px;
-        padding-top: 18px;
-        padding-bottom: 12px;
+        padding-top: 16px;
+        padding-bottom: 10px;
         spacing: 10px;
         HorizontalLayout {
-            height: 28px;
+            height: 32px;
             spacing: 10px;
+            cross-axis-alignment: center;
             Text {
                 text: Core.list-title;
                 color: Theme.text;
@@ -28,6 +31,10 @@ export component ListHeader inherits Rectangle {
                 vertical-alignment: center;
             }
             Rectangle { horizontal-stretch: 1; }
+            if BrowseApi.sort-visible: sort := DropPill {
+                label: "Sort: " + BrowseApi.sort-label;
+                clicked => { menu.open(sort.absolute-position.x + sort.width - 180px, sort.absolute-position.y + sort.height + 4px); }
+            }
         }
         if BrowseApi.chips.length > 0: HorizontalLayout {
             height: 28px;
@@ -51,5 +58,10 @@ export component ListHeader inherits Rectangle {
                 }
             }
         }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.sort-items;
+        menu-width: 180px;
+        picked(id) => { BrowseApi.sort-picked(id); }
     }
 }
