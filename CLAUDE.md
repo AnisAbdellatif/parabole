@@ -19,4 +19,5 @@ Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `parabol
 - Never log or display Xtream credentials (they are inside stream URLs).
 - Playlist content is untrusted input: validate URLs before handing them to a player; never run commands through a shell.
 - Tests live next to the code (`#[cfg(test)] mod tests` or a sibling `tests.rs`); fixtures in `tests/fixtures/`.
+- Before every `git push`: go through `docs/pre-push-checklist.md`, then push and watch CI to green.
 - Before finishing: `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` all clean (also with `--no-default-features` when shared code changed).

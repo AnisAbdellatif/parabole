@@ -146,9 +146,15 @@ mod tests {
                 "http://h.tv/get.php?type=m3u",
                 SourceInput::M3uUrl("http://h.tv/get.php?type=m3u".into()),
             ),
+            #[cfg(not(windows))]
             (
                 "file:///tmp/a%20b.m3u",
                 SourceInput::M3uFile("/tmp/a b.m3u".into()),
+            ),
+            #[cfg(windows)]
+            (
+                "file:///C:/tmp/a%20b.m3u",
+                SourceInput::M3uFile(r"C:\tmp\a b.m3u".into()),
             ),
             ("Cargo.toml", SourceInput::M3uFile("Cargo.toml".into())),
         ];
