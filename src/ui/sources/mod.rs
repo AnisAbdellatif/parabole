@@ -2,7 +2,7 @@
 mod account;
 mod form;
 mod list;
-mod ua_preset;
+pub(crate) mod ua_preset;
 
 use super::App;
 use crate::model::SourceId;

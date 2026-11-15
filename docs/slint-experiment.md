@@ -25,6 +25,9 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `UrlReady` (copy URL) ignored: no clipboard crate in deps. `PlayEmbedded` falls back to external mpv with a toast.
 - Phase 1: `InfoLoaded`/`SeriesLoaded`/`TestResult`/`AccountChecked` ignored (phase 2).
 - Phase 1: persisted state is saved only on window close.
+- Dialogs: account panel is one coloured text line (not separate labelled fields); dropdowns use the std-widgets `ComboBox` (platform style, not `dialog-kit` styled); dialog card max body height is fixed at 600px (a binding to window height formed a layout loop).
+- Dialogs: saving settings does not call the embedded player's `apply_mpv_args` (player area owns that); group dialog is only reachable via `DialogApi.open-dialog("group")` with the context properties set by browse.
+- Dialogs: no automated UI test of clicks/typing (osascript click was not delivered); verified by screenshots of each dialog and unit tests for the form builder.
 
 ## Comparison
 (filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
@@ -36,3 +39,6 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `ListView.viewport-y` is deprecated in 1.18; use `content-y`.
 - Phase 1: images decode off-thread into `SharedPixelBuffer` (Send); `slint::Image` is not Send, so it is built on the UI thread.
 - Phase 1: setting `HOME` breaks rustup; build first, then run the binary with `HOME=/tmp/...`.
+- Dialogs: a `FocusScope` in `DialogHost` is needed for Esc, because the overlay is a sibling of the main `keys` scope and key events never bubble to it; focus is handed back to `keys` via a `closed` callback.
+- Dialogs: `slint::include_modules!` only exports structs exported from `app.slint`, so new row structs must be added to its export line.
+- Dialogs: a component cannot override a built-in `focus()`; use a differently named public function. `viewport-height` is deprecated for `content-height`.

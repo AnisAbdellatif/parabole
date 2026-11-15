@@ -28,7 +28,7 @@ mod sidebar;
 mod sidebar_groups;
 mod sidebar_rows;
 mod sort;
-mod sources;
+pub(crate) mod sources;
 mod state;
 mod statusbar;
 mod stream_list;

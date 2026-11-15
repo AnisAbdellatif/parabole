@@ -1,5 +1,32 @@
 // Overlay for modal dialogs. Owned by the dialogs area.
+import { DialogApi } from "dialog-api.slint";
+import { SourcesDialog } from "dialog-sources.slint";
+import { SettingsDialog } from "dialog-settings.slint";
+import { ProfilesDialog } from "dialog-profiles.slint";
+import { GroupDialog } from "dialog-group.slint";
+
 export component DialogHost inherits Rectangle {
-    width: 0px;
-    height: 0px;
+    callback closed();
+    property <bool> shown: DialogApi.open != "";
+    visible: root.shown;
+    changed shown => {
+        if (root.shown) { fs.focus(); } else { root.closed(); }
+    }
+    Rectangle {
+        background: #000000a8;
+        TouchArea { clicked => { DialogApi.close(); } }
+    }
+    fs := FocusScope {
+        key-pressed(e) => { if (DialogApi.key(e)) { accept } else { reject } }
+        VerticalLayout {
+            alignment: center;
+            HorizontalLayout {
+                alignment: center;
+                if DialogApi.open == "sources": SourcesDialog { max-body: 600px; }
+                if DialogApi.open == "settings": SettingsDialog { max-body: 600px; }
+                if DialogApi.open == "profiles": ProfilesDialog { max-body: 600px; }
+                if DialogApi.open == "group": GroupDialog { max-body: 600px; }
+            }
+        }
+    }
 }
