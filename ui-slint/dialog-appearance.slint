@@ -1,6 +1,6 @@
-// Appearance dialog (spec S2c): edits AppearanceApi, Rust applies live and persists.
+// Appearance settings tab (spec S2c): edits AppearanceApi, Rust applies live and persists.
 import { Theme } from "theme.slint";
-import { AccentSlider, AccentSwitch, DialogFrame, FormRow } from "dialog-kit.slint";
+import { AccentSlider, AccentSwitch, FormRow, Segmented } from "dialog-kit.slint";
 
 export global AppearanceApi {
     in property <[color]> swatches;
@@ -14,37 +14,16 @@ export global AppearanceApi {
     callback live();
 }
 
-component Segmented inherits Rectangle {
-    in property <[string]> options;
-    in property <int> current;
-    callback picked(int);
-    height: 32px;
-    border-radius: Theme.radius;
-    background: Theme.input-bg;
-    border-width: 1px;
-    border-color: Theme.border;
-    HorizontalLayout {
-        padding: 2px;
-        spacing: 2px;
-        for o[i] in root.options: Rectangle {
-            border-radius: Theme.radius - 2px;
-            background: i == root.current ? Theme.selected-bg : ta.has-hover ? Theme.surface-hover : transparent;
-            Text {
-                text: o;
-                color: i == root.current ? Theme.accent : Theme.text-muted;
-                font-size: Theme.fs-md;
-                font-weight: Theme.medium;
-                horizontal-alignment: center;
-                vertical-alignment: center;
-            }
-            ta := TouchArea { clicked => { root.picked(i); } }
-        }
-    }
+component SliderValue inherits Text {
+    width: 44px;
+    color: Theme.text-muted;
+    font-size: Theme.fs-md;
+    vertical-alignment: center;
+    horizontal-alignment: right;
 }
 
-export component AppearanceDialog inherits DialogFrame {
-    title: "Appearance";
-    card-width: 480px;
+export component AppearancePane inherits VerticalLayout {
+    spacing: 12px;
     FormRow {
         label: "Accent";
         HorizontalLayout {
@@ -63,11 +42,11 @@ export component AppearanceDialog inherits DialogFrame {
     }
     FormRow {
         label: "Mode";
-        Segmented { options: ["Dark", "OLED", "Light"]; current: AppearanceApi.mode; picked(i) => { AppearanceApi.mode = i; AppearanceApi.changed(); } }
+        Segmented { options: ["Dark", "OLED", "Light"]; current: AppearanceApi.mode; changed(i) => { AppearanceApi.mode = i; AppearanceApi.changed(); } }
     }
     FormRow {
         label: "Density";
-        Segmented { options: ["Compact", "Cozy", "TV"]; current: AppearanceApi.density; picked(i) => { AppearanceApi.density = i; AppearanceApi.changed(); } }
+        Segmented { options: ["Compact", "Cozy", "TV"]; current: AppearanceApi.density; changed(i) => { AppearanceApi.density = i; AppearanceApi.changed(); } }
     }
     FormRow {
         label: "Corner radius";
@@ -78,6 +57,7 @@ export component AppearanceDialog inherits DialogFrame {
             changed(v) => { AppearanceApi.radius = v; AppearanceApi.live(); }
             released(v) => { AppearanceApi.radius = v; AppearanceApi.changed(); }
         }
+        SliderValue { text: round(AppearanceApi.radius * 100) + "%"; }
     }
     FormRow {
         label: "Font size";
@@ -88,6 +68,7 @@ export component AppearanceDialog inherits DialogFrame {
             changed(v) => { AppearanceApi.font = v; AppearanceApi.live(); }
             released(v) => { AppearanceApi.font = v; AppearanceApi.changed(); }
         }
+        SliderValue { text: round(AppearanceApi.font * 100) + "%"; }
     }
     FormRow {
         label: "Motion";

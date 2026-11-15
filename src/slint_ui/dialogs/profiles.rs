@@ -1,9 +1,10 @@
 //! Profiles dialog (mirrors `ui/profiles_view.rs`).
 use super::{AppWindow, DialogApi};
 use crate::model::Profile;
-use crate::slint_ui::ProfileRow;
 use crate::slint_ui::state::{SlintApp, with_app};
+use crate::slint_ui::{Core, ProfileRow};
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use std::time::Duration;
 
 fn copy_name(profiles: &[Profile], base: &str) -> String {
     let taken = |n: &str| profiles.iter().any(|p| p.name == n);
@@ -28,10 +29,17 @@ impl SlintApp {
 
     fn push_profile_rows(&self) {
         let Some(w) = self.win.upgrade() else { return };
+        // same fallback as `push_profiles`: no stored profile means the first one
+        let active = self
+            .profiles
+            .iter()
+            .position(|p| Some(p.id) == self.state.profile)
+            .unwrap_or(0);
         let rows: Vec<ProfileRow> = self
             .profiles
             .iter()
-            .map(|p| {
+            .enumerate()
+            .map(|(i, p)| {
                 let others: Vec<SharedString> = self
                     .profiles
                     .iter()
@@ -41,6 +49,7 @@ impl SlintApp {
                 ProfileRow {
                     id: p.id as i32,
                     name: p.name.as_str().into(),
+                    active: i == active,
                     renaming: self.dialogs.renaming == Some(p.id),
                     confirm: self.dialogs.confirm_profile == Some(p.id),
                     can_delete: self.profiles.len() > 1,
@@ -76,6 +85,21 @@ pub fn connect(win: &AppWindow) {
             w.global::<DialogApi>().set_profile_new_name("".into());
             let res = a.db.create_profile(&name).map(|_| ());
             a.finish_profile_op(res);
+        });
+    });
+    api.on_profile_switch(|id| {
+        with_app(|a| {
+            let Some(i) = a.profiles.iter().position(|p| p.id == i64::from(id)) else {
+                return;
+            };
+            let weak = a.win.clone();
+            // Slint callbacks invoked inside `with_app` are dropped, so switch on the next tick.
+            slint::Timer::single_shot(Duration::ZERO, move || {
+                if let Some(w) = weak.upgrade() {
+                    w.global::<Core>().invoke_profile_selected(i as i32);
+                }
+                with_app(|a| a.push_profile_rows());
+            });
         });
     });
     api.on_profile_rename_start(|id| {

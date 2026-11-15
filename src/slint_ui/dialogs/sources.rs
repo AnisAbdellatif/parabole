@@ -66,7 +66,9 @@ fn preset_index(ua: &str) -> i32 {
 }
 
 pub(super) fn reset_form(api: &DialogApi) {
+    api.set_form_open(false);
     api.set_form_editing(false);
+    api.set_form_is_xtream(true);
     for set in [
         DialogApi::set_form_paste,
         DialogApi::set_form_detected,
@@ -171,7 +173,9 @@ impl SlintApp {
         let Some(w) = self.win.upgrade() else { return };
         let api = w.global::<DialogApi>();
         reset_form(&api);
+        api.set_form_open(true);
         api.set_form_editing(true);
+        api.set_form_is_xtream(s.kind == SourceKind::Xtream);
         api.set_form_name(s.name.as_str().into());
         api.set_form_url(s.url.as_str().into());
         api.set_form_user(s.username.clone().unwrap_or_default().into());

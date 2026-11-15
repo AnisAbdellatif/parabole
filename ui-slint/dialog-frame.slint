@@ -1,0 +1,72 @@
+// Dialog card: DialogFrame { DialogBody { … } DialogFooter { … } }.
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { DialogApi } from "dialog-api.slint";
+
+export component DialogFrame inherits Rectangle {
+    in property <string> title;
+    in property <length> card-width: 560px;
+    // DialogHost sets it from its own height; dialogs pass it on to their DialogBody.
+    in property <length> max-body: 560px;
+    width: root.card-width;
+    height: self.preferred-height;
+    background: Theme.card;
+    border-radius: Theme.radius-card;
+    border-width: 1px;
+    border-color: Theme.card-border-hover;
+    drop-shadow-blur: 32px;
+    drop-shadow-offset-y: 12px;
+    drop-shadow-color: #000000a0;
+    TouchArea { }
+    VerticalLayout {
+        HorizontalLayout {
+            padding: 16px;
+            padding-bottom: 12px;
+            Text { text: root.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; vertical-alignment: center; horizontal-stretch: 1; }
+            TouchArea {
+                width: 24px;
+                clicked => { DialogApi.close(); }
+                Icon { source: Icons.close; tint: Theme.text-muted; size: 16px; }
+            }
+        }
+        Rectangle { height: 1px; background: Theme.divider; }
+        @children
+    }
+}
+
+export component DialogBody inherits Rectangle {
+    in property <length> max-body: 560px;
+    height: min(body.preferred-height, root.max-body);
+    flick := Flickable {
+        content-height: body.preferred-height;
+        body := VerticalLayout {
+            padding: 16px;
+            spacing: 12px;
+            @children
+        }
+        // Scroll thumb: the body has no other hint that it continues below the fold.
+        if flick.content-height > flick.height: Rectangle {
+            x: flick.width - 6px;
+            width: 3px;
+            border-radius: 2px;
+            background: Theme.border;
+            height: flick.height * flick.height / flick.content-height;
+            // inside the viewport, so offset by the scroll position too
+            y: -flick.content-y * (1 + flick.height / flick.content-height);
+        }
+    }
+}
+
+// Optional left content takes `horizontal-stretch: 1`; buttons sit at the right.
+export component DialogFooter inherits VerticalLayout {
+    Rectangle { height: 1px; background: Theme.divider; }
+    HorizontalLayout {
+        padding: 16px;
+        spacing: 8px;
+        cross-axis-alignment: center;
+        // with stretch 0 it only takes the space when no child stretches
+        Rectangle { horizontal-stretch: 0; }
+        @children
+    }
+}

@@ -6,10 +6,19 @@ use crate::worker::player_settings;
 use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 use std::path::PathBuf;
 
+fn kind_label(kind: &PlayerKind) -> &'static str {
+    match kind {
+        PlayerKind::Embedded => "Built-in player",
+        PlayerKind::Mpv => "mpv",
+        PlayerKind::Vlc => "VLC",
+        PlayerKind::Custom => "Custom command",
+    }
+}
+
 fn kind_names() -> Vec<SharedString> {
     PlayerKind::selectable()
         .iter()
-        .map(|k| format!("{k:?}").into())
+        .map(|k| kind_label(k).into())
         .collect()
 }
 
@@ -56,10 +65,12 @@ fn detect_text() -> String {
 }
 
 impl SlintApp {
-    pub(super) fn load_settings_dialog(&mut self) {
+    pub(super) fn load_settings_dialog(&mut self, tab: i32) {
+        self.load_appearance_dialog();
         let Some(w) = self.win.upgrade() else { return };
         let s = player_settings::load(&self.db);
         let api = w.global::<DialogApi>();
+        api.set_settings_tab(tab);
         let names = kind_names();
         let mut opt = vec![SharedString::from("Default")];
         opt.extend(names.iter().cloned());

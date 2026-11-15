@@ -1,118 +1,60 @@
-import { ComboBox } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { DialogApi } from "dialog-api.slint";
-import { DButton, DField, DialogFrame, FormRow } from "dialog-kit.slint";
-
-component SourceItem inherits Rectangle {
-    in property <int> id;
-    in property <string> name;
-    in property <string> kind;
-    in property <string> refreshed;
-    in property <bool> refreshing;
-    in property <string> error;
-    in property <string> account;
-    in property <int> account-level;
-    in property <bool> xtream;
-    in property <bool> checking;
-    in property <bool> confirm;
-    height: col.preferred-height + 16px;
-    background: Theme.surface;
-    border-radius: Theme.radius;
-    col := VerticalLayout {
-        padding: 8px;
-        padding-left: 12px;
-        padding-right: 12px;
-        spacing: 6px;
-        HorizontalLayout {
-            spacing: 8px;
-            cross-axis-alignment: center;
-            Text { text: root.name; color: Theme.text; font-weight: Theme.semibold; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
-            Text { text: root.kind; color: Theme.text-dim; vertical-alignment: center; }
-            Text { text: root.refreshing ? "refreshing…" : root.refreshed; color: Theme.text-dim; vertical-alignment: center; }
-            DButton { text: "Refresh"; enabled: !root.refreshing; clicked => { DialogApi.sources-refresh(root.id); } }
-            if root.xtream: DButton {
-                text: root.checking ? "Checking…" : "Check account";
-                enabled: !root.checking;
-                clicked => { DialogApi.sources-check(root.id); }
-            }
-            DButton { text: "Edit"; clicked => { DialogApi.sources-edit(root.id); } }
-            if root.confirm: DButton { text: "Really delete"; kind: 2; clicked => { DialogApi.sources-delete(root.id); } }
-            if root.confirm: DButton { text: "Cancel"; clicked => { DialogApi.sources-cancel-delete(); } }
-            if !root.confirm: DButton { text: "Delete"; clicked => { DialogApi.sources-delete(root.id); } }
-        }
-        if root.account != "": Text {
-            text: root.account;
-            wrap: word-wrap;
-            font-size: Theme.fs-sm;
-            color: root.account-level == 2 ? Theme.error : root.account-level == 1 ? Theme.warn : Theme.text-muted;
-        }
-        if root.error != "": Text { text: root.error; wrap: word-wrap; font-size: Theme.fs-sm; color: Theme.error; }
-    }
-}
+import { DButton, DField } from "dialog-kit.slint";
+import { DialogBody, DialogFooter, DialogFrame } from "dialog-frame.slint";
+import { SourceItem } from "dialog-source-item.slint";
+import { SourceForm } from "dialog-source-form.slint";
 
 export component SourcesDialog inherits DialogFrame {
-    title: "Sources";
+    property <bool> show-form: DialogApi.form-open || DialogApi.sources.length == 0;
+    title: !root.show-form ? "Sources" : DialogApi.form-editing ? "Edit source" : "Add source";
     card-width: 760px;
-    init => { paste.focus-input(); }
-    if DialogApi.sources.length == 0: Text { text: "No sources yet."; color: Theme.text-dim; }
-    for s in DialogApi.sources: SourceItem {
-        id: s.id; name: s.name; kind: s.kind; refreshed: s.refreshed; refreshing: s.refreshing;
-        error: s.error; account: s.account; account-level: s.account-level; xtream: s.xtream;
-        checking: s.checking; confirm: s.confirm;
+
+    if !root.show-form: DialogBody {
+        max-body: root.max-body;
+        for s in DialogApi.sources: SourceItem {
+            id: s.id; name: s.name; kind: s.kind; refreshed: s.refreshed; refreshing: s.refreshing;
+            error: s.error; account: s.account; account-level: s.account-level; xtream: s.xtream;
+            checking: s.checking; confirm: s.confirm;
+        }
     }
-    HorizontalLayout {
-        spacing: 12px;
-        cross-axis-alignment: center;
+    if !root.show-form: DialogFooter {
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: 8px;
+            alignment: start;
+            Text { text: "Auto-refresh after"; color: Theme.text-muted; font-size: Theme.fs-md; vertical-alignment: center; }
+            DField {
+                width: 56px;
+                input-type: InputType.number;
+                text <=> DialogApi.auto-hours;
+                edited(t) => { DialogApi.auto-hours-commit(t); }
+                accepted => { DialogApi.auto-hours-commit(self.text); }
+            }
+            Text { text: "hours (0 = off)"; color: Theme.text-muted; font-size: Theme.fs-md; vertical-alignment: center; }
+        }
         if DialogApi.sources.length > 1: DButton { text: "Refresh all"; clicked => { DialogApi.sources-refresh-all(); } }
-        Text { text: "Auto-refresh at startup after (hours, 0 = off):"; color: Theme.text-muted; vertical-alignment: center; horizontal-stretch: 1; horizontal-alignment: right; }
-        DField {
-            width: 70px;
-            input-type: InputType.number;
-            text <=> DialogApi.auto-hours;
-            accepted => { DialogApi.auto-hours-commit(self.text); }
+        add := DButton { text: "Add source"; kind: 1; clicked => { DialogApi.form-open = true; } }
+    }
+
+    if root.show-form: DialogBody {
+        max-body: root.max-body;
+        SourceForm { }
+    }
+    if root.show-form: DialogFooter {
+        Text {
+            text: DialogApi.test-text;
+            wrap: word-wrap;
+            font-size: Theme.fs-sm;
+            vertical-alignment: center;
+            color: DialogApi.test-ok ? Theme.ok : Theme.error;
+            horizontal-stretch: 1;
         }
-        DButton { text: "Set"; clicked => { DialogApi.auto-hours-commit(DialogApi.auto-hours); } }
-    }
-    Rectangle { height: 1px; background: Theme.divider; }
-    Text { text: DialogApi.form-editing ? "Edit source" : "Add source"; color: Theme.text; font-size: Theme.fs-md; font-weight: Theme.semibold; }
-    Text { text: "Paste anything (M3U link, Xtream URL + username + password, file path):"; color: Theme.text-muted; font-size: Theme.fs-sm; }
-    paste := DField {
-        multiline: true;
-        rows: 3;
-        text <=> DialogApi.form-paste;
-        edited(t) => { DialogApi.form-paste-edited(t); }
-    }
-    if DialogApi.form-detected != "": Text { text: DialogApi.form-detected; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; }
-    FormRow { label: "Name"; DField { text <=> DialogApi.form-name; } }
-    FormRow {
-        label: "URL / file";
-        DField { text <=> DialogApi.form-url; horizontal-stretch: 1; }
-        DButton { text: "Choose file…"; clicked => { DialogApi.form-choose-file(); } }
-    }
-    FormRow { label: "Backup URLs"; DField { multiline: true; rows: 2; placeholder: "Xtream only, one per line"; text <=> DialogApi.form-mirrors; } }
-    FormRow { label: "Username"; DField { text <=> DialogApi.form-user; } }
-    FormRow { label: "Password"; DField { password: true; text <=> DialogApi.form-pass; } }
-    FormRow {
-        label: "User agent";
-        ComboBox {
-            width: 190px;
-            model: ["Default", "IPTV Smarters Pro", "TiviMate", "OkHttp", "VLC", "Custom…"];
-            current-index <=> DialogApi.ua-preset;
-            selected(_) => { DialogApi.form-ua-selected(self.current-index); }
+        back := DButton {
+            text: DialogApi.sources.length > 0 ? "Back" : "Cancel";
+            clicked => { if (DialogApi.sources.length > 0) { DialogApi.form-cancel(); } else { DialogApi.close(); } }
         }
-        if DialogApi.ua-preset == 5: DField { text <=> DialogApi.form-ua; horizontal-stretch: 1; }
-        if DialogApi.ua-preset != 5: Rectangle { horizontal-stretch: 1; }
-    }
-    HorizontalLayout {
-        spacing: 8px;
-        alignment: start;
-        DButton { text: DialogApi.form-editing ? "Save" : "Add"; kind: 1; clicked => { DialogApi.form-submit(); } }
-        if DialogApi.form-editing: DButton { text: "Cancel edit"; clicked => { DialogApi.form-cancel(); } }
         DButton { text: DialogApi.testing ? "Testing…" : "Test"; enabled: !DialogApi.testing; clicked => { DialogApi.form-test(); } }
-    }
-    if DialogApi.test-text != "": Text {
-        text: DialogApi.test-text;
-        wrap: word-wrap;
-        color: DialogApi.test-ok ? Theme.ok : Theme.error;
+        DButton { text: DialogApi.form-editing ? "Save" : "Add"; kind: 1; clicked => { DialogApi.form-submit(); } }
     }
 }
