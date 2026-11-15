@@ -27,7 +27,7 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: persisted state is saved only on window close.
 - Dialogs: account panel is one coloured text line (not separate labelled fields); dropdowns use the std-widgets `ComboBox` (platform style, not `dialog-kit` styled); dialog card max body height is fixed at 600px (a binding to window height formed a layout loop).
 - Dialogs: saving settings does not call the embedded player's `apply_mpv_args` (player area owns that); group dialog is only reachable via `DialogApi.open-dialog("group")` with the context properties set by browse.
-- Dialogs: no automated UI test of clicks/typing (osascript click was not delivered); verified by screenshots of each dialog and unit tests for the form builder.
+- Dialogs: clicks and typing are covered headless (see "Headless UI tests"); the sources, settings and profiles forms are only snapshotted, not driven.
 - Player: mini mode is not always-on-top (needs the `unstable-winit-*` slint feature); the window just shrinks to 480x270 and restores.
 - Player: dock side and splitter size are not persisted; status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
 - Player: `slint-ui` needs the default `embedded-mpv` feature (no `--no-default-features --features slint-ui` build). Fullscreen was not screenshotted (macOS Space changes the window id); mini/docked right/bottom/stats were.
@@ -38,6 +38,22 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - browse: group dialog is `BrowseApi.request-dialog("group")` + `group-ctx-*` + `group-submit`; orchestrator must wire it to the dialogs area.
 - browse: series page also fetches info on open (egui doesn't); verified only with fake data (no Xtream offline).
 - browse: posters look blurry (`images.rs` THUMB=96, not browse-owned). Cmd+Left sidebar focus not verified via automation (Cmd+D verified).
+
+## Headless UI tests
+Two test binaries drive the real `AppWindow` (via `slint_ui::build`) with no window, no focus change and no OS input. Both use a scratch DB with `HOME`/`XDG_*` pointed at a temp dir, so the real library, config and image cache are never touched.
+- Run: `cargo test --features slint-ui --test slint_behaviour --test slint_snapshots` (about 2 s and 13 s in a debug build, plus compile).
+- `tests/slint_behaviour.rs`: `i-slint-backend-testing`; finds elements by id, clicks, types, checks state. Covers startup, sidebar, palette (search, Down, Esc, activating a category), appearance (accent, reduce motion, persisted state file), dialog focus after Esc, profile switch via palette.
+- `tests/slint_snapshots.rs`: software renderer (`tests/common/sw_platform.rs`, 1280x800 at 2x, manual clock, reduce motion on). Renders 11 screens to `tests/fixtures/slint-snapshots/*.png` and compares: a pixel differs if a channel differs by more than 8; fail above 0.3% differing pixels. On failure it writes `target/slint-snapshots/<name>.actual.png` and `.diff.png`. It also asserts that the player control icons and one sidebar badge are vertically aligned within 1 physical px.
+- Update goldens: `UPDATE_SNAPSHOTS=1 cargo test --features slint-ui --test slint_snapshots`, then review the PNGs. A missing golden is written and the test fails once.
+- Limits: the software renderer differs from femtovg (fonts, shadows, blur), so goldens only catch layout regressions, not final look. Goldens depend on the bundled fonts; the text-heavy screens may need re-recording on another OS. There is no mpv video (the video notifier fails on the software renderer and the player area just reports it), so playback, Enter on a stream result, fullscreen and PiP are untested. The ElementHandle API needs Slint debug info, which `build.rs` emits only in debug builds.
+
+Dev experience:
+- `build()` split out of `run()` was the only production change needed; `slint::include_modules!` already makes the window and globals public.
+- `ElementHandle` ids ("Component::id") work for repeater rows too: one match per row, in model order. Unnamed `TouchArea`s needed ids first.
+- Keyboard chords need the modifier held: press Control, press `k`, release Control. Pressing and releasing Control first does nothing.
+- Animations make positions move: wait for a dialog to settle before clicking inside it, or turn reduce-motion on.
+- A custom `Platform` with a manual clock and queue-backed event loop proxy makes `Timer`s, worker events and animations fully deterministic for snapshots.
+- A `slint` dev-dependency needs `std`, `compat-1-2` and `software-renderer-path` (path rendering) next to `renderer-software`, otherwise the default `cargo test` build fails.
 
 ## Comparison
 Measured 2026-11-15 on an M-series Mac, macOS, both builds with embedded mpv. The runtime numbers come from a copy of the real DB (290,693 streams, 906 categories, auto-refresh off). The script is `/tmp/cmp/measure.sh` (not committed).
