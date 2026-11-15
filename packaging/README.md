@@ -48,7 +48,10 @@ Builds mpv (libass + ffmpeg) from source against `org.freedesktop.Platform//24.0
 ## CI and releases
 
 - `.github/workflows/ci.yml`: fmt, clippy (default and `--no-default-features`) and tests on macOS, Linux, Windows.
-- `.github/workflows/release.yml`: on tag `v*`, builds the three packages and uploads them to a **draft** GitHub release.
+- `.github/workflows/release.yml`: on tag `v*`, builds the three packages, attests their build provenance and publishes them with `SHA256SUMS` as a GitHub release. The tag must equal `v` + the `Cargo.toml` version.
+- Actions are pinned by commit SHA; `.github/dependabot.yml` bumps them weekly.
+
+Cut a release: bump `version` in `Cargo.toml`, commit, then `git tag v0.1.0 && git push origin v0.1.0`.
 
 Release secrets (all optional; macOS signing/notarization is skipped without them, ad-hoc signed instead):
 
