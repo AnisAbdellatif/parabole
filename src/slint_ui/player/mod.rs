@@ -14,7 +14,7 @@ use crate::player::embed::MpvCore;
 use crate::player::{PlayerSettings, TrackInfo};
 use crate::ui::player::session::Session;
 use crate::ui::player::zap::ZapBuffer;
-use crate::worker::Event;
+use crate::worker::{Event, player_settings};
 use std::rc::Rc;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -53,7 +53,8 @@ pub fn connect(win: &AppWindow) {
     let pending = Arc::new(AtomicBool::new(false));
     let wake = Arc::clone(&pending);
     // Coalesces mpv wakeups: at most one poll is queued on the UI thread.
-    let core = MpvCore::new(&PlayerSettings::default(), move || {
+    let settings = with_app(|a| player_settings::load(&a.db)).unwrap_or_default();
+    let core = MpvCore::new(&settings, move || {
         if !wake.swap(true, Ordering::AcqRel) {
             let pending = Arc::clone(&wake);
             let _ = slint::invoke_from_event_loop(move || {
