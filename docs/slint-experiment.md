@@ -153,3 +153,26 @@ Gaps: VOD chrome (seek bar thumb/tooltip, remaining time), the "Go live" pill (b
 - Player: `states` with `in`/`out` transitions on `x` + `opacity` give the zap carousel slide-in/out with no Rust timers other than the 2 s auto-close; `Theme.motion` = 0 collapses them.
 - Player: Slint callbacks must not run inside `with_app`; the PiP/fullscreen window calls are deferred with `Timer::single_shot(ZERO)`.
 - Smoke: keyboard tests need a list row clicked first, otherwise the search box keeps focus and the `keys` FocusScope never sees the key.
+
+## VM end-to-end tests
+Real Slint app + embedded libmpv + real keyboard/pointer input, inside the UTM "Xubuntu" guest (aarch64, Linux, software GL). Nothing touches the host display, focus or input.
+
+Run: `scripts/vm/e2e.sh all` (up, sync, build, test, fetch; exit code = test result). Steps also run alone: `up | sync | build | test | fetch | down`. `VM_HOST` overrides the guest IP (default: newest `xubuntu-vm` lease in `/var/db/dhcpd_leases`). Screenshots and logs land in `/tmp/vm-e2e/`. Run time: about 45 s for the tests, plus a 15-60 s incremental build.
+
+What it does (`scripts/vm/guest-e2e.sh`, in the guest):
+- Starts Xvfb `:99` (1600x1000) with xfwm4, three local HLS live channels (`ffmpeg -re`: ch1 `testsrc2`, ch2 blue, ch3 green), and a Range-capable server for the VOD mp4. It seeds a scratch `HOME` through `examples/vm_seed.rs` (M3U file source, embedded player, mpv args `--ao=null`, bilinear scaling, `--log-file`).
+- Scenarios, each PASS/FAIL: `play-live`, `zap-down` (PgDn: blue), `zap-up`, `pause`, `fullscreen` (window = screen size, zap carousel shot), `mini` (<=500x300), `vod-seek` (seek bar shot, Right while paused changes the frame), `stop`, `mpv-args` (mpv.log exists, so stored `mpv_args` were applied).
+- Player keys are only handled while the pointer is over the video (or fullscreen/mini), so each step moves the pointer there first. The docked video rect comes from the fixed layout (420 px pane at the right edge, 16 px padding, 16:9); the probe box is its middle band.
+
+Limits:
+- Linux/X11 + llvmpipe only: no macOS PiP, Spaces or Metal, and no real audio (`--ao=null`).
+- llvmpipe renders mpv's default scaler as black lines (stock `mpv --vo=gpu` too), hence `--scale=bilinear --cscale=bilinear --dither=no`.
+- Colours are checked on solid test channels; real provider streams are out of scope here.
+- Needs no sudo in the guest. Only one build at a time (`-j3`, one bin): the guest has 3.4 GB RAM.
+
+### Watching a run
+`E2E_DISPLAY=:0 scripts/vm/e2e.sh test` runs the same scenarios on the guest's own logged-in Xfce desktop (seat 0, `:0`) so you can watch them in the UTM window. It starts no Xvfb or WM and never kills the desktop's xfwm4; it only stops the app, the encoders and the http servers it started. It looks for the session's `XAUTHORITY` (`~/.Xauthority`, then `/run/user/<uid>/...`) and fails with a clear message if `xdpyinfo -display :0` cannot connect. Screen size is read from `xdpyinfo`, so fullscreen is checked against the real display (1280x800 here; xfwm4 maximizes the window into the 775 px work area).
+
+Do not click or type inside the VM window during a run: the script injects keys and pointer moves on the same display, and your input would race with it.
+
+Bugs this found (all fixed): stored `mpv_args` ignored by the Slint player, the video Image not repainted on X11 until something else dirtied it, PiP not shrinking a maximized window.
