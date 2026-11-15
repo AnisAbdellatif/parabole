@@ -84,6 +84,7 @@ impl SlintApp {
         if !self.sources.iter().any(|s| Some(s.id) == self.state.source) {
             self.state.source = None;
         }
+        self.push_source_filter();
         self.reload_categories();
     }
 

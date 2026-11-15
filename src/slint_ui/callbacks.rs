@@ -63,6 +63,16 @@ pub fn connect(win: &AppWindow) {
             a.reload_sources();
         });
     });
+    core.on_source_selected(|i| {
+        with_app(|a| {
+            let at = (i as usize).checked_sub(1);
+            a.state.source = at.and_then(|n| a.sources.get(n)).map(|s| s.id);
+            clear_search(a);
+            reset_cursor(a);
+            super::browse::close_series(a);
+            a.reload_categories();
+        });
+    });
     core.on_search_edited(|s| {
         with_app(|a| {
             a.search_text = s.to_string();

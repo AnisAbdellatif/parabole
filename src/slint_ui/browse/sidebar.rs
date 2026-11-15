@@ -59,15 +59,14 @@ impl SlintApp {
                 v.push(row(id, 3, self.cat_label(c), c.count as i32, 0, c.pinned));
             }
         }
+        let sel_id = self.state.sel.as_ref().map(Sel::to_id).unwrap_or_default();
+        let at = v
+            .iter()
+            .position(|r| !sel_id.is_empty() && r.id == sel_id.as_str());
         self.browse.side_rows.set_vec(v);
-        win.global::<Core>().set_selected_id(
-            self.state
-                .sel
-                .as_ref()
-                .map(Sel::to_id)
-                .unwrap_or_default()
-                .into(),
-        );
+        let core = win.global::<Core>();
+        core.set_selected_index(at.map_or(-1, |i| i as i32));
+        core.set_selected_id(sel_id.into());
         self.push_edit();
     }
 

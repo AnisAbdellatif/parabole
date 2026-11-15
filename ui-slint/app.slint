@@ -1,7 +1,8 @@
 // Main window. Area ownership: docs/slint-phase2.md. Keys go Dialog -> Player -> Browse -> Core.
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
-import { TopBar } from "topbar.slint";
+import { ShellRail } from "shell-rail.slint";
+import { ShellHeader } from "shell-header.slint";
 import { Sidebar } from "sidebar.slint";
 import { BrowseHost } from "browse-host.slint";
 import { StatusBar } from "status-bar.slint";
@@ -35,7 +36,7 @@ export component AppWindow inherits Window {
                 if (e.text == "1") { Core.tab-selected(0); return accept; }
                 if (e.text == "2") { Core.tab-selected(1); return accept; }
                 if (e.text == "3") { Core.tab-selected(2); return accept; }
-                if (e.text == "f") { top.focus-search(); return accept; }
+                if (e.text == "f") { header.focus-search(); return accept; }
             }
             if (e.text == Key.Escape) { Core.search-cleared(); keys.focus(); return accept; }
             if (e.text == Key.DownArrow) { root.move-cursor(1); return accept; }
@@ -48,15 +49,19 @@ export component AppWindow inherits Window {
             reject
         }
         VerticalLayout {
-            top := TopBar { escaped => { keys.focus(); } }
-            HorizontalLayout {
+            main := HorizontalLayout {
+                Rectangle { width: Theme.rail-w; }
                 Sidebar { }
-                BrowseHost { interacted => { keys.focus(); } }
+                VerticalLayout {
+                    header := ShellHeader { escaped => { keys.focus(); } }
+                    BrowseHost { interacted => { keys.focus(); } }
+                }
                 PlayerPane { }
             }
             PlayerPaneBottom { }
             StatusBar { }
         }
+        ShellRail { x: 0px; y: 0px; height: main.height; }
     }
 
     PlayerOverlay { x: 0px; y: 0px; width: parent.width; height: parent.height; }

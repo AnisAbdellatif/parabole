@@ -1,0 +1,61 @@
+// Bar above the browse area: search, source filter, sort.
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { ComboBox } from "std-widgets.slint";
+import { SearchBox } from "search-box.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+
+export component ShellHeader inherits Rectangle {
+    callback escaped();
+    public function focus-search() { search.focus-search(); }
+    height: Theme.header-h;
+    background: Theme.panel;
+    Rectangle { y: parent.height - 1px; height: 1px; background: Theme.divider; }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 12px;
+        alignment: stretch;
+        search := SearchBox {
+            y: (parent.height - self.height) / 2;
+            preferred-width: 420px;
+            max-width: 460px;
+            min-width: 146px;
+            escaped => { root.escaped(); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        ComboBox {
+            width: 170px;
+            y: (parent.height - self.height) / 2;
+            model: Core.source-names;
+            current-index: Core.source-index;
+            selected(_) => { Core.source-selected(self.current-index); }
+        }
+        if BrowseApi.sort-visible: sort-btn := Rectangle {
+            width: sort-text.preferred-width + 28px;
+            height: 32px;
+            y: (parent.height - self.height) / 2;
+            background: sort-ta.has-hover ? Theme.surface-hover : Theme.surface;
+            border-radius: Theme.radius;
+            border-width: 1px;
+            border-color: Theme.border;
+            sort-ta := TouchArea {
+                clicked => { menu.open(sort-btn.absolute-position.x + sort-btn.width - 180px, sort-btn.absolute-position.y + sort-btn.height + 4px); }
+            }
+            sort-text := Text {
+                x: 12px;
+                text: BrowseApi.sort-label + " ▾";
+                color: Theme.text;
+                font-size: Theme.fs-md;
+                vertical-alignment: center;
+                height: parent.height;
+            }
+        }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.sort-items;
+        menu-width: 180px;
+        picked(id) => { BrowseApi.sort-picked(id); }
+    }
+}

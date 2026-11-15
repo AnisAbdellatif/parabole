@@ -20,9 +20,35 @@ impl SlintApp {
             .iter()
             .position(|p| Some(p.id) == self.state.profile)
             .unwrap_or(0);
-        core.set_profile_name(names.get(idx).cloned().unwrap_or_default());
+        let name = names.get(idx).cloned().unwrap_or_default();
+        let initials: String = name
+            .split_whitespace()
+            .filter_map(|w| w.chars().next())
+            .take(2)
+            .collect();
+        core.set_profile_initials(initials.to_uppercase().into());
+        core.set_profile_name(name);
         core.set_profile_index(idx as i32);
         core.set_profiles(ModelRc::new(VecModel::from(names)));
+    }
+
+    pub fn push_source_filter(&self) {
+        let Some(win) = self.win.upgrade() else {
+            return;
+        };
+        let mut names: Vec<SharedString> = vec!["All sources".into()];
+        names.extend(
+            self.sources
+                .iter()
+                .map(|s| SharedString::from(s.name.as_str())),
+        );
+        let idx = self
+            .sources
+            .iter()
+            .position(|s| Some(s.id) == self.state.source);
+        let core = win.global::<Core>();
+        core.set_source_names(ModelRc::new(VecModel::from(names)));
+        core.set_source_index(idx.map_or(0, |i| i as i32 + 1));
     }
 
     pub fn push_streams(&mut self, rows: Vec<StreamRow>) {

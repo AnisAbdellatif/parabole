@@ -7,6 +7,10 @@ export global Core {
     in property <[string]> profiles;
     in-out property <int> profile-index: 0;
     in property <string> profile-name;
+    in property <string> profile-initials;
+    in property <[string]> source-names;
+    in-out property <int> source-index: 0;
+    in-out property <int> selected-index: -1;
     in-out property <string> search-text;
     in property <[SidebarItem]> sidebar;
     in property <string> selected-id;
@@ -31,5 +35,7 @@ export global Core {
     callback stream-activated(int);
     callback favorite-toggled(int);
     callback toast-dismissed(int);
+    callback source-selected(int);
+    callback open-palette();
     callback stop-playback();
 }

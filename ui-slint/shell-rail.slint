@@ -1,0 +1,95 @@
+// Icon rail: 56px at rest, overlays the layout at 180px while hovered.
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { DialogApi } from "dialog-api.slint";
+
+component RailButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <bool> active: false;
+    in property <bool> open: false;
+    out property <bool> hovered: ta.has-hover;
+    callback clicked();
+    height: 36px * Theme.density;
+    ta := TouchArea { clicked => { root.clicked(); } }
+    chip := Rectangle {
+        x: 12px;
+        width: 32px;
+        height: 32px * Theme.density;
+        y: (parent.height - self.height) / 2;
+        border-radius: Theme.radius-l;
+        background: root.active ? @linear-gradient(135deg, Theme.accent 0%, Theme.accent-2 100%) : ta.has-hover ? Theme.surface : transparent;
+        drop-shadow-color: Theme.accent.with-alpha(0.35);
+        drop-shadow-blur: root.active ? 18px : 0px;
+        Icon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            size: 18px;
+            tint: root.active ? Theme.on-accent : ta.has-hover ? Theme.text : Theme.text-dim;
+        }
+    }
+    Text {
+        x: 56px;
+        y: 0px;
+        height: parent.height;
+        text: root.label;
+        color: root.active ? Theme.text : Theme.text-muted;
+        font-size: Theme.fs-md;
+        font-weight: Theme.medium;
+        vertical-alignment: center;
+        opacity: root.open ? 1 : 0;
+        animate opacity { duration: Theme.motion; easing: ease-out; }
+    }
+}
+
+export component ShellRail inherits Rectangle {
+    property <bool> open: bg.has-hover || b-search.hovered || b-live.hovered || b-movies.hovered || b-series.hovered
+        || b-fav.hovered || b-sources.hovered || b-profile.hovered || b-settings.hovered;
+    width: root.open ? Theme.rail-w-open : Theme.rail-w;
+    animate width { duration: Theme.motion; easing: ease-out; }
+    background: Theme.toolbar;
+    drop-shadow-color: #00000090;
+    drop-shadow-blur: root.open ? 28px : 0px;
+    animate drop-shadow-blur { duration: Theme.motion; }
+    Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
+    bg := TouchArea { }
+    VerticalLayout {
+        padding-top: 14px;
+        padding-bottom: 12px;
+        spacing: 6px;
+        b-search := RailButton { icon: Icons.search; label: "Search"; open: root.open; clicked => { Core.open-palette(); } }
+        b-live := RailButton { icon: Icons.live; label: "Live"; open: root.open; active: Core.tab == 0; clicked => { Core.tab-selected(0); } }
+        b-movies := RailButton { icon: Icons.movie; label: "Movies"; open: root.open; active: Core.tab == 1; clicked => { Core.tab-selected(1); } }
+        b-series := RailButton { icon: Icons.series; label: "Series"; open: root.open; active: Core.tab == 2; clicked => { Core.tab-selected(2); } }
+        b-fav := RailButton { icon: Icons.star; label: "Favorites"; open: root.open; active: Core.selected-id == "fav"; clicked => { Core.sidebar-selected("fav"); } }
+        Rectangle { vertical-stretch: 1; }
+        b-sources := RailButton { icon: Icons.sources; label: "Sources"; open: root.open; clicked => { DialogApi.open-dialog("sources"); } }
+        b-profile := RailButton {
+            label: "Profile: " + Core.profile-name;
+            open: root.open;
+            clicked => { DialogApi.open-dialog("profiles"); }
+            Rectangle {
+                x: 12px;
+                width: 32px;
+                height: 32px;
+                y: (parent.height - self.height) / 2;
+                border-radius: 16px;
+                background: Theme.surface-hover;
+                border-width: 1px;
+                border-color: Theme.accent.with-alpha(0.6);
+                Text {
+                    text: Core.profile-initials;
+                    color: Theme.text;
+                    font-size: Theme.fs-xs;
+                    font-weight: Theme.semibold;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        b-settings := RailButton { icon: Icons.settings; label: "Settings"; open: root.open; clicked => { DialogApi.open-dialog("settings"); } }
+    }
+}

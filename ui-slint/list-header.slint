@@ -1,7 +1,6 @@
 import { Theme } from "theme.slint";
 import { Core } from "core.slint";
 import { BrowseApi } from "browse-api.slint";
-import { ContextMenu } from "browse-menu.slint";
 
 export component ListHeader inherits Rectangle {
     height: 58px + (BrowseApi.chips.length > 0 ? 38px : 0px);
@@ -29,24 +28,6 @@ export component ListHeader inherits Rectangle {
                 vertical-alignment: center;
             }
             Rectangle { horizontal-stretch: 1; }
-            if BrowseApi.sort-visible: sort-btn := Rectangle {
-                width: sort-text.preferred-width + 28px;
-                background: sort-ta.has-hover ? Theme.surface-hover : Theme.surface;
-                border-radius: Theme.radius;
-                border-width: 1px;
-                border-color: Theme.border;
-                sort-ta := TouchArea {
-                    clicked => { menu.open(sort-btn.absolute-position.x + sort-btn.width - 180px, sort-btn.absolute-position.y + sort-btn.height + 4px); }
-                }
-                sort-text := Text {
-                    x: 12px;
-                    text: BrowseApi.sort-label + " ▾";
-                    color: Theme.text;
-                    font-size: Theme.fs-md;
-                    vertical-alignment: center;
-                    height: parent.height;
-                }
-            }
         }
         if BrowseApi.chips.length > 0: HorizontalLayout {
             height: 28px;
@@ -70,10 +51,5 @@ export component ListHeader inherits Rectangle {
                 }
             }
         }
-    }
-    menu := ContextMenu {
-        items: BrowseApi.sort-items;
-        menu-width: 180px;
-        picked(id) => { BrowseApi.sort-picked(id); }
     }
 }

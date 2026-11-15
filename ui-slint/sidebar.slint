@@ -16,6 +16,30 @@ component SideList inherits Rectangle {
             list.content-y = -((BrowseApi.side-scroll-index + 1) * Theme.sidebar-row-step - list.visible-height);
         }
     }
+    Rectangle {
+        x: 10px;
+        width: parent.width - 20px;
+        height: parent.height;
+        clip: true;
+        pill := Rectangle {
+            visible: Core.selected-index >= 0;
+            y: Core.selected-index * Theme.sidebar-row-step + list.content-y;
+            height: Theme.sidebar-row-h;
+            border-radius: Theme.radius;
+            background: Theme.selected-bg;
+            border-width: BrowseApi.sidebar-focus ? 1px : 0px;
+            border-color: Theme.accent;
+            animate y, height { duration: Theme.motion; easing: ease-out; }
+            Rectangle {
+                x: 0px;
+                y: 6px * Theme.density;
+                width: 3px;
+                height: parent.height - 12px * Theme.density;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+        }
+    }
     list := ListView {
         x: 10px;
         width: parent.width - 20px;
@@ -28,6 +52,7 @@ component SideList inherits Rectangle {
                 text: item.label;
                 color: Theme.text-dim;
                 font-size: Theme.fs-xs;
+                letter-spacing: 1.2px;
                 font-weight: Theme.semibold;
             }
             if item.kind == 4: Rectangle {
@@ -37,6 +62,7 @@ component SideList inherits Rectangle {
                     text: item.label;
                     color: Theme.text-dim;
                     font-size: Theme.fs-xs;
+                    letter-spacing: 1.2px;
                     font-weight: Theme.semibold;
                 }
                 plus := Rectangle {
@@ -53,10 +79,8 @@ component SideList inherits Rectangle {
             if item.kind != 0 && item.kind != 4: Rectangle {
                 height: Theme.sidebar-row-h;
                 border-radius: Theme.radius;
-                border-width: 1px;
                 property <bool> on: item.id == Core.selected-id;
-                background: on ? Theme.selected-bg : (ta.has-hover ? Theme.row-hover : transparent);
-                border-color: on ? (BrowseApi.sidebar-focus ? Theme.accent : Theme.selected-border) : transparent;
+                background: !on && ta.has-hover ? Theme.row-hover : transparent;
                 ta := TouchArea {
                     clicked => { BrowseApi.sidebar-focus = false; Core.sidebar-selected(item.id); }
                     pointer-event(e) => {
