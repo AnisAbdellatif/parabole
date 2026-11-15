@@ -79,3 +79,19 @@ Notes:
 - browse: Slint maps Cmd to `modifiers.control` on macOS; a `meta||control` check covers both.
 - browse: a child without x/y inside a Rectangle is centered; PopupWindow x/y can't be set from a function (bind to root properties).
 - browse: osascript can't send modifier combos; a small CGEvent swift helper can.
+
+## Ambient S2c
+Gaps / deviations:
+- `PaletteItem` has no `icon` field: the row icon is picked from `kind` in Slint. `PaletteApi.close` is a public function, not a callback.
+- Touched outside the owned files, all minimal: `worker/mod.rs` (`Command::Search` / `Event::SearchResults`), `ui/events.rs` (empty arm for the new event), `slint_ui/events.rs`, `state.rs` + `mod.rs` (`palette` field, `palette::connect`), `browse/mod.rs` (`pub use series::open as open_series`), `dialog-host.slint` and `dialog-settings.slint` (appearance dialog + button).
+- `Core.open-palette` is handled in `palette::connect`, not `callbacks.rs`. Cmd+K is in `PaletteApi.key` (toggles).
+- The overlay component is `CommandPalette`, because `Palette` clashes with the std-widgets global.
+- Appearance sliders/switch use the std-widgets colours (blue), not `Theme.accent`. Persistence saves on every change (slider drag writes the JSON per tick).
+- Not exercised: keyboard nav and activating results in the running app (no accessibility rights to inject keys); search, rendering and the appearance dialog were verified by screenshot via a temporary env hook (removed).
+
+Dev experience:
+- Callbacks invoked from inside `with_app` are silently dropped (`try_borrow_mut`); every action that fires a Slint callback needs a `Timer::single_shot(ZERO)`.
+- A user component named `Palette` shadows the `std-widgets` global of the same name with "Cannot access id", an error that points at the wrong file.
+- `ListView.viewport-y` is deprecated for `content-y`; the error says so, so the fix was quick.
+- Animating a derived `t` (0..1) bound to `open` gives enter and exit animation without state machines, and `Theme.motion` = 0 makes it snap.
+- Slint runs no synthetic input without OS accessibility rights, so an env-var smoke hook was the practical way to screenshot overlays.
