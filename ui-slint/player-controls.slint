@@ -27,12 +27,12 @@ export component PlayerControls inherits Rectangle {
             alignment: start;
             cross-axis-alignment: center;
             height: 40px;
-            IconBtn {
+            pause-btn := IconBtn {
                 icon: PlayerApi.paused ? Icons.play : Icons.pause;
                 clicked => { PlayerApi.toggle-pause(); }
             }
-            IconBtn { icon: Icons.stop; clicked => { PlayerApi.stop(); } }
-            IconBtn {
+            stop-btn := IconBtn { icon: Icons.stop; clicked => { PlayerApi.stop(); } }
+            mute-btn := IconBtn {
                 icon: PlayerApi.muted ? Icons.volume-off : Icons.volume;
                 clicked => { PlayerApi.toggle-mute(); }
             }
@@ -77,9 +77,9 @@ export component PlayerControls inherits Rectangle {
                 tracks: PlayerApi.audio-tracks;
                 picked(id) => { PlayerApi.select-audio(id); }
             }
-            IconBtn { icon: Icons.info; on: PlayerApi.show-stats; clicked => { PlayerApi.toggle-stats(); } }
-            IconBtn { icon: Icons.mini; clicked => { PlayerApi.toggle-mini(); } }
-            IconBtn {
+            info-btn := IconBtn { icon: Icons.info; on: PlayerApi.show-stats; clicked => { PlayerApi.toggle-stats(); } }
+            mini-btn := IconBtn { icon: Icons.mini; clicked => { PlayerApi.toggle-mini(); } }
+            fullscreen-btn := IconBtn {
                 icon: PlayerApi.fullscreen ? Icons.fullscreen-exit : Icons.fullscreen;
                 clicked => { PlayerApi.toggle-fullscreen(); }
             }
