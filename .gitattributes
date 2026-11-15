@@ -1,0 +1,3 @@
+# Keep generated and mockup files out of the GitHub language bar
+graphify-out/** linguist-generated
+docs/*.html linguist-documentation
