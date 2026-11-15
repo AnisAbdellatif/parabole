@@ -14,6 +14,7 @@ const MARGIN_Y: f32 = 80.0;
 pub struct Geometry {
     size: PhysicalSize,
     pos: PhysicalPosition,
+    maximized: bool,
 }
 
 pub fn connect(win: &AppWindow) {
@@ -31,11 +32,14 @@ pub fn save(w: &AppWindow) -> Geometry {
     Geometry {
         size: w.window().size(),
         pos: w.window().position(),
+        maximized: w.window().is_maximized(),
     }
 }
 
 pub fn enter(w: &AppWindow) {
     let window = w.window();
+    // a maximized window ignores resize requests (X11 window managers), so PiP would stay full size
+    window.set_maximized(false);
     window.set_size(SIZE);
     let scale = window.scale_factor();
     let monitor = window
@@ -52,4 +56,5 @@ pub fn enter(w: &AppWindow) {
 pub fn restore(w: &AppWindow, g: &Geometry) {
     w.window().set_size(g.size);
     w.window().set_position(g.pos);
+    w.window().set_maximized(g.maximized);
 }
