@@ -14,6 +14,10 @@ fn main() {
         println!("cargo:rerun-if-changed=ui-slint");
         println!("cargo:rerun-if-changed=assets/icons");
         println!("cargo:rerun-if-changed=assets/fonts");
-        slint_build::compile("ui-slint/app.slint").expect("compile ui-slint/app.slint");
+        // Element ids are only queryable (headless tests) when debug info is emitted; release stays lean.
+        let debug = std::env::var("PROFILE").as_deref() == Ok("debug");
+        let config = slint_build::CompilerConfiguration::new().with_debug_info(debug);
+        slint_build::compile_with_config("ui-slint/app.slint", config)
+            .expect("compile ui-slint/app.slint");
     }
 }
