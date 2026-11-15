@@ -6,32 +6,47 @@ use crate::slint_ui::state::{SlintApp, with_app};
 use slint::{Color, ComponentHandle, ModelRc, VecModel};
 
 /// Applies `f` to the stored appearance, then applies it live and saves it.
-// shortcut: saves on every change (a slider drag writes the small JSON per tick).
 pub fn commit(a: &mut SlintApp, f: impl FnOnce(&mut Appearance)) {
+    update(a, f, true);
+}
+
+fn update(a: &mut SlintApp, f: impl FnOnce(&mut Appearance), save: bool) {
     let mut ap = a.state.appearance.clone();
     f(&mut ap);
     a.state.appearance = ap.clamped();
     if let Some(w) = a.win.upgrade() {
         a.state.appearance.apply(&w);
     }
-    let res = a.state.save(&a.state_path);
-    a.report(res);
+    if save {
+        let res = a.state.save(&a.state_path);
+        a.report(res);
+    }
+}
+
+fn from_api(a: &mut SlintApp, save: bool) {
+    let Some(w) = a.win.upgrade() else { return };
+    let api = w.global::<AppearanceApi>();
+    update(
+        a,
+        |s| {
+            s.accent = api.get_accent().clamp(0, 255) as u8;
+            s.mode = api.get_mode().clamp(0, 255) as u8;
+            s.density = api.get_density().clamp(0, 255) as u8;
+            s.radius_scale = api.get_radius();
+            s.font_scale = api.get_font();
+            s.reduce_motion = api.get_reduce_motion();
+        },
+        save,
+    );
 }
 
 pub fn connect(win: &AppWindow) {
-    win.global::<AppearanceApi>().on_changed(|| {
-        with_app(|a| {
-            let Some(w) = a.win.upgrade() else { return };
-            let api = w.global::<AppearanceApi>();
-            commit(a, |s| {
-                s.accent = api.get_accent().clamp(0, 255) as u8;
-                s.mode = api.get_mode().clamp(0, 255) as u8;
-                s.density = api.get_density().clamp(0, 255) as u8;
-                s.radius_scale = api.get_radius();
-                s.font_scale = api.get_font();
-                s.reduce_motion = api.get_reduce_motion();
-            });
-        });
+    let api = win.global::<AppearanceApi>();
+    api.on_changed(|| {
+        with_app(|a| from_api(a, true));
+    });
+    api.on_live(|| {
+        with_app(|a| from_api(a, false));
     });
 }
 
