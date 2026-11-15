@@ -281,7 +281,7 @@ fn snapshots() {
     fonts::install_fallback();
     let win = build(&db).expect("build window");
     #[cfg(target_os = "macos")]
-    assert_eq!(win.global::<Theme>().get_font(), "Avenir Next");
+    assert_eq!(win.global::<Theme>().get_font(), ".SF NS");
     // Keep goldens portable rather than dependent on macOS system fonts.
     win.global::<Theme>().set_font("Inter".into());
     win.show().expect("show window");
