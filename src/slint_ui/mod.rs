@@ -2,9 +2,9 @@
 mod appearance;
 mod browse;
 mod callbacks;
-mod dock_icon;
 mod data;
 mod dialogs;
+mod dock_icon;
 mod events;
 pub mod fonts;
 mod images;
