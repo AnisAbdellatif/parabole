@@ -2,6 +2,7 @@
 name = "iptv-player"
 version = "0.1.0"
 edition = "2024"
+default-run = "iptv-player"
 
 [dependencies]
 anyhow = "1.0.104"
@@ -23,16 +24,16 @@ url = "2.5.8"
 arboard = { version = "3.7", default-features = false, optional = true }
 
 [features]
-default = ["embedded-mpv"]
+default = ["embedded-mpv", "slint-ui"]
 embedded-mpv = ["dep:libmpv2"]
-slint-ui = ["dep:slint", "dep:slint-build", "dep:arboard"]
+slint-ui = ["embedded-mpv", "dep:slint", "dep:slint-build", "dep:arboard"]
 
 [build-dependencies]
 slint-build = { version = "1.18", optional = true }
 
 [[bin]]
-name = "iptv-player-slint"
-path = "src/bin/iptv-player-slint.rs"
+name = "iptv-player"
+path = "src/main.rs"
 required-features = ["slint-ui"]
 
 [dev-dependencies]

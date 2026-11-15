@@ -37,7 +37,7 @@ sync_src() {
 }
 
 build() {
-    guest ". ~/.cargo/env && cd $GUEST_DIR && cargo build --features slint-ui --bin iptv-player-slint -j3 && cargo build --features slint-ui --example vm_seed -j3"
+    guest ". ~/.cargo/env && cd $GUEST_DIR && cargo build --bin iptv-player -j3 && cargo build --example vm_seed -j3"
 }
 
 test_run() {

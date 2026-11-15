@@ -1,4 +1,4 @@
-//! Slint front end. Run with `cargo run --features slint-ui --bin iptv-player-slint`.
+//! Slint front end. The default binary: `cargo run`.
 mod appearance;
 mod browse;
 mod callbacks;

@@ -209,3 +209,6 @@ Gaps:
 - Hero latch (keyed on tab + list title) was only checked in snapshots; its timing against late backdrops is unverified.
 - Channel-list logos update on the next zap, not when the image loads. Help card key column is 96px; long Ctrl combos may be cut on Linux/Windows.
 - Sources auto-refresh saves on every edit; an empty field saves 0.
+
+## Default UI
+The Slint UI is the default: `slint-ui` is in the default features (and implies `embedded-mpv`), `src/main.rs` is the Slint binary `iptv-player`, and the egui UI is `iptv-player-egui` (`src/bin/`). `--no-default-features` builds only the egui binary. Commands above that say `--features slint-ui` or `--bin iptv-player-slint` no longer need them.
