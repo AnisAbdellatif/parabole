@@ -193,13 +193,17 @@ Branches `ui/{nav-search,browse-density,dialogs,player-pane}` are merged into `e
 - Browse: no hero on Live; VOD hero is 34% of the height (180–320px) and appears only once a backdrop loads; rows are 48px with the star on hover/favorite; sidebar has a filter field, is resizable (200–460px, saved) and shows the pin star in place of the count on hover. Dominant-colour code is gone.
 - Dialogs: `DialogFrame`/`DialogBody`/`DialogFooter` (`dialog-frame.slint`) keep the footer fixed and scroll the body, max `min(600px, window - 220px)`. Sources is a list view plus an add/edit form; Settings has Playback/Players/Appearance tabs (no standalone Appearance dialog); Profiles has Switch, an Active badge and a "⋯" menu.
 - Player: tooltips (`tip.slint`) with real shortcuts; docked pane shows tech line, position and a live channel list (±25 around the current one); shortcut help popover (`player-help.slint`); volume bar when the row is ≥360px; dock side and pane size are saved. Controls drop out by priority when the row is too narrow.
+- Accessibility (`ui/a11y`): every custom control has `accessible-role`, a label and a default action; toggles, sliders and selected rows expose their state. Episode rows (`episode-row.slint`) have a keyboard cursor (arrows, PageUp/Down, Home/End, Enter) and a play button. Counts use correct singulars.
 
 Pitfalls found:
+- Slint 1.18 has no menu / menu-item accessible role; menu rows are `list-item`.
+- `Tip` is clipped inside a `ListView` or `Flickable`, so the sidebar "+" and the profile "⋯" have a label but no tooltip.
 - A layout inside the overlay host feeds the dialog's height into the window's size limits (layout loop); `DialogHost` centres with absolute x/y instead.
 - `alignment: end` on a `HorizontalLayout` overrides stretch; use a zero-stretch spacer.
 - `Persisted` has a hand-written `Default`; a new field must be added there too.
 
 Gaps:
+- Accessibility was only checked headless (`find_by_accessible_label`), never with a screen reader. The series tests fill the episode model directly (the fixture is M3U).
 - Not exercised interactively (no input synthesis): tooltip delay, help popover open/close, channel-list click and scroll-into-view, star on hover, two-line row, equalizer, Compact density, the Profiles "⋯" menu, state restore across a restart.
 - Sidebar width and dock settings are read back only on window close.
 - Hero latch (keyed on tab + list title) was only checked in snapshots; its timing against late backdrops is unverified.
