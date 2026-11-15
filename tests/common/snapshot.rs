@@ -11,7 +11,9 @@ fn root() -> PathBuf {
 }
 
 fn differs(a: &Rgba<u8>, b: &Rgba<u8>) -> bool {
-    a.0.iter().zip(b.0).any(|(x, y)| x.abs_diff(y) > CHANNEL_TOLERANCE)
+    a.0.iter()
+        .zip(b.0)
+        .any(|(x, y)| x.abs_diff(y) > CHANNEL_TOLERANCE)
 }
 
 /// Compares `img` with `tests/fixtures/slint-snapshots/<name>.png`; Err carries the failure message.
@@ -19,14 +21,18 @@ pub fn check(name: &str, img: &RgbaImage) -> Result<(), String> {
     let golden = root().join(format!("tests/fixtures/slint-snapshots/{name}.png"));
     let write_golden = || {
         std::fs::create_dir_all(golden.parent().expect("golden has a parent")).ok();
-        img.save(&golden).map_err(|e| format!("{name}: write golden: {e}"))
+        img.save(&golden)
+            .map_err(|e| format!("{name}: write golden: {e}"))
     };
     if std::env::var_os("UPDATE_SNAPSHOTS").is_some() {
         return write_golden();
     }
     if !golden.exists() {
         write_golden()?;
-        return Err(format!("{name}: new snapshot written to {}", golden.display()));
+        return Err(format!(
+            "{name}: new snapshot written to {}",
+            golden.display()
+        ));
     }
     let want = image::open(&golden)
         .map_err(|e| format!("{name}: read golden: {e}"))?

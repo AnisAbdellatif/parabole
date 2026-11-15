@@ -76,8 +76,7 @@ impl SwPlatform {
 
     /// Re-applies the fixed window size (showing a component may replace it with its preferred size).
     pub fn resize(&self) {
-        self.window
-            .set_size(LogicalSize::new(LOGICAL.0, LOGICAL.1));
+        self.window.set_size(LogicalSize::new(LOGICAL.0, LOGICAL.1));
     }
 
     fn run_jobs(&self) {
