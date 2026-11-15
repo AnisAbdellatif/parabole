@@ -229,13 +229,23 @@ export component DialogFrame inherits Rectangle {
             }
         }
         Rectangle { height: 1px; background: Theme.divider; }
-        Flickable {
+        flick := Flickable {
             height: min(body.preferred-height, root.max-body);
             content-height: body.preferred-height;
             body := VerticalLayout {
                 padding: 16px;
                 spacing: 12px;
                 @children
+            }
+            // Scroll thumb: the body has no other hint that it continues below the fold.
+            if flick.content-height > flick.height: Rectangle {
+                x: flick.width - 6px;
+                width: 3px;
+                border-radius: 2px;
+                background: Theme.border;
+                height: flick.height * flick.height / flick.content-height;
+                // inside the viewport, so offset by the scroll position too
+                y: -flick.content-y * (1 + flick.height / flick.content-height);
             }
         }
     }
