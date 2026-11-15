@@ -66,28 +66,6 @@ pub fn connect(win: &AppWindow) {
     if let Err(e) = video::install(win, mpv, ready_later, fail_later) {
         fail(format!("{e}"));
     }
-    // TMPHOOK
-    if let Ok(url) = std::env::var("IPTV_SLINT_TEST_URL") {
-        slint::Timer::single_shot(std::time::Duration::from_millis(1500), move || {
-            with_app(|a| {
-                let req = crate::model::PlayRequest {
-                    url: url.clone(),
-                    title: "Test pattern".into(),
-                    media: crate::model::MediaKind::Movie,
-                    ..Default::default()
-                };
-                playback::on_embed_play(
-                    a,
-                    crate::worker::EmbedPlay {
-                        req,
-                        track: None,
-                        stream_id: None,
-                        series: None,
-                    },
-                );
-            });
-        });
-    }
 }
 
 fn fail(reason: String) {

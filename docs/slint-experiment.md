@@ -25,6 +25,10 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `UrlReady` (copy URL) ignored: no clipboard crate in deps. `PlayEmbedded` falls back to external mpv with a toast.
 - Phase 1: `InfoLoaded`/`SeriesLoaded`/`TestResult`/`AccountChecked` ignored (phase 2).
 - Phase 1: persisted state is saved only on window close.
+- Player: mini mode is not always-on-top (needs the `unstable-winit-*` slint feature); the window just shrinks to 480x270 and restores.
+- Player: dock side and splitter size are not persisted; status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
+- Player: `slint-ui` needs the default `embedded-mpv` feature (no `--no-default-features --features slint-ui` build). Fullscreen was not screenshotted (macOS Space changes the window id); mini/docked right/bottom/stats were.
+- Player: key handling uses a `PlayerApi.hover` flag (pointer over video) in place of egui's hover rect; arrows seek/volume only act while the pointer is over the video or in fullscreen/mini.
 
 ## Comparison
 (filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
@@ -36,3 +40,7 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Phase 1: `ListView.viewport-y` is deprecated in 1.18; use `content-y`.
 - Phase 1: images decode off-thread into `SharedPixelBuffer` (Send); `slint::Image` is not Send, so it is built on the UI thread.
 - Phase 1: setting `HOME` breaks rustup; build first, then run the binary with `HOME=/tmp/...`.
+- Player: mpv renders into its own FBO texture sized to the pane's physical px; `BorrowedOpenGLTextureBuilder` with `flip_y=false` + `BottomLeft` origin shows it upright. Rebuilding the `Image` only on resize is enough, since femtovg re-reads the texture each redraw.
+- Player: femtovg keeps GL state, so the mpv render is wrapped in a save/restore of fbo, program, VAO, buffers, texture, viewport and the blend/scissor/depth/stencil/cull toggles.
+- Player: `parent` is not allowed on a component's root element in `.slint`; position it at the instantiation site. A `PopupWindow` track menu and `Timer`-based control auto-hide (compare `animation-tick()`) both worked without Rust help.
+- Player: `mod core;` next to the `core` crate works if you import with `self::core`; python's `http.server` can't seek, so test media needs `-movflags +faststart`.
