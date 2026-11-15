@@ -2,3 +2,6 @@ target/
 .tokenade/
 .fastembed_cache/
 dist/
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
