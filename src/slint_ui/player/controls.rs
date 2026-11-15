@@ -1,12 +1,12 @@
 //! `PlayerApi` control callbacks and fullscreen/mini window modes.
 use super::super::state::{SlintApp, with_app};
 use super::super::{AppWindow, PlayerApi};
-use super::{playback, sync};
+use super::{pip, playback, sync};
 use crate::player::TrackKind;
-use slint::{ComponentHandle, LogicalSize};
+use slint::ComponentHandle;
 use std::time::Duration;
 
-const MINI_SIZE: LogicalSize = LogicalSize::new(480.0, 270.0);
+const FULLSCREEN_EXIT: Duration = Duration::from_millis(900);
 /// Volume slider range, as in the egui bar.
 const VOL_MAX: f64 = 130.0;
 
@@ -96,7 +96,12 @@ pub fn toggle_mini(a: &mut SlintApp) {
 
 pub fn set_fullscreen(a: &mut SlintApp, on: bool) {
     if on && a.player.mini {
+        // PiP restores the geometry saved before it; keep it for the next PiP
+        let keep = a.player.windowed.clone();
         set_mini(a, false);
+        a.player.windowed = keep;
+    } else if on && let Some(w) = a.win.upgrade() {
+        a.player.windowed = Some(pip::save(&w));
     }
     a.player.fullscreen = on;
     if let Some(w) = a.win.upgrade() {
@@ -115,23 +120,30 @@ pub fn set_mini(a: &mut SlintApp, on: bool) {
     if on == a.player.mini {
         return;
     }
-    if on && a.player.fullscreen {
+    let from_fullscreen = on && a.player.fullscreen;
+    if from_fullscreen {
         set_fullscreen(a, false);
     }
     a.player.mini = on;
     if let Some(w) = a.win.upgrade() {
-        let restore = a.player.windowed.take();
-        if on {
-            a.player.windowed = Some(w.window().size());
+        if on && !from_fullscreen {
+            a.player.windowed = Some(pip::save(&w));
         }
+        let restore = if on { None } else { a.player.windowed.take() };
+        // shortcut: fixed wait for macOS' fullscreen-exit animation; poll the window size to do it right
+        let delay = if from_fullscreen {
+            FULLSCREEN_EXIT
+        } else {
+            Duration::ZERO
+        };
         let weak = w.as_weak();
-        slint::Timer::single_shot(Duration::ZERO, move || {
+        slint::Timer::single_shot(delay, move || {
             let Some(w) = weak.upgrade() else {
                 return;
             };
             match (on, restore) {
-                (true, _) => w.window().set_size(MINI_SIZE),
-                (false, Some(size)) => w.window().set_size(size),
+                (true, _) => pip::enter(&w),
+                (false, Some(geometry)) => pip::restore(&w, &geometry),
                 (false, None) => {}
             }
         });

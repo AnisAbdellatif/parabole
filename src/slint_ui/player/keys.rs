@@ -1,7 +1,7 @@
 //! `PlayerApi.key`, ported from `ui/player/keys.rs` and `zap.rs`.
 use super::super::state::{SlintApp, with_app};
 use super::super::{Core, PlayerApi};
-use super::{controls, playback};
+use super::{carousel, controls, playback};
 use crate::model::{MediaKind, StreamRow};
 use crate::player::PlayerKind;
 use crate::worker::Command;
@@ -62,6 +62,7 @@ fn select_row(a: &SlintApp, i: usize) {
 fn zap(a: &mut SlintApp, step: isize) {
     if let Some((i, row)) = neighbor_row(a, step) {
         select_row(a, i);
+        carousel::show(a, i);
         play_embedded(a, row.id);
     }
 }
@@ -85,6 +86,7 @@ pub fn zap_to_number(a: &mut SlintApp, n: i64) {
     match row_for_number(a, n) {
         Some((i, row)) => {
             select_row(a, i);
+            carousel::show(a, i);
             play_embedded(a, row.id);
         }
         None => a.toast(format!("No live channel {n}")),
@@ -143,6 +145,7 @@ fn handle_keys(a: &mut SlintApp, e: &Pressed, focused: bool, cmd: bool) -> bool 
         a.player
             .zap
             .push(text.chars().next().unwrap_or('0'), Instant::now());
+        carousel::show_playing(a);
         return true;
     }
     if a.player.zap.text().is_some() {
@@ -159,6 +162,7 @@ fn handle_keys(a: &mut SlintApp, e: &Pressed, focused: bool, cmd: bool) -> bool 
     }
     if is(e, Key::Backspace) || text.eq_ignore_ascii_case("l") {
         if let Some(prev) = a.player.prev_stream {
+            carousel::show_id(a, prev);
             play_embedded(a, prev);
             return true;
         }

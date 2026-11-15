@@ -1,12 +1,15 @@
 //! Player area: embedded libmpv drawn into the Slint window. Spec: docs/slint-phase2.md.
+mod carousel;
+mod chrome;
 mod controls;
 mod keys;
+mod pip;
 mod playback;
 mod sync;
 mod video;
 
 use super::state::{SlintApp, with_app};
-use super::{AppWindow, TrackItem};
+use super::{AppWindow, StreamItem, TrackItem};
 use crate::player::embed::MpvCore;
 use crate::player::{PlayerSettings, TrackInfo};
 use crate::ui::player::session::Session;
@@ -32,8 +35,10 @@ pub struct PlayerArea {
     switched_to: Option<i64>,
     fullscreen: bool,
     mini: bool,
-    /// Window size to restore when leaving mini mode.
-    windowed: Option<slint::PhysicalSize>,
+    /// Window geometry to restore when leaving picture-in-picture.
+    windowed: Option<pip::Geometry>,
+    zap_items: Rc<slint::VecModel<StreamItem>>,
+    zap_timer: slint::Timer,
     timer: slint::Timer,
     audio: Rc<slint::VecModel<TrackItem>>,
     subs: Rc<slint::VecModel<TrackItem>>,
@@ -44,6 +49,7 @@ pub struct PlayerArea {
 pub fn connect(win: &AppWindow) {
     controls::connect(win);
     keys::connect(win);
+    pip::connect(win);
     let pending = Arc::new(AtomicBool::new(false));
     let wake = Arc::clone(&pending);
     // Coalesces mpv wakeups: at most one poll is queued on the UI thread.

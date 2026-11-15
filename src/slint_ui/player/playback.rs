@@ -1,7 +1,7 @@
 //! Session lifecycle and the housekeeping tick; mirrors `ui/player/mod.rs` (`embed_tick`).
 use super::super::Core;
 use super::super::state::{SlintApp, with_app};
-use super::sync;
+use super::{carousel, sync};
 use crate::player::{Notice, PlayerKind};
 use crate::ui::player::autonext;
 use crate::ui::player::session::{EndAction, SAVE_EVERY, STABLE_AFTER_S, Session, end_action};
@@ -31,6 +31,10 @@ pub fn on_embed_play(a: &mut SlintApp, play: EmbedPlay) {
                 ar.prev_stream = old;
             }
             set_playing(a, &play.req.title, "the built-in player");
+            // zaps land here too, so the living row (equalizer) follows the channel
+            a.play_req = play.stream_id;
+            a.playing_id = play.stream_id;
+            a.streams.set_playing(a.playing_id);
             a.player.session = Some(Session::new(play));
             a.player.timer.start(slint::TimerMode::Repeated, TICK, || {
                 with_app(tick);
@@ -57,6 +61,9 @@ pub fn stop_embedded(a: &mut SlintApp) {
     a.player.session = None;
     a.player.timer.stop();
     a.player.zap.cancel();
+    carousel::close(a);
+    a.playing_id = None;
+    a.streams.set_playing(None);
     super::controls::leave_special_modes(a);
     set_playing(a, "", "");
     sync::push(a);

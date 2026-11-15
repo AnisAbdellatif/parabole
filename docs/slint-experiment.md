@@ -79,3 +79,11 @@ Notes:
 - browse: Slint maps Cmd to `modifiers.control` on macOS; a `meta||control` check covers both.
 - browse: a child without x/y inside a Rectangle is centered; PopupWindow x/y can't be set from a function (bind to root properties).
 - browse: osascript can't send modifier combos; a small CGEvent swift helper can.
+
+## Ambient S2a
+Gaps: VOD chrome (seek bar thumb/tooltip, remaining time), the "Go live" pill (behind-live >= 3 s) and `reduce-motion` were implemented but not exercised in a smoke run. PiP from fullscreen waits a fixed 900 ms for macOS' fullscreen-exit animation (`// shortcut:` in `controls.rs`). `app.slint` also drops `min-width/min-height` while `PlayerApi.pip` (needed to shrink to 480x270).
+- Player: `BorrowedOpenGLTextureBuilder` with `flip_y=false` showed the video upside-down on femtovg; `flip_y=true` is correct (checked against an ffmpeg source frame).
+- Player: window APIs beyond `set_fullscreen`/position (`drag_window`, `current_monitor`) need the `unstable-winit-030` Cargo feature plus `WinitWindowAccessor`; `always-on-top`/`no-frame` are plain `Window` properties bindable from `.slint`.
+- Player: `states` with `in`/`out` transitions on `x` + `opacity` give the zap carousel slide-in/out with no Rust timers other than the 2 s auto-close; `Theme.motion` = 0 collapses them.
+- Player: Slint callbacks must not run inside `with_app`; the PiP/fullscreen window calls are deferred with `Timer::single_shot(ZERO)`.
+- Smoke: keyboard tests need a list row clicked first, otherwise the search box keeps focus and the `keys` FocusScope never sees the key.
