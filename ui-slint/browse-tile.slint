@@ -48,30 +48,38 @@ export component Tile inherits Rectangle {
         x: 0px;
         y: 0px;
         width: parent.width;
-        height: parent.width * 1.5;
+        // rounded like the tile; extends under the label zone, covered by the filler below
+        height: root.width * 1.5 + Theme.radius-card;
+        border-radius: Theme.radius-card;
+        clip: true;
         background: Theme.poster-bg;
         if !root.item.has-poster: Text {
             text: root.item.initials;
+            y: 0px;
+            width: parent.width;
+            height: root.width * 1.5;
+            horizontal-alignment: center;
+            vertical-alignment: center;
             color: Theme.text-faint;
             font-size: Theme.fs-hero;
             font-weight: Theme.semibold;
         }
         if root.item.has-poster: Image {
             width: parent.width;
-            height: parent.height;
+            height: root.width * 1.5;
             source: root.item.poster;
             image-fit: cover;
         }
         if root.item.progress > 0 && !root.item.watched: Rectangle {
             x: 0px;
-            y: parent.height - 3px;
+            y: root.width * 1.5 - 3px;
             height: 3px;
             background: #00000096;
             Rectangle { x: 0px; width: parent.width * root.item.progress; background: Theme.accent; }
         }
         if root.item.watched: Rectangle {
             x: 7px;
-            y: parent.height - 25px;
+            y: root.width * 1.5 - 25px;
             width: 20px;
             height: 20px;
             border-radius: 10px;
@@ -79,6 +87,7 @@ export component Tile inherits Rectangle {
             Icon { source: Icons.check; tint: Theme.accent; size: 14px; x: 3px; y: 3px; }
         }
     }
+    Rectangle { x: 0px; y: root.width * 1.5; width: root.width; height: Theme.radius-card; background: Theme.card; }
     Text {
         x: 12px;
         y: parent.width * 1.5 + 10px;
