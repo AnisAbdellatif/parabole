@@ -9,8 +9,8 @@ import { Tile } from "browse-tile.slint";
 export component PosterGrid inherits Rectangle {
     callback interacted();
     in property <int> cursor: Core.cursor;
-    // 6px inset so the focused tile's 1.06 scale isn't clipped by the list edge
-    property <length> avail: root.width - 48px - 12px;
+    // 10px inset so the focused tile's 1.06 scale isn't clipped by the list edge
+    property <length> avail: root.width - 48px - 20px;
     property <int> cols: max(1, floor((root.avail + Theme.gap) / (Theme.poster-min-w + Theme.gap)));
     property <length> card-w: (root.avail - Theme.gap * (root.cols - 1)) / root.cols;
     property <length> row-step: root.card-w * 1.5 + Theme.poster-title-h + Theme.gap;
@@ -35,8 +35,8 @@ export component PosterGrid inherits Rectangle {
         for row in BrowseApi.grid-rows: Rectangle {
             height: root.row-step;
             for t[n] in row.tiles: Tile {
-                x: 6px + n * (root.card-w + Theme.gap);
-                y: 6px;
+                x: 10px + n * (root.card-w + Theme.gap);
+                y: 10px;
                 width: root.card-w;
                 height: root.card-w * 1.5 + Theme.poster-title-h;
                 item: t;
