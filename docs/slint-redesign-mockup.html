@@ -1,0 +1,124 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+:root{--acc:#5eead4;--acc2:#818cf8}
+*{box-sizing:border-box;margin:0}
+body{font-family:var(--font-sans);color:var(--foreground)}
+h2{font-size:15px;margin:18px 0 8px}
+.cap{font-size:12px;color:var(--muted-foreground);margin:6px 0 4px;line-height:1.5}
+.cap b{color:var(--foreground)}
+.scr{position:relative;width:100%;aspect-ratio:16/10;border-radius:14px;overflow:hidden;background:#0b0f14;color:#e6edf3;font-size:11px;box-shadow:0 10px 30px #0008}
+.rail{position:absolute;left:0;top:0;bottom:0;width:52px;background:#0e131a;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:16px;border-right:1px solid #1c2430}
+.ri{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;color:#7d8a99;font-size:14px}
+.ri.on{background:linear-gradient(135deg,var(--acc),var(--acc2));color:#071016;box-shadow:0 0 18px #5eead455}
+.cats{position:absolute;left:52px;top:0;bottom:0;width:150px;padding:14px 10px;background:#0d1218}
+.cat{padding:6px 9px;border-radius:8px;color:#9aa7b4;display:flex;justify-content:space-between;margin-bottom:2px}
+.cat i{font-style:normal;color:#5c6875}
+.cat.on{color:#fff;background:#16212c;position:relative}
+.cat.on:before{content:"";position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:2px;background:var(--acc)}
+.lbl{font-size:9px;letter-spacing:.12em;color:#5c6875;margin:10px 9px 6px}
+.main{position:absolute;left:202px;right:0;top:0;bottom:0;overflow:hidden}
+.hero{height:42%;position:relative;padding:18px 20px;background:radial-gradient(120% 140% at 85% 0%,#7c2d12 0%,#3b1d4a 45%,#0b0f14 80%)}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 40%,#0b0f14)}
+.hero>*{position:relative;z-index:1}
+.chip{display:inline-block;padding:2px 7px;border-radius:99px;font-size:9px;font-weight:600}
+.live{background:#ef4444;color:#fff}
+.ht{font-size:22px;font-weight:700;margin:8px 0 3px}
+.hs{color:#cbd5e1;opacity:.8}
+.prog{height:3px;background:#ffffff22;border-radius:2px;margin-top:10px;width:55%}
+.prog i{display:block;height:100%;width:62%;border-radius:2px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.btn{display:inline-flex;gap:6px;align-items:center;margin-top:12px;padding:7px 14px;border-radius:99px;background:#fff;color:#0b0f14;font-weight:700}
+.btn.g{background:#ffffff1a;color:#fff;margin-left:6px;backdrop-filter:blur(6px)}
+.rows{padding:4px 14px}
+.row{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:10px;margin-bottom:3px}
+.row.hov{background:#141c26;box-shadow:0 6px 18px #0006;transform:translateX(3px)}
+.logo{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-weight:700;font-size:9px}
+.nm{flex:1}.nm b{display:block;font-weight:600}.nm span{color:#6b7785;font-size:10px}
+.eq{display:flex;gap:2px;align-items:flex-end;height:12px}
+.eq i{width:3px;background:var(--acc);border-radius:1px}
+.bar{width:60px;height:3px;border-radius:2px;background:#1f2a36}.bar i{display:block;height:100%;background:#64748b;border-radius:2px}
+.num{position:absolute;width:18px;height:18px;border-radius:50%;background:#facc15;color:#111;font-weight:800;font-size:10px;display:grid;place-items:center;box-shadow:0 0 0 3px #facc1544;z-index:5}
+.grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:0 20px}
+.post{aspect-ratio:2/3;border-radius:10px;position:relative;overflow:hidden}
+.post:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,#000c)}
+.post span{position:absolute;left:7px;bottom:6px;z-index:1;font-size:9px;font-weight:600}
+.post.big{transform:scale(1.08);box-shadow:0 14px 30px #000a,0 0 0 2px var(--acc);z-index:2}
+.pb{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--acc);z-index:2}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,#000a,transparent 25%,transparent 60%,#000d)}
+.video{position:absolute;inset:0;background:radial-gradient(80% 80% at 60% 45%,#1e3a5f,#0a1622 70%)}
+.zap{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:200px}
+.zr{display:flex;gap:8px;align-items:center;padding:6px 8px;border-radius:10px;opacity:.45}
+.zr.on{opacity:1;background:#0b0f14cc;box-shadow:0 8px 24px #0008;border:1px solid #ffffff22}
+.ctr{position:absolute;left:20px;right:20px;bottom:16px}
+.seek{height:4px;border-radius:2px;background:#ffffff33;position:relative;margin:8px 0 10px}
+.seek i{position:absolute;left:0;top:0;bottom:0;width:72%;border-radius:2px;background:linear-gradient(90deg,var(--acc),var(--acc2))}
+.seek b{position:absolute;left:72%;top:50%;width:12px;height:12px;border-radius:50%;background:#fff;transform:translate(-50%,-50%);box-shadow:0 0 0 5px #5eead444}
+.cb{display:flex;gap:14px;align-items:center;font-size:13px}
+.pal{position:absolute;left:50%;top:16%;transform:translateX(-50%);width:58%;border-radius:14px;background:#0f151ddd;border:1px solid #ffffff1f;box-shadow:0 24px 60px #000c;padding:8px}
+.pin{padding:9px 10px;border-radius:9px;background:#0b0f14;color:#cbd5e1;font-size:12px;border:1px solid #2a3644}
+.pr{display:flex;gap:8px;padding:6px 10px;border-radius:8px;color:#a7b3bf}
+.pr.on{background:#1b2633;color:#fff}.pr em{margin-left:auto;font-style:normal;color:#5c6875;font-size:10px}
+.cust{position:absolute;right:14px;bottom:14px;width:190px;border-radius:12px;background:#0f151d;border:1px solid #233040;padding:10px;box-shadow:0 18px 40px #000a}
+.sw{display:flex;gap:6px;margin:6px 0 10px}.sw i{width:18px;height:18px;border-radius:50%}
+.seg{display:flex;background:#0b0f14;border-radius:8px;padding:2px;margin:6px 0 8px}.seg span{flex:1;text-align:center;padding:4px;border-radius:6px;color:#7d8a99}.seg .on{background:#1e2a38;color:#fff}
+.toast{position:absolute;right:14px;top:14px;padding:8px 12px;border-radius:10px;background:#0f151d;border:1px solid #233040;box-shadow:0 10px 26px #0009;display:flex;gap:8px;align-items:center}
+.list{font-size:12px;line-height:1.65;color:var(--muted-foreground);padding-left:18px;margin-top:4px}
+.list b{color:var(--foreground)}
+</style></head><body>
+
+<h2>1 · Live: rail, ambient hero, living rows</h2>
+<div class="scr">
+  <div class="rail"><div class="ri">⌘</div><div class="ri on">◉</div><div class="ri">▤</div><div class="ri">▦</div><div class="ri">★</div><div style="flex:1"></div><div class="ri">⚙</div></div>
+  <div class="cats"><div class="lbl">PINNED</div><div class="cat">★ Favorites<i>24</i></div><div class="cat">↺ Continue<i>3</i></div>
+    <div class="lbl">CATEGORIES</div><div class="cat on">4K | 24/7 ᵁᴴᴰ<i>46</i></div><div class="cat">8K | Sport on air<i>605</i></div><div class="cat">AFR | Canal+ VIP<i>123</i></div><div class="cat">AR | News<i>88</i></div><div class="cat">UK | Entertainment<i>212</i></div></div>
+  <div class="main">
+    <div class="hero"><span class="chip live">● LIVE</span><div class="ht">beIN Sports 1 4K</div><div class="hs">Premier League · Arsenal – Chelsea · 2nd half</div><div class="prog"><i></i></div><span class="btn">▶ Watch</span><span class="btn g">★ Favorite</span></div>
+    <div class="rows">
+      <div class="row hov"><div class="logo" style="background:#7c3aed">bS1</div><div class="nm"><b>beIN Sports 1 4K</b><span>Arsenal – Chelsea</span></div><div class="eq"><i style="height:6px"></i><i style="height:12px"></i><i style="height:8px"></i></div><div class="bar"><i style="width:62%;background:var(--acc)"></i></div></div>
+      <div class="row"><div class="logo" style="background:#0e7490">SKY</div><div class="nm"><b>Sky Sports Main Event</b><span>Next: Monday Night Football · 20:00</span></div><div class="bar"><i style="width:30%"></i></div></div>
+      <div class="row"><div class="logo" style="background:#b45309">AJ</div><div class="nm"><b>الجزيرة الوثائقية</b><span>وثائقي · 45 min</span></div><div class="bar"><i style="width:80%"></i></div></div>
+    </div>
+  </div>
+  <div class="num" style="left:58px;top:58px">1</div><div class="num" style="left:196px;top:150px">2</div><div class="num" style="left:400px;top:10px">3</div><div class="num" style="left:660px;top:200px">4</div>
+  <div class="toast"><span style="color:var(--acc)">✓</span> Playlist refreshed · 290k streams</div><div class="num" style="right:6px;top:6px">5</div>
+</div>
+<p class="cap"><b>1</b> Icon rail that widens on hover to show labels (animated <code>width</code>). <b>2</b> The selection pill slides between categories (<code>animate y</code>), and section labels stay pinned. <b>3</b> The hero is tinted from the logo's dominant colour, computed in Rust and fed to a <code>@radial-gradient</code>. It shows now/next from EPG when that lands. <b>4</b> Hovered rows lift (<code>drop-shadow</code> + <code>animate x</code>), the playing row shows looping equaliser bars (<code>animate</code> with <code>iteration-count: -1</code>), and each row has a watch-progress bar. <b>5</b> Toasts slide in with an <code>ease-out-back</code> spring.</p>
+
+<h2>2 · Movies & Series: poster wall with backdrop</h2>
+<div class="scr">
+  <div class="rail"><div class="ri">⌘</div><div class="ri">◉</div><div class="ri on">▤</div><div class="ri">▦</div><div class="ri">★</div></div>
+  <div class="cats"><div class="lbl">GENRES</div><div class="cat on">Action<i>1.2k</i></div><div class="cat">Drama<i>860</i></div><div class="cat">Arabic<i>2.1k</i></div><div class="cat">Kids<i>420</i></div><div class="lbl">MY GROUPS</div><div class="cat">Weekend 🍿<i>12</i></div></div>
+  <div class="main">
+    <div class="hero" style="height:46%;background:radial-gradient(110% 130% at 80% 10%,#155e75,#1e1b4b 50%,#0b0f14 82%)"><span class="chip" style="background:#ffffff22">2024 · 2h 46m · ★ 8.6</span><div class="ht">Dune: Part Two</div><div class="hs" style="max-width:60%">Paul Atreides unites with the Fremen while on a path of revenge…</div><span class="btn">▶ Resume 1:12:40</span><span class="btn g">ⓘ Details</span></div>
+    <div class="grid" style="margin-top:-18px">
+      <div class="post" style="background:linear-gradient(160deg,#0e7490,#1e1b4b)"><span>Dune: Part Two</span><div class="pb" style="width:44%"></div></div>
+      <div class="post big" style="background:linear-gradient(160deg,#9a3412,#450a0a)"><span>Oppenheimer</span></div>
+      <div class="post" style="background:linear-gradient(160deg,#4d7c0f,#14532d)"><span>The Wild Robot</span></div>
+      <div class="post" style="background:linear-gradient(160deg,#6d28d9,#1e1b4b)"><span>Arcane</span><div class="pb" style="width:80%"></div></div>
+      <div class="post" style="background:linear-gradient(160deg,#be123c,#4c0519)"><span>Gladiator II</span></div>
+      <div class="post" style="background:linear-gradient(160deg,#334155,#0f172a)"><span>Shōgun</span></div>
+    </div>
+  </div>
+  <div class="num" style="left:420px;top:16px">6</div><div class="num" style="left:330px;top:205px">7</div>
+</div>
+<p class="cap"><b>6</b> The backdrop is the selected title's poster, blurred and darkened in Rust (the <code>image</code> crate), with a gradient scrim. It cross-fades on selection (<code>animate opacity</code>). <b>7</b> Focused posters scale up with an accent ring (<code>transform-scale</code>), and resume progress is drawn on the poster. Same lazy model as today, laid out as a responsive grid.</p>
+
+<h2>3 · Player, command palette, theme</h2>
+<div class="scr">
+  <div class="video"></div><div class="scrim"></div>
+  <div style="position:absolute;left:20px;top:16px"><span class="chip live">● LIVE</span> <b style="font-size:13px;margin-left:6px">beIN Sports 1 4K</b> <span style="color:#94a3b8">· 1080p · 5.1</span></div>
+  <div class="zap"><div class="zr"><div class="logo" style="background:#0e7490">SKY</div>Sky Sports</div><div class="zr on"><div class="logo" style="background:#7c3aed">bS1</div><div><b>101 · beIN Sports 1</b><br><span style="color:#94a3b8">Arsenal – Chelsea</span></div></div><div class="zr"><div class="logo" style="background:#b45309">bS2</div>beIN Sports 2</div></div>
+  <div class="pal"><div class="pin">⌘K  ars|</div><div class="pr on">◉ Arsenal TV <em>Live · UK Sports</em></div><div class="pr">▤ Arsenal: Ballon d'Or <em>Movie</em></div><div class="pr">⚙ Toggle compact density <em>Action</em></div><div class="pr">↺ Refresh all sources <em>Action</em></div></div>
+  <div class="ctr"><div class="seek"><i></i><b></b></div><div class="cb">⏯ <span style="font-size:11px;color:#cbd5e1">−00:42 behind live</span><span style="flex:1"></span>🔊 CC ⧉ ⛶</div></div>
+  <div class="cust"><b style="font-size:11px">Appearance</b><div class="sw"><i style="background:#5eead4;box-shadow:0 0 0 2px #fff"></i><i style="background:#818cf8"></i><i style="background:#f472b6"></i><i style="background:#fb923c"></i><i style="background:#facc15"></i></div><div class="seg"><span class="on">Dark</span><span>OLED</span><span>Light</span></div><div class="seg"><span>Compact</span><span class="on">Cozy</span><span>TV</span></div><div style="font-size:10px;color:#7d8a99">Corner radius · Font size · Motion</div></div>
+  <div class="num" style="left:226px;top:150px">8</div><div class="num" style="left:500px;top:46px">9</div><div class="num" style="left:510px;top:290px">10</div><div class="num" style="left:20px;top:300px">11</div>
+</div>
+<p class="cap"><b>8</b> Zapping opens a vertical channel carousel that slides in with the zap, then fades after 2 s (<code>states</code> with in/out transitions). <b>9</b> A Cmd+K command palette searches channels, VOD and actions in one fuzzy list (<code>PopupWindow</code>, keyboard first). <b>10</b> Live theming: <code>Theme</code> becomes runtime properties (accent, mode, density, radius, font scale, reduced motion) that Rust sets and persists. Every <code>animate</code> reads <code>Theme.motion</code>. <b>11</b> Immersive overlay: gradient scrims, a seek bar with a glowing thumb, and a "behind live" readout. Picture-in-picture uses the real <code>always-on-top</code> window.</p>
+
+<h2>Also on the table</h2>
+<ul class="list">
+<li><b>Skeleton shimmer</b> while categories load: an animated gradient offset instead of a spinner.</li>
+<li><b>Custom window chrome</b> (<code>no-frame</code>) with the rail as a drag area, for a cleaner frameless look.</li>
+<li><b>TV mode</b>: the density preset scales everything 1.6×, so 10-foot / remote use comes almost free (PLAN item 9).</li>
+<li><b>Fixes along the way</b>: register the DejaVu fallback font (superscript tofu), stop idle timers, and add the source filter.</li>
+</ul>
+</body></html>
