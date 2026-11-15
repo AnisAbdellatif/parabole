@@ -1,0 +1,57 @@
+// Shortcut help: an icon button opening a card of key / action rows (`PlayerApi.help-keys`).
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { PlayerApi } from "player-api.slint";
+import { IconBtn, TipAlign } from "player-widgets.slint";
+
+export component HelpBtn inherits IconBtn {
+    // Controls are showing; the card closes when they auto-hide.
+    in property <bool> shown: true;
+    icon: Icons.help;
+    tip: "Keyboard shortcuts";
+    tip-align: TipAlign.end;
+    on: popup.is-open;
+    changed shown => { if (!root.shown) { popup.close(); } }
+    // A second click lands outside the open card: Slint swallows that press and closes it.
+    clicked => { popup.show(); }
+    popup := PopupWindow {
+        close-policy: close-on-click-outside;
+        x: root.width - self.width;
+        y: -self.height - 6px;
+        width: 280px;
+        Rectangle {
+            background: Theme.toast-bg;
+            border-radius: Theme.radius-card;
+            border-width: 1px;
+            border-color: Theme.toast-border;
+            VerticalLayout {
+                padding: 12px;
+                spacing: 6px;
+                Text {
+                    text: "Keyboard shortcuts";
+                    color: Theme.text;
+                    font-size: Theme.fs-md;
+                    font-weight: Theme.semibold;
+                }
+                for k in PlayerApi.help-keys: HorizontalLayout {
+                    spacing: 12px;
+                    Text {
+                        width: 96px;
+                        text: k.keys;
+                        color: Theme.accent;
+                        font-size: Theme.fs-sm;
+                        font-weight: Theme.medium;
+                        overflow: elide;
+                    }
+                    Text { text: k.action; color: Theme.text-muted; font-size: Theme.fs-sm; overflow: elide; }
+                }
+                Text {
+                    text: "Most keys act while the pointer is over the video.";
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-xs;
+                    wrap: word-wrap;
+                }
+            }
+        }
+    }
+}

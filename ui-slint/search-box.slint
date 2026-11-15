@@ -1,0 +1,47 @@
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+
+export component SearchBox inherits Rectangle {
+    callback escaped();
+    public function focus-search() { input.focus(); input.select-all(); }
+    height: 38px;
+    background: Theme.input-bg;
+    border-radius: Theme.radius-l;
+    border-width: 1px;
+    border-color: input.has-focus ? Theme.selected-border : Theme.border;
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 8px;
+        cross-axis-alignment: center;
+        Icon { source: Icons.search; tint: Theme.text-muted; size: 16px; }
+        input := TextInput {
+            accessible-label: "Filter this tab";
+            text <=> Core.search-text;
+            color: Theme.text;
+            font-size: Theme.fs-md;
+            vertical-alignment: center;
+            single-line: true;
+            edited => { Core.search-edited(self.text); }
+            accepted => { root.escaped(); }
+            key-pressed(e) => {
+                if (e.text == Key.Escape) {
+                    Core.search-cleared();
+                    root.escaped();
+                    return accept;
+                }
+                reject
+            }
+            if self.text == "" && !self.has-focus: Text {
+                x: 0px;
+                text: "Filter this tab (" + Core.mod-label + "F)";
+                color: Theme.text-faint;
+                font-size: Theme.fs-md;
+                vertical-alignment: center;
+                height: parent.height;
+            }
+        }
+    }
+}

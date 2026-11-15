@@ -1,0 +1,84 @@
+// Appearance settings tab (spec S2c): edits AppearanceApi, Rust applies live and persists.
+import { Theme } from "theme.slint";
+import { AccentSlider, AccentSwitch, FormRow, Segmented } from "dialog-kit.slint";
+
+export global AppearanceApi {
+    in property <[color]> swatches;
+    in-out property <int> accent;
+    in-out property <int> mode;
+    in-out property <int> density;
+    in-out property <float> radius: 1.0;
+    in-out property <float> font: 1.0;
+    in-out property <bool> reduce-motion;
+    callback changed();
+    callback live();
+}
+
+component SliderValue inherits Text {
+    width: 44px;
+    color: Theme.text-muted;
+    font-size: Theme.fs-md;
+    vertical-alignment: center;
+    horizontal-alignment: right;
+}
+
+export component AppearancePane inherits VerticalLayout {
+    spacing: 12px;
+    FormRow {
+        label: "Accent";
+        HorizontalLayout {
+            spacing: 10px;
+            alignment: start;
+            for c[i] in AppearanceApi.swatches: Rectangle {
+                accessible-role: radio-button;
+                accessible-label: "Accent colour " + (i + 1);
+                accessible-checkable: true;
+                accessible-checked: i == AppearanceApi.accent;
+                accessible-action-default => { AppearanceApi.accent = i; AppearanceApi.changed(); }
+                width: 30px;
+                height: 30px;
+                border-radius: 15px;
+                border-width: 2px;
+                border-color: i == AppearanceApi.accent ? Theme.text : transparent;
+                Rectangle { width: 22px; height: 22px; border-radius: 11px; background: c; }
+                swatch := TouchArea { clicked => { AppearanceApi.accent = i; AppearanceApi.changed(); } }
+            }
+        }
+    }
+    FormRow {
+        label: "Mode";
+        Segmented { options: ["Dark", "OLED", "Light"]; current: AppearanceApi.mode; changed(i) => { AppearanceApi.mode = i; AppearanceApi.changed(); } }
+    }
+    FormRow {
+        label: "Density";
+        Segmented { options: ["Compact", "Cozy", "TV"]; current: AppearanceApi.density; changed(i) => { AppearanceApi.density = i; AppearanceApi.changed(); } }
+    }
+    FormRow {
+        label: "Corner radius";
+        radius-slider := AccentSlider {
+            label: "Corner radius";
+            minimum: 0.5;
+            maximum: 1.5;
+            value: AppearanceApi.radius;
+            changed(v) => { AppearanceApi.radius = v; AppearanceApi.live(); }
+            released(v) => { AppearanceApi.radius = v; AppearanceApi.changed(); }
+        }
+        SliderValue { text: round(AppearanceApi.radius * 100) + "%"; }
+    }
+    FormRow {
+        label: "Font size";
+        font-slider := AccentSlider {
+            label: "Font size";
+            minimum: 0.85;
+            maximum: 1.3;
+            value: AppearanceApi.font;
+            changed(v) => { AppearanceApi.font = v; AppearanceApi.live(); }
+            released(v) => { AppearanceApi.font = v; AppearanceApi.changed(); }
+        }
+        SliderValue { text: round(AppearanceApi.font * 100) + "%"; }
+    }
+    FormRow {
+        label: "Motion";
+        motion-switch := AccentSwitch { text: "Reduce motion"; checked <=> AppearanceApi.reduce-motion; toggled => { AppearanceApi.changed(); } }
+    }
+}

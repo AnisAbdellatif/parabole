@@ -1,0 +1,140 @@
+import { Theme } from "theme.slint";
+import { StreamItem } from "types.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { LogoTile } from "logo-tile.slint";
+
+component EqBar inherits Rectangle {
+    in property <length> lo;
+    in property <length> hi;
+    property <bool> phase: false;
+    init => { self.phase = true; }
+    width: 3px;
+    border-radius: 1px;
+    background: Theme.accent;
+    height: Theme.reduce-motion ? (root.lo + root.hi) / 2 : (root.phase ? root.hi : root.lo);
+    animate height { duration: Theme.motion * 10 / 3; iteration-count: -1; direction: alternate; easing: ease-in-out; }
+}
+
+// Three looping bars; static when reduce-motion is on.
+component Equalizer inherits Rectangle {
+    width: 15px;
+    height: 12px;
+    EqBar { x: 0px; y: 12px - self.height; lo: 3px; hi: 12px; }
+    EqBar { x: 6px; y: 12px - self.height; lo: 12px; hi: 4px; }
+    EqBar { x: 12px; y: 12px - self.height; lo: 5px; hi: 11px; }
+}
+
+// One 48px Live channel row (see src/ui/stream_row.rs).
+export component StreamRow inherits Rectangle {
+    in property <StreamItem> item;
+    in property <bool> cursor;
+    in property <bool> playing;
+    callback clicked();
+    callback double-clicked();
+    callback favorite-clicked();
+    callback right-clicked(length, length);
+    accessible-role: list-item;
+    accessible-label: root.item.name;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.cursor;
+    accessible-action-default => { root.double-clicked(); }
+
+    property <bool> show-progress: root.item.progress > 0 && !root.item.watched;
+    // trailing slots below, each plus 10px spacing; the star slot is always reserved
+    property <length> trail: 32px + (root.playing ? 25px : 0px) + (root.show-progress ? 70px : 0px) + (root.item.watched ? 28px : 0px);
+    property <length> text-x: Theme.logo + 20px;
+
+    height: Theme.channel-row-h;
+    border-radius: Theme.radius-l;
+    border-width: 1px;
+    background: root.playing ? Theme.selected-bg : row-area.has-hover ? Theme.surface : root.cursor ? Theme.row-hover : transparent;
+    border-color: root.playing ? Theme.selected-border : root.cursor ? Theme.border : transparent;
+    animate background { duration: Theme.motion; }
+    opacity: (root.item.missing || root.item.hidden) ? 0.5 : 1;
+
+    row-area := TouchArea {
+        clicked => { root.clicked(); }
+        double-clicked => { root.double-clicked(); }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                root.right-clicked(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+
+    LogoTile {
+        x: 8px;
+        y: (parent.height - self.height) / 2;
+        initials: root.item.initials;
+        logo: root.item.logo;
+        has-logo: root.item.has-logo;
+    }
+    VerticalLayout {
+        x: root.text-x;
+        width: parent.width - root.text-x - root.trail - 16px;
+        height: parent.height;
+        alignment: center;
+        Text {
+            text: root.item.name;
+            color: Theme.text;
+            font-size: Theme.fs-md;
+            font-weight: Theme.medium;
+            overflow: elide;
+        }
+        if root.item.meta != "": Text {
+            text: root.item.meta;
+            color: Theme.text-muted;
+            font-size: Theme.fs-sm;
+            overflow: elide;
+        }
+    }
+    HorizontalLayout {
+        x: parent.width - self.width - 8px;
+        width: root.trail;
+        height: parent.height;
+        spacing: 10px;
+        alignment: end;
+        if root.playing: Rectangle { width: 15px; Equalizer { y: (parent.height - self.height) / 2; } }
+        if root.show-progress: Rectangle {
+            width: 60px;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                height: 3px;
+                border-radius: 2px;
+                background: Theme.surface-hover;
+                Rectangle {
+                    width: parent.width * root.item.progress;
+                    border-radius: 2px;
+                    background: root.playing ? Theme.accent : Theme.text-dim;
+                }
+            }
+        }
+        if root.item.watched: Rectangle {
+            width: 18px;
+            Rectangle {
+                y: (parent.height - self.height) / 2;
+                width: 18px;
+                height: 18px;
+                border-radius: 9px;
+                background: #000000aa;
+                Icon { source: Icons.check; tint: Theme.accent; size: 14px; x: 2px; y: 2px; }
+            }
+        }
+        star := TouchArea {
+            width: 32px;
+            accessible-role: button;
+            accessible-label: root.item.favorite ? "Remove from favorites" : "Add to favorites";
+            accessible-action-default => { root.favorite-clicked(); }
+            clicked => { root.favorite-clicked(); }
+            Icon {
+                visible: root.item.favorite || row-area.has-hover || star.has-hover;
+                source: root.item.favorite ? Icons.star-filled : Icons.star;
+                tint: root.item.favorite ? Theme.star : Theme.text-muted;
+                size: 18px;
+                x: 7px;
+                y: (parent.height - self.height) / 2;
+            }
+        }
+    }
+}

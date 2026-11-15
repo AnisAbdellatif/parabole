@@ -1,0 +1,36 @@
+// Bar above the browse area: search and source filter.
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { SearchBox } from "search-box.slint";
+import { DropPill } from "drop-pill.slint";
+
+export component ShellHeader inherits Rectangle {
+    callback escaped();
+    public function focus-search() { search.focus-search(); }
+    height: Theme.header-h;
+    background: Theme.panel;
+    Rectangle { y: parent.height - 1px; height: 1px; background: Theme.divider; }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 12px;
+        alignment: stretch;
+        cross-axis-alignment: center;
+        search := SearchBox {
+            preferred-width: 420px;
+            max-width: 460px;
+            min-width: 146px;
+            escaped => { root.escaped(); }
+        }
+        Rectangle { horizontal-stretch: 1; }
+        DropPill {
+            label: Core.source-index >= 0 && Core.source-index < Core.source-names.length ? Core.source-names[Core.source-index] : "";
+            options: Core.source-names;
+            current: Core.source-index;
+            picked(i) => {
+                Core.source-index = i;
+                Core.source-selected(i);
+            }
+        }
+    }
+}

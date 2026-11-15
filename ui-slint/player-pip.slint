@@ -1,0 +1,38 @@
+// Picture-in-picture overlay: drag handle plus a minimal hover bar (close, return, play/pause).
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { PlayerApi } from "player-api.slint";
+import { IconBtn } from "player-widgets.slint";
+
+export component PipControls inherits Rectangle {
+    out property <bool> hovered: drag.has-hover || ret.hovered || cls.hovered || pp.hovered;
+    drag := TouchArea {
+        mouse-cursor: move;
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.down && e.button == PointerEventButton.left) { PlayerApi.pip-drag(); }
+        }
+        double-clicked => { PlayerApi.toggle-mini(); }
+    }
+    Rectangle {
+        background: #00000070;
+        opacity: drag.has-hover || ret.hovered || cls.hovered || pp.hovered ? 1 : 0;
+        animate opacity { duration: Theme.motion; }
+        HorizontalLayout {
+            padding: 6px;
+            spacing: 4px;
+            alignment: end;
+            cross-axis-alignment: center;
+            y: 0px;
+            height: 44px;
+            ret := IconBtn { icon: Icons.fullscreen; label: "Exit mini player"; clicked => { PlayerApi.toggle-mini(); } }
+            cls := IconBtn { icon: Icons.close; label: "Stop"; clicked => { PlayerApi.stop(); } }
+        }
+        pp := IconBtn {
+            icon: PlayerApi.paused ? Icons.play : Icons.pause;
+            label: PlayerApi.paused ? "Play" : "Pause";
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            clicked => { PlayerApi.toggle-pause(); }
+        }
+    }
+}

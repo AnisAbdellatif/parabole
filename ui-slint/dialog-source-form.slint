@@ -1,0 +1,38 @@
+import { ComboBox } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DField, FormRow } from "dialog-kit.slint";
+
+// Add/edit form fields; the buttons live in the dialog footer.
+export component SourceForm inherits VerticalLayout {
+    spacing: 12px;
+    Text { text: "Paste anything (M3U link, Xtream URL + username + password, file path):"; color: Theme.text-muted; font-size: Theme.fs-sm; }
+    paste := DField {
+        multiline: true;
+        rows: 3;
+        text <=> DialogApi.form-paste;
+        edited(t) => { DialogApi.form-paste-edited(t); }
+        init => { self.focus-input(); }
+    }
+    if DialogApi.form-detected != "": Text { text: DialogApi.form-detected; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; }
+    FormRow { label: "Name"; DField { text <=> DialogApi.form-name; } }
+    FormRow {
+        label: "URL / file";
+        DField { text <=> DialogApi.form-url; horizontal-stretch: 1; }
+        DButton { text: "Choose file…"; clicked => { DialogApi.form-choose-file(); } }
+    }
+    if DialogApi.form-is-xtream: FormRow { label: "Backup URLs"; DField { multiline: true; rows: 2; placeholder: "Xtream only, one per line"; text <=> DialogApi.form-mirrors; } }
+    if DialogApi.form-is-xtream: FormRow { label: "Username"; DField { text <=> DialogApi.form-user; } }
+    if DialogApi.form-is-xtream: FormRow { label: "Password"; DField { password: true; text <=> DialogApi.form-pass; } }
+    FormRow {
+        label: "User agent";
+        ComboBox {
+            width: 190px;
+            model: ["Default", "IPTV Smarters Pro", "TiviMate", "OkHttp", "VLC", "Custom…"];
+            current-index <=> DialogApi.ua-preset;
+            selected(_) => { DialogApi.form-ua-selected(self.current-index); }
+        }
+        if DialogApi.ua-preset == 5: DField { text <=> DialogApi.form-ua; horizontal-stretch: 1; }
+        if DialogApi.ua-preset != 5: Rectangle { horizontal-stretch: 1; }
+    }
+}

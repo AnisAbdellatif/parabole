@@ -1,0 +1,29 @@
+// Overlay for modal dialogs. Owned by the dialogs area.
+import { DialogApi } from "dialog-api.slint";
+import { SourcesDialog } from "dialog-sources.slint";
+import { SettingsDialog } from "dialog-settings.slint";
+import { ProfilesDialog } from "dialog-profiles.slint";
+import { GroupDialog } from "dialog-group.slint";
+
+export component DialogHost inherits Rectangle {
+    callback closed();
+    property <bool> shown: DialogApi.open != "";
+    visible: root.shown;
+    // The host is sized by the window, not by the dialog, so this does not form a layout loop.
+    property <length> max-body: min(600px, root.height - 220px);
+    changed shown => {
+        if (root.shown) { fs.focus(); } else { root.closed(); }
+    }
+    Rectangle {
+        background: #000000a8;
+        TouchArea { clicked => { DialogApi.close(); } }
+    }
+    fs := FocusScope {
+        key-pressed(e) => { if (DialogApi.key(e)) { accept } else { reject } }
+        // Absolute centring, not a layout: a layout here would feed the dialog's height into the window's layoutinfo.
+        if DialogApi.open == "sources": SourcesDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
+        if DialogApi.open == "settings": SettingsDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
+        if DialogApi.open == "profiles": ProfilesDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
+        if DialogApi.open == "group": GroupDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
+    }
+}

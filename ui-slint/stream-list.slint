@@ -1,0 +1,48 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { StreamRow } from "stream-row.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+
+// Virtualized: the Rust model is lazy, so only visible rows are ever built.
+export component StreamList inherits Rectangle {
+    callback interacted();
+    in property <int> cursor: Core.cursor;
+
+    function ensure-visible(i: int) {
+        if (-list.content-y > i * Theme.channel-row-step) {
+            list.content-y = -i * Theme.channel-row-step;
+        } else if (-list.content-y + list.visible-height < (i + 1) * Theme.channel-row-step) {
+            list.content-y = -((i + 1) * Theme.channel-row-step - list.visible-height);
+        }
+    }
+    changed cursor => { root.ensure-visible(root.cursor); }
+    property <length> scrolled: -list.content-y;
+    changed scrolled => { BrowseApi.scroll-y = root.scrolled; BrowseApi.scroll-room = list.content-height - list.visible-height; }
+    init => { BrowseApi.scroll-y = 0px; }
+
+    list := ListView {
+        x: 24px;
+        width: parent.width - 48px;
+        height: parent.height;
+        for item[i] in Core.streams: Rectangle {
+            height: Theme.channel-row-step;
+            StreamRow {
+                y: 0px;
+                width: parent.width;
+                item: item;
+                cursor: i == Core.cursor;
+                playing: item.playing;
+                clicked => { Core.cursor = i; root.interacted(); }
+                double-clicked => { Core.cursor = i; Core.stream-activated(i); }
+                favorite-clicked => { Core.favorite-toggled(i); root.interacted(); }
+                right-clicked(x, y) => { Core.cursor = i; BrowseApi.row-menu-requested(i); menu.open(x, y); root.interacted(); }
+            }
+        }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.row-menu;
+        picked(id) => { BrowseApi.row-menu-picked(id); root.interacted(); }
+    }
+}

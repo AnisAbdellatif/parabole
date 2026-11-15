@@ -1,0 +1,64 @@
+import { ComboBox } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DCheck, DField, FormRow, Segmented } from "dialog-kit.slint";
+import { DialogBody, DialogFooter, DialogFrame } from "dialog-frame.slint";
+import { AppearancePane } from "dialog-appearance.slint";
+
+component PlaybackTab inherits VerticalLayout {
+    spacing: 12px;
+    FormRow { label: "Default player"; ComboBox { model: DialogApi.player-kinds; current-index <=> DialogApi.set-default; } }
+    FormRow { label: "Live player"; ComboBox { model: DialogApi.player-kinds-opt; current-index <=> DialogApi.set-live; } }
+    FormRow { label: "Movie player"; ComboBox { model: DialogApi.player-kinds-opt; current-index <=> DialogApi.set-movie; } }
+    FormRow { label: "Episode player"; ComboBox { model: DialogApi.player-kinds-opt; current-index <=> DialogApi.set-episode; } }
+    FormRow {
+        label: "Live latency";
+        VerticalLayout {
+            spacing: 8px;
+            padding-top: 5px;
+            DCheck { text: "Low-latency buffering"; checked <=> DialogApi.set-low-latency; }
+            DCheck { text: "Catch up to the live edge"; checked <=> DialogApi.set-catchup; }
+        }
+    }
+}
+
+component PlayersTab inherits VerticalLayout {
+    spacing: 12px;
+    FormRow { label: "mpv path"; DField { placeholder: "auto-detect"; text <=> DialogApi.set-mpv-path; } }
+    FormRow { label: "VLC path"; DField { placeholder: "auto-detect"; text <=> DialogApi.set-vlc-path; } }
+    FormRow {
+        label: "";
+        DButton { text: "Detect"; clicked => { DialogApi.settings-detect(); } }
+        Text { text: DialogApi.set-detected; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; wrap: word-wrap; horizontal-stretch: 1; }
+    }
+    FormRow { label: "Custom command"; DField { placeholder: "{url} {title} {user_agent} {referrer}"; text <=> DialogApi.set-template; } }
+    FormRow { label: "Extra mpv args"; DField { text <=> DialogApi.set-mpv-args; } }
+}
+
+export component SettingsDialog inherits DialogFrame {
+    title: "Settings";
+    card-width: 560px;
+    HorizontalLayout {
+        padding: 16px;
+        padding-bottom: 0px;
+        tabs := Segmented {
+            options: ["Playback", "Players", "Appearance"];
+            current: DialogApi.settings-tab;
+            changed(i) => { DialogApi.settings-tab = i; }
+        }
+    }
+    DialogBody {
+        max-body: root.max-body - 48px;
+        if DialogApi.settings-tab == 0: PlaybackTab { }
+        if DialogApi.settings-tab == 1: PlayersTab { }
+        if DialogApi.settings-tab == 2: AppearancePane { }
+    }
+    if DialogApi.settings-tab != 2: DialogFooter {
+        DButton { text: "Cancel"; clicked => { DialogApi.close(); } }
+        DButton { text: "Save"; kind: 1; clicked => { DialogApi.settings-save(); } }
+    }
+    if DialogApi.settings-tab == 2: DialogFooter {
+        Text { text: "Applied immediately"; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; horizontal-stretch: 1; }
+        DButton { text: "Done"; clicked => { DialogApi.close(); } }
+    }
+}

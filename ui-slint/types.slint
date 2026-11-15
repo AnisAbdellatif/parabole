@@ -1,0 +1,147 @@
+// Row structs shared by Rust models and components.
+export struct StreamItem {
+    name: string,
+    meta: string,
+    initials: string,
+    logo: image,
+    has-logo: bool,
+    favorite: bool,
+    progress: float,
+    watched: bool,
+    missing: bool,
+    hidden: bool,
+    playing: bool,
+}
+
+// kind: 0 section header, 1 special entry, 2 group, 3 category. icon: 0 none, 1 star, 2 recent, 3 resume.
+export struct SidebarItem {
+    id: string,
+    kind: int,
+    label: string,
+    count: int,
+    icon: int,
+}
+
+export struct ToastItem {
+    id: int,
+    text: string,
+}
+
+// account-level: 0 normal, 1 warning (expiring / connections full), 2 error (expired).
+export struct SourceRow {
+    id: int,
+    name: string,
+    kind: string,
+    refreshed: string,
+    refreshing: bool,
+    error: string,
+    account: string,
+    account-level: int,
+    xtream: bool,
+    checking: bool,
+    confirm: bool,
+}
+
+export struct ProfileRow {
+    id: int,
+    name: string,
+    active: bool,
+    renaming: bool,
+    confirm: bool,
+    can-delete: bool,
+    others: [string],
+}
+
+// Player track-menu row. id -1 = "off" (subtitles only).
+export struct TrackItem {
+    id: int,
+    label: string,
+    selected: bool,
+}
+
+// Browse area structs.
+export struct ChipItem {
+    id: string,
+    label: string,
+    on: bool,
+}
+
+// kind: 0 item, 1 header, 2 separator.
+export struct MenuEntry {
+    id: string,
+    label: string,
+    kind: int,
+}
+
+// kind: 0 header, 1 special entry, 2 group, 3 category, 4 "MY GROUPS" header with a + button.
+// icon: 0 none, 1 star, 2 recent, 3 resume.
+export struct SideRow {
+    id: string,
+    kind: int,
+    label: string,
+    count: int,
+    icon: int,
+    pinned: bool,
+}
+
+export struct EditCat {
+    label: string,
+    count: int,
+    hidden: bool,
+    pinned: bool,
+    matched: bool,
+}
+
+export struct EditGroup {
+    name: string,
+    confirm: bool,
+}
+
+export struct TileItem {
+    index: int,
+    name: string,
+    sub: string,
+    initials: string,
+    poster: image,
+    has-poster: bool,
+    favorite: bool,
+    progress: float,
+    watched: bool,
+    hidden: bool,
+    missing: bool,
+}
+
+export struct GridRow {
+    tiles: [TileItem],
+}
+
+export struct EpisodeItem {
+    id: string,
+    num: string,
+    title: string,
+    progress: float,
+    watched: bool,
+}
+
+export struct FieldItem {
+    label: string,
+    value: string,
+}
+
+// state: 0 nothing, 1 loading, 2 loaded, 3 failed.
+export struct InfoView {
+    state: int,
+    poster: image,
+    has-poster: bool,
+    fields: [FieldItem],
+}
+
+// Hero extras pushed by Rust for the focused row; valid when `index` equals the hero's focus index.
+export struct HeroExtra {
+    index: int,
+    backdrop: image,
+    has-backdrop: bool,
+    meta: string,
+    plot: string,
+    action: string,
+}

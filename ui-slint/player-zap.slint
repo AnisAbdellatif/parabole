@@ -1,0 +1,66 @@
+// Channel carousel on the left edge: 2 previous, the current (elevated) and 2 next channels.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { LogoTile } from "logo-tile.slint";
+
+// band-h: height between the top chrome and the controls. Neighbours shown per side:
+// clamp(floor((band-h - current - 2 gap) / (2 step)), 0, 2). The current card is the middle item
+// (carousel.rs builds the list symmetric around it).
+// Neighbours only when `neighbours` is set (fullscreen); docked and mini show the current card alone.
+export component ZapCarousel inherits Rectangle {
+    in property <bool> neighbours: true;
+    private property <bool> open: PlayerApi.zap-open || PlayerApi.zap-text != "";
+    private property <length> cur-h: 64px;
+    private property <length> gap: 6px;
+    private property <length> step: 50px;
+    private property <int> cur: (PlayerApi.zap-items.length - 1) / 2;
+    private property <int> n: !root.neighbours ? 0 : max(0, min(2, Math.floor((root.height - root.cur-h - 2 * root.gap) / (2 * root.step) * 1px / 1px)));
+    width: 220px;
+    x: -220px;
+    opacity: 0;
+    clip: true;
+    visible: self.opacity > 0.01;
+    states [
+        shown when root.open: {
+            x: 18px;
+            opacity: 1;
+            in { animate x, opacity { duration: Theme.motion * 1.5; easing: ease-out; } }
+            out { animate x, opacity { duration: Theme.motion * 1.5; easing: ease-in; } }
+        }
+    ]
+    for it[i] in PlayerApi.zap-items: Rectangle {
+        private property <int> d: i - root.cur;
+        visible: abs(self.d) <= root.n;
+        y: (root.height - root.cur-h) / 2 + (self.d < 0 ? self.d * root.step : self.d == 0 ? 0px : root.cur-h + root.gap + (self.d - 1) * root.step);
+        width: parent.width;
+        height: it.playing ? root.cur-h : 44px;
+        border-radius: Theme.radius-l;
+        background: it.playing ? #000000e0 : #000000a8;
+        border-width: it.playing ? 1px : 0px;
+        border-color: Theme.accent.with-alpha(0.7);
+        opacity: it.playing ? 1 : 0.8;
+        drop-shadow-color: #000000a0;
+        drop-shadow-blur: it.playing ? 16px : 0px;
+        drop-shadow-offset-y: 4px;
+        HorizontalLayout {
+            padding: 8px;
+            spacing: 10px;
+            cross-axis-alignment: center;
+            LogoTile {
+                width: it.playing ? 46px : 28px;
+                height: self.width;
+                initials: it.initials;
+                logo: it.logo;
+                has-logo: it.has-logo;
+            }
+            Text {
+                text: it.playing && PlayerApi.zap-text != "" ? PlayerApi.zap-text : (it.playing && it.meta != "" ? it.meta + " · " : "") + it.name;
+                color: white;
+                font-size: it.playing ? Theme.fs-md : Theme.fs-sm;
+                font-weight: it.playing ? Theme.semibold : Theme.regular;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+        }
+    }
+}

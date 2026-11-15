@@ -1,0 +1,60 @@
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DField } from "dialog-kit.slint";
+import { DialogBody, DialogFooter, DialogFrame } from "dialog-frame.slint";
+import { SourceItem } from "dialog-source-item.slint";
+import { SourceForm } from "dialog-source-form.slint";
+
+export component SourcesDialog inherits DialogFrame {
+    property <bool> show-form: DialogApi.form-open || DialogApi.sources.length == 0;
+    title: !root.show-form ? "Sources" : DialogApi.form-editing ? "Edit source" : "Add source";
+    card-width: 760px;
+
+    if !root.show-form: DialogBody {
+        max-body: root.max-body;
+        for s in DialogApi.sources: SourceItem {
+            id: s.id; name: s.name; kind: s.kind; refreshed: s.refreshed; refreshing: s.refreshing;
+            error: s.error; account: s.account; account-level: s.account-level; xtream: s.xtream;
+            checking: s.checking; confirm: s.confirm;
+        }
+    }
+    if !root.show-form: DialogFooter {
+        HorizontalLayout {
+            horizontal-stretch: 1;
+            spacing: 8px;
+            alignment: start;
+            Text { text: "Auto-refresh after"; color: Theme.text-muted; font-size: Theme.fs-md; vertical-alignment: center; }
+            DField {
+                width: 56px;
+                input-type: InputType.number;
+                text <=> DialogApi.auto-hours;
+                edited(t) => { DialogApi.auto-hours-commit(t); }
+                accepted => { DialogApi.auto-hours-commit(self.text); }
+            }
+            Text { text: "hours (0 = off)"; color: Theme.text-muted; font-size: Theme.fs-md; vertical-alignment: center; }
+        }
+        if DialogApi.sources.length > 1: DButton { text: "Refresh all"; clicked => { DialogApi.sources-refresh-all(); } }
+        add := DButton { text: "Add source"; kind: 1; clicked => { DialogApi.form-open = true; } }
+    }
+
+    if root.show-form: DialogBody {
+        max-body: root.max-body;
+        SourceForm { }
+    }
+    if root.show-form: DialogFooter {
+        Text {
+            text: DialogApi.test-text;
+            wrap: word-wrap;
+            font-size: Theme.fs-sm;
+            vertical-alignment: center;
+            color: DialogApi.test-ok ? Theme.ok : Theme.error;
+            horizontal-stretch: 1;
+        }
+        back := DButton {
+            text: DialogApi.sources.length > 0 ? "Back" : "Cancel";
+            clicked => { if (DialogApi.sources.length > 0) { DialogApi.form-cancel(); } else { DialogApi.close(); } }
+        }
+        DButton { text: DialogApi.testing ? "Testing…" : "Test"; enabled: !DialogApi.testing; clicked => { DialogApi.form-test(); } }
+        DButton { text: DialogApi.form-editing ? "Save" : "Add"; kind: 1; clicked => { DialogApi.form-submit(); } }
+    }
+}

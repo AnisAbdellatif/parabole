@@ -1,0 +1,86 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+import { DropPill } from "drop-pill.slint";
+import { InfoBody } from "browse-details.slint";
+import { EmptyBox } from "browse-empty.slint";
+import { EpisodeRow } from "episode-row.slint";
+
+// Series page: back button, provider details, season picker and episode list (see src/ui/series_view.rs).
+export component SeriesPage inherits Rectangle {
+    VerticalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 18px;
+        padding-bottom: 24px;
+        spacing: 12px;
+        HorizontalLayout {
+            height: 30px;
+            spacing: 14px;
+            alignment: start;
+            Rectangle {
+                width: 86px;
+                border-radius: 15px;
+                border-width: 1px;
+                border-color: Theme.border;
+                background: back-ta.has-hover ? Theme.surface-hover : Theme.surface;
+                accessible-role: button;
+                accessible-label: "Back";
+                accessible-action-default => { BrowseApi.series-back(); }
+                back-ta := TouchArea { clicked => { BrowseApi.series-back(); } }
+                Icon { source: Icons.back; size: 14px; x: 14px; y: 8px; }
+                Text { x: 34px; text: "Back"; color: Theme.text; font-size: Theme.fs-md; font-weight: Theme.semibold; vertical-alignment: center; height: parent.height; }
+            }
+            Text { text: BrowseApi.series-title; color: Theme.text; font-size: Theme.fs-xl; font-weight: Theme.semibold; vertical-alignment: center; overflow: elide; }
+        }
+        if BrowseApi.series-info.state == 2: Rectangle {
+            height: min(info.preferred-height, 230px);
+            clip: true;
+            info := InfoBody { info: BrowseApi.series-info; }
+        }
+        if BrowseApi.series-loading: Text { text: "Loading episodes…"; color: Theme.text-muted; font-size: Theme.fs-md; }
+        if BrowseApi.series-empty: EmptyBox {
+            title: "No episodes found";
+            body: "This series has no episodes from the provider yet.";
+            cta: "Back";
+            clicked => { BrowseApi.series-back(); }
+        }
+        if !BrowseApi.series-loading && !BrowseApi.series-empty: VerticalLayout {
+            spacing: 8px;
+            property <int> cursor: BrowseApi.episode-cursor;
+            changed cursor => {
+                if (-list.content-y > self.cursor * 48px) {
+                    list.content-y = -self.cursor * 48px;
+                } else if (-list.content-y + list.visible-height < (self.cursor + 1) * 48px) {
+                    list.content-y = -((self.cursor + 1) * 48px - list.visible-height);
+                }
+            }
+            HorizontalLayout {
+                height: 32px;
+                alignment: start;
+                season-btn := DropPill {
+                    label: BrowseApi.season-label;
+                    clicked => { menu.open(season-btn.absolute-position.x, season-btn.absolute-position.y + season-btn.height + 4px); }
+                }
+            }
+            list := ListView {
+                for ep[i] in BrowseApi.episodes: EpisodeRow {
+                    ep: ep;
+                    index: i;
+                    current: i == BrowseApi.episode-cursor;
+                    picked => { BrowseApi.episode-cursor = i; }
+                    activated => { BrowseApi.episode-cursor = i; BrowseApi.episode-activated(i); }
+                    watched-toggled => { BrowseApi.episode-watched-toggled(i); }
+                }
+            }
+        }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.season-items;
+        menu-width: 200px;
+        picked(id) => { BrowseApi.season-picked(id); }
+    }
+}

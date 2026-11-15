@@ -1,0 +1,142 @@
+// Command palette (Cmd/Ctrl+K) overlay (spec S2c).
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { PaletteApi } from "palette-api.slint";
+
+component PaletteRow inherits Rectangle {
+    in property <int> kind;
+    in property <string> title;
+    in property <string> subtitle;
+    in property <bool> active;
+    callback clicked();
+    accessible-role: list-item;
+    accessible-label: root.subtitle == "" ? root.title : root.title + ", " + root.subtitle;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.active;
+    accessible-action-default => { root.clicked(); }
+    height: 44px;
+    border-radius: Theme.radius;
+    background: root.active ? Theme.selected-bg : transparent;
+    HorizontalLayout {
+        padding-left: 12px;
+        padding-right: 12px;
+        spacing: 12px;
+        cross-axis-alignment: center;
+        Icon {
+            size: 18px;
+            tint: root.active ? Theme.accent : Theme.text-muted;
+            source: root.kind == 0 ? Icons.live : root.kind == 1 ? Icons.movie : root.kind == 2 ? Icons.series
+                : root.kind == 3 ? Icons.sources : Icons.settings;
+        }
+        Text { text: root.title; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; overflow: elide; horizontal-stretch: 1; }
+        Text {
+            text: root.subtitle;
+            color: Theme.text-dim;
+            font-size: Theme.fs-sm;
+            vertical-alignment: center;
+            horizontal-alignment: right;
+            overflow: elide;
+            max-width: root.width * 0.45;
+        }
+    }
+    TouchArea { clicked => { root.clicked(); } }
+}
+
+export component CommandPalette inherits Rectangle {
+    callback closed();
+    property <bool> shown: PaletteApi.open;
+    // 0..1, animated; Theme.motion is 0 with reduced motion, so it then snaps.
+    property <float> t: PaletteApi.open ? 1.0 : 0.0;
+    animate t { duration: Theme.motion; easing: ease-out; }
+    visible: root.shown || root.t > 0.0;
+    changed shown => {
+        if (root.shown) { input.focus(); } else { root.closed(); }
+    }
+    Rectangle {
+        background: Colors.black.with-alpha(0.45 * root.t);
+        TouchArea { clicked => { PaletteApi.close(); } }
+    }
+    card := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: parent.height * 0.12 + (root.t - 1.0) * 8px;
+        width: max(480px, parent.width * 0.58);
+        height: lay.preferred-height;
+        opacity: root.t;
+        background: Theme.card.with-alpha(0.98);
+        border-radius: 14px;
+        border-width: 1px;
+        border-color: Theme.card-border-hover;
+        drop-shadow-blur: 60px;
+        drop-shadow-offset-y: 24px;
+        drop-shadow-color: #000000cc;
+        TouchArea { }
+        lay := VerticalLayout {
+            padding: 8px;
+            spacing: 6px;
+            HorizontalLayout {
+                height: 44px;
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 10px;
+                cross-axis-alignment: center;
+                Icon { source: Icons.search; tint: Theme.text-muted; size: 18px; }
+                input := TextInput {
+                    text <=> PaletteApi.query;
+                    color: Theme.text;
+                    font-size: Theme.fs-lg;
+                    vertical-alignment: center;
+                    single-line: true;
+                    edited => { PaletteApi.edited(self.text); }
+                    key-pressed(e) => { if (PaletteApi.key(e)) { accept } else { reject } }
+                    if self.text == "": Text {
+                        text: "Search everything or run a command";
+                        color: Theme.text-faint;
+                        font-size: Theme.fs-lg;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+            Rectangle { height: 1px; background: Theme.divider; }
+            list := ListView {
+                height: min(PaletteApi.items.length * 44px, 8 * 44px);
+                for it[i] in PaletteApi.items: PaletteRow {
+                    kind: it.kind;
+                    title: it.title;
+                    subtitle: it.subtitle;
+                    active: i == PaletteApi.cursor;
+                    clicked => { PaletteApi.activate(i); }
+                }
+            }
+            Text {
+                visible: PaletteApi.items.length == 0;
+                height: PaletteApi.items.length == 0 ? 44px : 0px;
+                text: "No matches";
+                color: Theme.text-dim;
+                font-size: Theme.fs-md;
+                horizontal-alignment: center;
+                vertical-alignment: center;
+            }
+            Rectangle { height: 1px; background: Theme.divider; }
+            HorizontalLayout {
+                height: 28px;
+                padding-left: 12px;
+                padding-right: 12px;
+                spacing: 16px;
+                alignment: start;
+                for h in ["↑↓ navigate", "↵ open", "esc close"]: Text {
+                    text: h;
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-xs;
+                    vertical-alignment: center;
+                }
+            }
+        }
+    }
+    property <int> cur: PaletteApi.cursor;
+    changed cur => {
+        if (root.cur * 44px < -list.content-y) { list.content-y = -root.cur * 44px; }
+        else if ((root.cur + 1) * 44px > -list.content-y + list.height) { list.content-y = list.height - (root.cur + 1) * 44px; }
+    }
+}

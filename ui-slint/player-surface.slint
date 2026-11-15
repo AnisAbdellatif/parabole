@@ -1,0 +1,96 @@
+// The video itself plus everything drawn over it. One instance exists at a time.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { PlayerControls } from "player-controls.slint";
+import { TopChrome } from "player-top.slint";
+import { ZapCarousel } from "player-zap.slint";
+import { PipControls } from "player-pip.slint";
+import { NerdStats, NextCard } from "player-overlays.slint";
+
+export component VideoSurface inherits Rectangle {
+    // Picture-in-picture: no chrome, just the video and the minimal PiP overlay.
+    in property <bool> compact: false;
+    in property <bool> docked: false;
+    property <bool> shown: true;
+    property <duration> last-move: 0ms;
+    private property <bool> chrome-on: !root.compact && (root.shown || PlayerApi.paused || PlayerApi.error != "");
+    background: black;
+    clip: true;
+    border-radius: root.docked ? Theme.radius-card : 0px;
+
+    init => { PlayerApi.video-w = self.width; PlayerApi.video-h = self.height; }
+    changed width => { PlayerApi.video-w = self.width; }
+    changed height => { PlayerApi.video-h = self.height; }
+
+    Image {
+        source: PlayerApi.frame;
+        image-fit: fill;
+        // Dirties the Image per rendered frame: the texture changes in place, which Slint cannot see (X11 GL).
+        opacity: 0.999 + mod(PlayerApi.frame-tick, 2) * 0.001;
+        width: parent.width;
+        height: parent.height;
+    }
+    ta := TouchArea {
+        changed has-hover => { PlayerApi.hover = self.has-hover || ctl.hovered; }
+        pointer-event(e) => {
+            if (e.kind == PointerEventKind.move || e.kind == PointerEventKind.down) {
+                root.shown = true;
+                root.last-move = animation-tick();
+            }
+        }
+        double-clicked => { if (PlayerApi.mini) { PlayerApi.toggle-mini(); } else { PlayerApi.toggle-fullscreen(); } }
+    }
+    Timer {
+        interval: 500ms;
+        running: root.shown && !PlayerApi.paused && PlayerApi.error == "";
+        triggered => {
+            if (ctl.hovered) { root.last-move = animation-tick(); }
+            if (animation-tick() - root.last-move > 3s) { root.shown = false; }
+        }
+    }
+    if PlayerApi.show-stats && !root.compact: NerdStats { }
+    if PlayerApi.error != "": Text {
+        text: PlayerApi.error;
+        color: Theme.error;
+        wrap: word-wrap;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width - 32px;
+        x: 16px;
+        height: parent.height;
+    }
+    if PlayerApi.error == "" && PlayerApi.buffering: Text {
+        text: "Loading…";
+        color: Theme.text-muted;
+        font-size: Theme.fs-md;
+        horizontal-alignment: center;
+        vertical-alignment: center;
+        width: parent.width;
+        height: parent.height;
+    }
+    top := TopChrome {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        visible: self.opacity > 0.01 && !root.compact;
+        opacity: root.chrome-on ? 1 : 0;
+        animate opacity { duration: Theme.motion * 1.5; }
+    }
+    ctl := PlayerControls {
+        docked: root.docked;
+        shown: root.chrome-on;
+        x: 0px;
+        y: parent.height - self.height;
+        width: parent.width;
+        visible: self.opacity > 0.01 && !root.compact;
+        opacity: root.chrome-on ? 1 : 0;
+        animate opacity { duration: Theme.motion * 1.5; }
+    }
+    ZapCarousel {
+        y: root.compact ? 0px : top.height;
+        height: root.compact ? parent.height : max(0px, ctl.y - top.height);
+        neighbours: PlayerApi.fullscreen;
+    }
+    if root.compact: PipControls { width: parent.width; height: parent.height; }
+    if PlayerApi.next-label != "": NextCard { width: parent.width; height: parent.height; }
+}

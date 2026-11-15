@@ -1,0 +1,38 @@
+// Overlays drawn on the video: nerd stats, auto-next card.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { Pill } from "player-widgets.slint";
+
+export component NerdStats inherits Rectangle {
+    x: 12px;
+    y: 72px;
+    width: row.preferred-width + 20px;
+    height: row.preferred-height + 20px;
+    border-radius: Theme.radius;
+    background: #000000b4;
+    row := HorizontalLayout {
+        padding: 10px;
+        spacing: 12px;
+        Text { text: PlayerApi.stats-labels; color: Theme.text-muted; font-size: Theme.fs-xs; }
+        Text { text: PlayerApi.stats-values; color: Theme.text; font-size: Theme.fs-xs; }
+    }
+}
+
+export component NextCard inherits Rectangle {
+    background: #000000d7;
+    TouchArea { }
+    VerticalLayout {
+        alignment: center;
+        spacing: 4px;
+        Text { text: "Next episode"; color: Theme.text-muted; font-size: Theme.fs-sm; horizontal-alignment: center; }
+        Text { text: PlayerApi.next-label; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; horizontal-alignment: center; overflow: elide; }
+        Text { text: "Playing in " + PlayerApi.next-secs + "s"; color: Theme.text-muted; font-size: Theme.fs-sm; horizontal-alignment: center; }
+        HorizontalLayout {
+            alignment: center;
+            spacing: 8px;
+            padding-top: 10px;
+            Pill { text: "Cancel"; clicked => { PlayerApi.next-cancel(); } }
+            Pill { text: "Play now"; primary: true; clicked => { PlayerApi.next-now(); } }
+        }
+    }
+}

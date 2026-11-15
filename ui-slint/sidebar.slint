@@ -1,0 +1,257 @@
+import { ListView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+import { EditPanel } from "browse-edit.slint";
+
+component SideList inherits Rectangle {
+    in property <int> tick: BrowseApi.side-scroll-tick;
+    changed tick => {
+        if (-list.content-y > BrowseApi.side-scroll-index * Theme.sidebar-row-step) {
+            list.content-y = -BrowseApi.side-scroll-index * Theme.sidebar-row-step;
+        } else if (-list.content-y + list.visible-height < (BrowseApi.side-scroll-index + 1) * Theme.sidebar-row-step) {
+            list.content-y = -((BrowseApi.side-scroll-index + 1) * Theme.sidebar-row-step - list.visible-height);
+        }
+    }
+    Rectangle {
+        x: 10px;
+        width: parent.width - 20px;
+        height: parent.height;
+        clip: true;
+        pill := Rectangle {
+            visible: Core.selected-index >= 0;
+            y: Core.selected-index * Theme.sidebar-row-step + (Theme.sidebar-row-step - Theme.sidebar-row-h) / 2 + list.content-y;
+            height: Theme.sidebar-row-h;
+            border-radius: Theme.radius;
+            background: Theme.selected-bg;
+            border-width: BrowseApi.sidebar-focus ? 1px : 0px;
+            border-color: Theme.accent;
+            animate y, height { duration: Theme.motion; easing: ease-out; }
+            Rectangle {
+                x: 0px;
+                y: 6px * Theme.density;
+                width: 3px;
+                height: parent.height - 12px * Theme.density;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+        }
+    }
+    list := ListView {
+        x: 10px;
+        width: parent.width - 20px;
+        height: parent.height;
+        for item in BrowseApi.side-rows: Rectangle {
+            height: Theme.sidebar-row-step;
+            if item.kind == 0: Text {
+                x: 10px;
+                y: 18px;
+                text: item.label;
+                color: Theme.text-dim;
+                font-size: Theme.fs-xs;
+                letter-spacing: 1.2px;
+                font-weight: Theme.semibold;
+            }
+            if item.kind == 4: Rectangle {
+                Text {
+                    x: 10px;
+                    y: 18px;
+                    text: item.label;
+                    color: Theme.text-dim;
+                    font-size: Theme.fs-xs;
+                    letter-spacing: 1.2px;
+                    font-weight: Theme.semibold;
+                }
+                plus := Rectangle {
+                    accessible-role: button;
+                    accessible-label: "New group";
+                    accessible-action-default => { BrowseApi.group-new(); }
+                    x: parent.width - 36px;
+                    y: 11px;
+                    width: 28px;
+                    height: 28px;
+                    border-radius: Theme.radius;
+                    background: plus-ta.has-hover ? Theme.row-hover : transparent;
+                    plus-ta := TouchArea { clicked => { BrowseApi.group-new(); } }
+                    Text { text: "+"; color: Theme.text-muted; font-size: Theme.fs-lg; font-weight: Theme.semibold; horizontal-alignment: center; vertical-alignment: center; }
+                }
+            }
+            if item.kind != 0 && item.kind != 4: Rectangle {
+                height: Theme.sidebar-row-h;
+                border-radius: Theme.radius;
+                property <bool> on: item.id == Core.selected-id;
+                accessible-role: list-item;
+                accessible-label: item.label;
+                accessible-item-selectable: true;
+                accessible-item-selected: on;
+                accessible-action-default => { BrowseApi.sidebar-focus = false; Core.sidebar-selected(item.id); }
+                background: !on && ta.has-hover ? Theme.row-hover : transparent;
+                if item.icon != 0: Icon {
+                    x: 10px;
+                    y: (parent.height - self.height) / 2;
+                    source: item.icon == 1 ? Icons.star-filled : item.icon == 2 ? Icons.recent : Icons.resume;
+                    tint: on ? Theme.text : Theme.text-row;
+                }
+                Text {
+                    x: item.icon != 0 ? 36px : 10px;
+                    width: parent.width - self.x - (item.count >= 0 || item.kind == 3 ? 52px : 10px);
+                    text: item.label;
+                    color: on ? Theme.text : Theme.text-row;
+                    font-size: Theme.fs-md;
+                    vertical-alignment: center;
+                    height: parent.height;
+                    overflow: elide;
+                }
+                if item.count >= 0: Rectangle {
+                    visible: !(item.kind == 3 && ta.has-hover);
+                    x: parent.width - self.width - 8px;
+                    y: (parent.height - self.height) / 2;
+                    width: badge.preferred-width + 14px;
+                    height: 20px;
+                    border-radius: 6px;
+                    background: Theme.surface;
+                    badge := Text {
+                        text: item.count;
+                        color: Theme.badge-text;
+                        font-size: Theme.fs-xs;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+                ta := TouchArea {
+                    clicked => { BrowseApi.sidebar-focus = false; Core.sidebar-selected(item.id); }
+                    pointer-event(e) => {
+                        if (item.kind >= 2 && e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                            BrowseApi.side-menu-requested(item.id);
+                            menu.open(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+                        }
+                    }
+                    // nested so hovering the pin keeps the row hovered
+                    if item.kind == 3: TouchArea {
+                        accessible-role: button;
+                        accessible-label: item.pinned ? "Unpin category" : "Pin category";
+                        accessible-action-default => { BrowseApi.pin-toggled(item.id); }
+                        visible: ta.has-hover;
+                        x: parent.width - 36px;
+                        y: (parent.height - self.height) / 2;
+                        width: 32px;
+                        height: 32px;
+                        clicked => { BrowseApi.pin-toggled(item.id); }
+                        Icon {
+                            source: item.pinned ? Icons.star-filled : Icons.star;
+                            tint: item.pinned ? Theme.star : Theme.text-muted;
+                            x: 8px;
+                            y: 8px;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.side-menu;
+        picked(id) => { BrowseApi.side-menu-picked(id); }
+    }
+}
+
+component SideFilter inherits Rectangle {
+    callback escaped();
+    height: 30px;
+    background: Theme.input-bg;
+    border-radius: Theme.radius;
+    border-width: 1px;
+    border-color: input.has-focus ? Theme.selected-border : Theme.border;
+    input := TextInput {
+        x: 10px;
+        width: parent.width - 34px;
+        accessible-label: "Filter categories";
+        text <=> BrowseApi.side-filter;
+        color: Theme.text;
+        font-size: Theme.fs-md;
+        single-line: true;
+        vertical-alignment: center;
+        edited => { BrowseApi.side-filter-edited(self.text); }
+        accepted => { BrowseApi.side-filter-accepted(); root.escaped(); }
+        key-pressed(e) => {
+            if (e.text == Key.Escape) {
+                BrowseApi.side-filter = "";
+                BrowseApi.side-filter-edited("");
+                root.escaped();
+                return accept;
+            }
+            reject
+        }
+    }
+    if BrowseApi.side-filter == "": Text { x: 10px; text: "Filter categories"; color: Theme.text-faint; font-size: Theme.fs-md; vertical-alignment: center; height: parent.height; }
+    if BrowseApi.side-filter != "": clear := TouchArea {
+        x: parent.width - 26px;
+        width: 22px;
+        accessible-role: button;
+        accessible-label: "Clear filter";
+        accessible-action-default => { BrowseApi.side-filter = ""; BrowseApi.side-filter-edited(""); }
+        clicked => { BrowseApi.side-filter = ""; BrowseApi.side-filter-edited(""); }
+        Text { text: "×"; color: clear.has-hover ? Theme.text : Theme.text-muted; font-size: Theme.fs-lg; horizontal-alignment: center; vertical-alignment: center; }
+    }
+}
+
+export component Sidebar inherits Rectangle {
+    callback escaped();
+    width: BrowseApi.sidebar-w;
+    background: Theme.panel;
+    Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
+    VerticalLayout {
+        padding-right: 1px;
+        Rectangle {
+            height: 48px;
+            if !BrowseApi.edit-on: SideFilter {
+                x: 12px;
+                width: parent.width - 12px - 58px - 16px - 8px;
+                escaped => { root.escaped(); }
+            }
+            if BrowseApi.edit-on: Text {
+                x: 18px;
+                text: "Edit categories";
+                color: Theme.text-muted;
+                font-size: Theme.fs-sm;
+                font-weight: Theme.semibold;
+                vertical-alignment: center;
+                height: parent.height;
+            }
+            Rectangle {
+                x: parent.width - self.width - 16px;
+                y: (parent.height - self.height) / 2;
+                width: 58px;
+                height: 30px;
+                border-radius: 15px;
+                border-width: 1px;
+                background: BrowseApi.edit-on ? Theme.accent : (edit-ta.has-hover ? Theme.surface-hover : Theme.surface);
+                border-color: BrowseApi.edit-on ? Theme.accent : Theme.border;
+                accessible-role: button;
+                accessible-label: BrowseApi.edit-on ? "Done" : "Edit";
+                accessible-action-default => { BrowseApi.edit-toggled(); }
+                edit-ta := TouchArea { clicked => { BrowseApi.edit-toggled(); } }
+                Text {
+                    text: BrowseApi.edit-on ? "Done" : "Edit";
+                    color: BrowseApi.edit-on ? Theme.on-accent : Theme.text-muted;
+                    font-size: Theme.fs-sm;
+                    font-weight: Theme.semibold;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        if !BrowseApi.edit-on: SideList { }
+        if BrowseApi.edit-on: EditPanel { }
+    }
+    TouchArea {
+        x: parent.width - 6px;
+        width: 6px;
+        mouse-cursor: col-resize;
+        moved => {
+            if (self.pressed) { BrowseApi.sidebar-w = clamp(BrowseApi.sidebar-w + (self.mouse-x - self.pressed-x), 200px, 460px); }
+        }
+    }
+}

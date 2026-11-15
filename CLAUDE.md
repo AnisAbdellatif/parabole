@@ -1,6 +1,6 @@
 # IPTV Player — conventions
 
-Rust + egui (glow renderer) IPTV player. Design: `PLAN.md` (read only the section you need).
+Rust IPTV player. Default UI: Slint (`ui-slint/` + `src/slint_ui/`, bin `iptv-player`); the egui UI is kept as bin `iptv-player-egui`. Design: `PLAN.md` (read only the section you need).
 
 ## Layout
 - `src/model.rs` — shared plain data types. Changing it affects every module.
@@ -8,7 +8,8 @@ Rust + egui (glow renderer) IPTV player. Design: `PLAN.md` (read only the sectio
 - `src/db/` — SQLite storage and queries. No network, no UI.
 - `src/player/` — external player launching (mpv / VLC / custom). No DB, no UI.
 - `src/worker.rs` — background thread: runs network/DB jobs, talks to UI via Command/Event channels.
-- `src/ui/` — egui views. UI never does network I/O; it sends Commands to the worker.
+- `ui-slint/` + `src/slint_ui/` — Slint views and their Rust glue (feature `slint-ui`, on by default). Notes: `docs/slint-experiment.md`.
+- `src/ui/` — egui views (secondary UI). No UI does network I/O; it sends Commands to the worker.
 
 ## Code rules (code must stay workable for models with small context windows)
 - One concern per file. Keep files under ~300 lines; split into a submodule directory before they grow past that.
@@ -19,4 +20,4 @@ Rust + egui (glow renderer) IPTV player. Design: `PLAN.md` (read only the sectio
 - Never log or display Xtream credentials (they are inside stream URLs).
 - Playlist content is untrusted input: validate URLs before handing them to a player; never run commands through a shell.
 - Tests live next to the code (`#[cfg(test)] mod tests` or a sibling `tests.rs`); fixtures in `tests/fixtures/`.
-- Before finishing: `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` all clean.
+- Before finishing: `cargo fmt`, `cargo clippy --all-targets -- -D warnings`, `cargo test` all clean (also with `--no-default-features` when shared code changed).

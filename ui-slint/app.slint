@@ -1,0 +1,91 @@
+// Main window. Area ownership: docs/slint-phase2.md. Keys go Dialog -> Player -> Browse -> Core.
+import { Theme } from "theme.slint";
+import { Palette } from "std-widgets.slint";
+import { Core } from "core.slint";
+import { ShellRail } from "shell-rail.slint";
+import { ShellHeader } from "shell-header.slint";
+import { Sidebar } from "sidebar.slint";
+import { BrowseHost } from "browse-host.slint";
+import { StatusBar } from "status-bar.slint";
+import { Toasts } from "toasts.slint";
+import { PlayerPane, PlayerPaneBottom, PlayerOverlay } from "player-pane.slint";
+import { DialogHost } from "dialog-host.slint";
+import { PlayerApi } from "player-api.slint";
+import { BrowseApi } from "browse-api.slint";
+import { DialogApi } from "dialog-api.slint";
+import { CommandPalette } from "palette.slint";
+import { PaletteApi } from "palette-api.slint";
+import { AppearanceApi } from "dialog-appearance.slint";
+
+export { Core, Theme, PlayerApi, BrowseApi, DialogApi, PaletteApi, AppearanceApi }
+export { KeyHint } from "player-api.slint";
+export { StreamItem, SidebarItem, ToastItem, SourceRow, ProfileRow, TrackItem } from "types.slint";
+
+export component AppWindow inherits Window {
+    title: "IPTV Player";
+    preferred-width: 1280px;
+    preferred-height: 800px;
+    min-width: PlayerApi.pip ? 0px : 800px;
+    min-height: PlayerApi.pip ? 0px : 500px;
+    always-on-top: PlayerApi.pip;
+    no-frame: PlayerApi.pip;
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    default-font-size: Theme.fs-md;
+
+    function move-cursor(d: int) { Core.cursor = max(0, min(Core.streams.length - 1, Core.cursor + d)); }
+    property <int> theme-mode: Theme.mode;
+    changed theme-mode => { Palette.color-scheme = Theme.mode == 2 ? ColorScheme.light : ColorScheme.dark; }
+    init => { keys.focus(); Palette.color-scheme = Theme.mode == 2 ? ColorScheme.light : ColorScheme.dark; }
+
+    keys := FocusScope {
+        key-pressed(e) => {
+            if (PaletteApi.key(e) || DialogApi.key(e) || PlayerApi.key(e) || BrowseApi.key(e)) { return accept; }
+            if (e.modifiers.meta || e.modifiers.control) {
+                if (e.text == "1") { Core.tab-selected(0); return accept; }
+                if (e.text == "2") { Core.tab-selected(1); return accept; }
+                if (e.text == "3") { Core.tab-selected(2); return accept; }
+                if (e.text == "f") { header.focus-search(); return accept; }
+            }
+            if (e.text == Key.Escape) { Core.search-cleared(); keys.focus(); return accept; }
+            if (e.text == Key.DownArrow) { root.move-cursor(1); return accept; }
+            if (e.text == Key.UpArrow) { root.move-cursor(-1); return accept; }
+            if (e.text == Key.PageDown) { root.move-cursor(12); return accept; }
+            if (e.text == Key.PageUp) { root.move-cursor(-12); return accept; }
+            if (e.text == Key.Home) { Core.cursor = 0; return accept; }
+            if (e.text == Key.End) { Core.cursor = max(0, Core.streams.length - 1); return accept; }
+            if (e.text == Key.Return) { Core.stream-activated(Core.cursor); return accept; }
+            reject
+        }
+        VerticalLayout {
+            main := HorizontalLayout {
+                Rectangle { width: Theme.rail-w; }
+                Sidebar { escaped => { keys.focus(); } }
+                VerticalLayout {
+                    header := ShellHeader { escaped => { keys.focus(); } }
+                    BrowseHost { interacted => { keys.focus(); } }
+                }
+                PlayerPane { }
+            }
+            PlayerPaneBottom { }
+            StatusBar { }
+        }
+        ShellRail { x: 0px; y: 0px; height: main.height; }
+    }
+
+    PlayerOverlay { x: 0px; y: 0px; width: parent.width; height: parent.height; }
+
+    DialogHost {
+        width: parent.width;
+        height: parent.height;
+        closed => { keys.focus(); }
+    }
+
+    CommandPalette { width: parent.width; height: parent.height; closed => { keys.focus(); } }
+
+    Toasts {
+        x: parent.width - self.width - 16px;
+        y: 0px;
+        height: parent.height - Theme.statusbar-h - 16px;
+    }
+}

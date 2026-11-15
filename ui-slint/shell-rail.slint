@@ -1,0 +1,84 @@
+// Icon rail: fixed width, icon chips with a label underneath.
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { DialogApi } from "dialog-api.slint";
+
+component RailButton inherits Rectangle {
+    in property <image> icon;
+    in property <string> label;
+    in property <bool> active: false;
+    out property <bool> hovered: ta.has-hover;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-item-selectable: true;
+    accessible-item-selected: root.active;
+    accessible-action-default => { root.clicked(); }
+    height: 52px * Theme.density;
+    ta := TouchArea { clicked => { root.clicked(); } }
+    chip := Rectangle {
+        x: (parent.width - self.width) / 2;
+        y: 2px;
+        width: 32px;
+        height: 32px;
+        border-radius: Theme.radius-l;
+        background: root.active ? Theme.selected-bg : ta.has-hover ? Theme.surface : transparent;
+        @children
+        if root.icon.width > 0: Icon {
+            x: (parent.width - self.width) / 2;
+            y: (parent.height - self.height) / 2;
+            source: root.icon;
+            size: 18px;
+            tint: root.active ? Theme.accent : ta.has-hover ? Theme.text : Theme.text-dim;
+        }
+    }
+    Text {
+        x: 2px;
+        y: chip.y + chip.height + 2px;
+        width: parent.width - 4px;
+        text: root.label;
+        color: root.active || ta.has-hover ? Theme.text : Theme.text-dim;
+        font-size: Theme.fs-xs;
+        horizontal-alignment: center;
+        overflow: elide;
+    }
+}
+
+export component ShellRail inherits Rectangle {
+    width: Theme.rail-w;
+    background: Theme.toolbar;
+    Rectangle { x: parent.width - 1px; width: 1px; background: Theme.divider; }
+    TouchArea { }
+    VerticalLayout {
+        padding-top: 12px;
+        padding-bottom: 10px;
+        spacing: 4px;
+        b-search := RailButton { icon: Icons.search; label: "Search"; clicked => { Core.open-palette(); } }
+        b-live := RailButton { icon: Icons.live; label: "Live"; active: Core.tab == 0; clicked => { Core.tab-selected(0); } }
+        b-movies := RailButton { icon: Icons.movie; label: "Movies"; active: Core.tab == 1; clicked => { Core.tab-selected(1); } }
+        b-series := RailButton { icon: Icons.series; label: "Series"; active: Core.tab == 2; clicked => { Core.tab-selected(2); } }
+        Rectangle { vertical-stretch: 1; }
+        b-sources := RailButton { icon: Icons.sources; label: "Sources"; clicked => { DialogApi.open-dialog("sources"); } }
+        b-profile := RailButton {
+            label: Core.profile-name;
+            clicked => { DialogApi.open-dialog("profiles"); }
+            Rectangle {
+                border-radius: 16px;
+                background: Theme.surface-hover;
+                border-width: 1px;
+                border-color: Theme.accent.with-alpha(0.6);
+                Text {
+                    text: Core.profile-initials;
+                    color: Theme.text;
+                    font-size: Theme.fs-xs;
+                    font-weight: Theme.semibold;
+                    horizontal-alignment: center;
+                    vertical-alignment: center;
+                }
+            }
+        }
+        b-settings := RailButton { icon: Icons.settings; label: "Settings"; clicked => { DialogApi.open-dialog("settings"); } }
+    }
+}

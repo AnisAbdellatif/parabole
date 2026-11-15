@@ -1,12 +1,13 @@
 # IPTV Player
 
-Rust + egui IPTV player. Design notes: `PLAN.md`.
+Rust IPTV player with a Slint UI (the older egui UI is kept as `iptv-player-egui`). Design notes: `PLAN.md`.
 
 ## Building
 
 ```sh
-cargo build            # with the embedded libmpv player (default)
-cargo build --no-default-features   # external players only (mpv / VLC / custom)
+cargo run              # Slint UI with the embedded libmpv player (default)
+cargo run --bin iptv-player-egui   # the egui UI
+cargo build --no-default-features  # egui UI only, external players only (mpv / VLC / custom)
 ```
 
 The embedded player (`embedded-mpv` feature) links against **libmpv**:

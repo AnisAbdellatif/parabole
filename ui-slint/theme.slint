@@ -1,0 +1,85 @@
+// Design tokens, runtime-themable: Rust sets the inputs (src/slint_ui/appearance.rs).
+// Every length scales with density, radii with radius-scale, fonts with font-scale * density.
+import "../assets/fonts/Inter-Regular.ttf";
+import "../assets/fonts/Inter-Medium.ttf";
+import "../assets/fonts/Inter-SemiBold.ttf";
+
+export global Theme {
+    in-out property <color> accent: #5eead4;
+    in-out property <color> accent-2: #818cf8;
+    in-out property <int> mode: 0;
+    in-out property <float> density: 1.0;
+    in-out property <float> radius-scale: 1.0;
+    in-out property <float> font-scale: 1.0;
+    in-out property <bool> reduce-motion: false;
+
+    out property <duration> motion: reduce-motion ? 0ms : 180ms;
+
+    pure function pick(dark: color, oled: color, light: color) -> color {
+        mode == 1 ? oled : mode == 2 ? light : dark
+    }
+
+    out property <string> font: "Inter";
+    out property <int> regular: 400;
+    out property <int> medium: 500;
+    out property <int> semibold: 600;
+
+    out property <color> bg: pick(#0b0f14, #000000, #f5f7fa);
+    out property <color> panel: pick(#0d1218, #05070a, #ffffff);
+    out property <color> toolbar: pick(#10161d, #07090c, #f0f3f7);
+    out property <color> card: pick(#111821, #0a0d11, #ffffff);
+    out property <color> surface: pick(#16212c, #10161d, #e8edf3);
+    out property <color> surface-hover: pick(#1e2a38, #18212b, #dde4ec);
+    out property <color> row-hover: pick(#141c26, #0d131a, #eaeff5);
+    out property <color> input-bg: pick(#080b0f, #000000, #ffffff);
+    out property <color> border: pick(#2a3644, #1f2933, #cfd8e3);
+    out property <color> divider: pick(#1c2430, #141a21, #e1e7ee);
+    out property <color> card-border: pick(#233040, #1a232d, #d5dde7);
+    out property <color> card-border-hover: pick(#3a4a5e, #2c3947, #b6c3d2);
+    out property <color> text: pick(#e6edf3, #f1f5f9, #0f1720);
+    out property <color> text-row: pick(#cbd5e1, #d6dee8, #26323f);
+    out property <color> text-muted: pick(#9aa7b4, #a3afbc, #51606f);
+    out property <color> text-dim: pick(#7d8a99, #8794a2, #667585);
+    out property <color> text-faint: pick(#5c6875, #667381, #8593a2);
+    out property <color> badge-text: pick(#9aa7b4, #a3afbc, #51606f);
+    out property <color> on-accent: pick(#071016, #071016, #071016);
+    out property <color> star: pick(#f5c451, #f5c451, #d49a0c);
+    out property <color> ok: pick(#4ade80, #4ade80, #16a34a);
+    out property <color> warn: pick(#fb923c, #fb923c, #ea580c);
+    out property <color> error: pick(#f87171, #f87171, #dc2626);
+    out property <color> toast-bg: pick(#0f151d, #0a0d11, #ffffff);
+    out property <color> toast-border: pick(#233040, #1a232d, #d5dde7);
+    out property <color> video-idle: pick(#0a1622, #000000, #dbe3ec);
+    out property <color> live-bg: pick(#2a1d1f, #2a1416, #fde4e4);
+    out property <color> live-fg: pick(#ff9aa0, #ff9aa0, #c62828);
+    out property <color> info-bg: pick(#1b2330, #111823, #e0eaf8);
+    out property <color> info-fg: pick(#a9c4ee, #a9c4ee, #2b5aa8);
+    out property <color> poster-bg: pick(#16202b, #0c1117, #e3e9f0);
+    out property <color> match-bg: pick(#2a2616, #221f10, #fdf3c8);
+    out property <color> selected-bg: accent.with-alpha(mode == 2 ? 0.14 : 0.16);
+    out property <color> selected-border: accent.with-alpha(0.55);
+
+    out property <length> header-h: 52px * density;
+    out property <length> statusbar-h: 30px * density;
+    out property <length> rail-w: 64px;
+    out property <length> sidebar-row-h: 36px * density;
+    out property <length> sidebar-row-step: 40px * density;
+    out property <length> channel-row-h: 48px * density;
+    out property <length> channel-row-step: 52px * density;
+    out property <length> logo: 36px * density;
+    out property <length> radius: 8px * radius-scale;
+    out property <length> radius-l: 10px * radius-scale;
+    out property <length> radius-card: 12px * radius-scale;
+
+    out property <length> fs-xs: 11px * font-scale * density;
+    out property <length> fs-sm: 12px * font-scale * density;
+    out property <length> fs-md: 13px * font-scale * density;
+    out property <length> fs-lg: 16px * font-scale * density;
+    out property <length> fs-xl: 20px * font-scale * density;
+    out property <length> fs-hero: 28px * font-scale * density;
+
+    // Browse area.
+    out property <length> gap: 16px * density;
+    out property <length> poster-min-w: 150px * density;
+    out property <length> poster-title-h: 58px * density;
+}

@@ -1,0 +1,49 @@
+#EXTM3U
+#EXTINF:-1 tvg-id="ch1" group-title="News",World News ᵁᴴᴰ
+http://media.test/live/u/p/1.ts
+#EXTINF:-1 tvg-id="ch2" group-title="News",Channel One
+http://media.test/live/u/p/2.ts
+#EXTINF:-1 tvg-id="ch3" group-title="News",Channel Two
+http://media.test/live/u/p/3.ts
+#EXTINF:-1 tvg-id="ch4" group-title="News",Daily Brief
+http://media.test/live/u/p/4.ts
+#EXTINF:-1 tvg-id="ch5" group-title="News",Market Watch
+http://media.test/live/u/p/5.ts
+#EXTINF:-1 tvg-id="ch6" group-title="News",Night Report
+http://media.test/live/u/p/6.ts
+#EXTINF:-1 tvg-id="ch7" group-title="Sports",Sport Arena
+http://media.test/live/u/p/7.ts
+#EXTINF:-1 tvg-id="ch8" group-title="Sports",Channel Goal
+http://media.test/live/u/p/8.ts
+#EXTINF:-1 tvg-id="ch9" group-title="Sports",Racing HD
+http://media.test/live/u/p/9.ts
+#EXTINF:-1 tvg-id="ch10" group-title="Sports",Tennis Court
+http://media.test/live/u/p/10.ts
+#EXTINF:-1 tvg-id="ch11" group-title="Sports",Ocean Cup
+http://media.test/live/u/p/11.ts
+#EXTINF:-1 tvg-id="ch12" group-title="Sports",Chan Extra
+http://media.test/live/u/p/12.ts
+#EXTINF:-1 tvg-id="ch13" group-title="Kids",Toon Club
+http://media.test/live/u/p/13.ts
+#EXTINF:-1 tvg-id="ch14" group-title="Kids",Channel Fun
+http://media.test/live/u/p/14.ts
+#EXTINF:-1 tvg-id="ch15" group-title="Kids",Story Time
+http://media.test/live/u/p/15.ts
+#EXTINF:-1 tvg-id="ch16" group-title="Kids",Cartoon Hub
+http://media.test/live/u/p/16.ts
+#EXTINF:-1 tvg-id="ch17" group-title="Kids",Little Stars
+http://media.test/live/u/p/17.ts
+#EXTINF:-1 tvg-id="ch18" group-title="Kids",قناة الأطفال
+http://media.test/live/u/p/18.ts
+#EXTINF:-1 tvg-id="mv1" group-title="Movies",The Long Road
+http://media.test/movie/u/p/1.mp4
+#EXTINF:-1 tvg-id="mv2" group-title="Movies",Midnight Harbor
+http://media.test/movie/u/p/2.mp4
+#EXTINF:-1 tvg-id="mv3" group-title="Movies",Paper Cities
+http://media.test/movie/u/p/3.mp4
+#EXTINF:-1 tvg-id="mv4" group-title="Movies",Silver Dunes
+http://media.test/movie/u/p/4.mp4
+#EXTINF:-1 tvg-id="mv5" group-title="Movies",Quiet Orbit
+http://media.test/movie/u/p/5.mp4
+#EXTINF:-1 tvg-id="mv6" group-title="Movies",Last Summer
+http://media.test/movie/u/p/6.mp4

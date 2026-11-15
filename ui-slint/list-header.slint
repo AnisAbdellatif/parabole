@@ -1,0 +1,72 @@
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ContextMenu } from "browse-menu.slint";
+import { DropPill } from "drop-pill.slint";
+
+export component ListHeader inherits Rectangle {
+    height: 58px + (BrowseApi.chips.length > 0 ? 38px : 0px);
+    VerticalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-top: 16px;
+        padding-bottom: 10px;
+        spacing: 10px;
+        HorizontalLayout {
+            height: 32px;
+            spacing: 10px;
+            cross-axis-alignment: center;
+            Text {
+                text: Core.list-title;
+                color: Theme.text;
+                font-size: Theme.fs-xl;
+                font-weight: Theme.semibold;
+                vertical-alignment: center;
+                overflow: elide;
+            }
+            Text {
+                text: Core.list-subtitle;
+                color: Theme.text-muted;
+                font-size: Theme.fs-md;
+                vertical-alignment: center;
+            }
+            Rectangle { horizontal-stretch: 1; }
+            if BrowseApi.sort-visible: sort := DropPill {
+                label: "Sort: " + BrowseApi.sort-label;
+                clicked => { menu.open(sort.absolute-position.x + sort.width - 180px, sort.absolute-position.y + sort.height + 4px); }
+            }
+        }
+        if BrowseApi.chips.length > 0: HorizontalLayout {
+            height: 28px;
+            spacing: 6px;
+            alignment: start;
+            for c in BrowseApi.chips: Rectangle {
+                width: chip-text.preferred-width + 24px;
+                accessible-role: button;
+                accessible-label: c.label;
+                accessible-checkable: true;
+                accessible-checked: c.on;
+                accessible-action-default => { BrowseApi.chip-clicked(c.id); }
+                border-radius: 14px;
+                border-width: 1px;
+                background: c.on ? Theme.accent : (chip-ta.has-hover ? Theme.surface-hover : Theme.surface);
+                border-color: c.on ? Theme.accent : Theme.border;
+                chip-ta := TouchArea { clicked => { BrowseApi.chip-clicked(c.id); } }
+                chip-text := Text {
+                    x: 12px;
+                    text: c.label;
+                    color: c.on ? Theme.on-accent : Theme.text-muted;
+                    font-size: Theme.fs-sm;
+                    font-weight: Theme.medium;
+                    vertical-alignment: center;
+                    height: parent.height;
+                }
+            }
+        }
+    }
+    menu := ContextMenu {
+        items: BrowseApi.sort-items;
+        menu-width: 180px;
+        picked(id) => { BrowseApi.sort-picked(id); }
+    }
+}

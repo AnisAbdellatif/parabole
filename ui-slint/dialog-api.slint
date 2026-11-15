@@ -1,0 +1,92 @@
+// Dialog area state and callbacks (sources, settings, profiles, groups). Owned by the dialogs area.
+import { SourceRow, ProfileRow } from "types.slint";
+
+export global DialogApi {
+    // "", "sources", "settings", "profiles" or "group" ("appearance" opens settings tab 2).
+    in-out property <string> open: "";
+    callback open-dialog(string);
+    public function close() { root.open = ""; }
+    // Tried first of all (an open dialog owns the keyboard); return true when handled.
+    callback key(KeyEvent) -> bool;
+    key(e) => {
+        if (root.open == "" || e.text != Key.Escape) { return false; }
+        if (root.open == "sources" && root.form-open && root.sources.length > 0) { root.form-cancel(); return true; }
+        root.close();
+        true
+    }
+
+    // Sources
+    in property <[SourceRow]> sources;
+    // List view vs add/edit form; the form also shows whenever there are no sources.
+    in-out property <bool> form-open: false;
+    in-out property <bool> form-editing: false;
+    // false only when the paste or the edited source is known to be M3U.
+    in-out property <bool> form-is-xtream: true;
+    in-out property <string> form-paste;
+    in-out property <string> form-detected;
+    in-out property <string> form-name;
+    in-out property <string> form-url;
+    in-out property <string> form-user;
+    in-out property <string> form-pass;
+    in-out property <string> form-mirrors;
+    in-out property <string> form-ua;
+    // 0 Default, 1..4 presets, 5 Custom.
+    in-out property <int> ua-preset: 0;
+    in-out property <bool> testing: false;
+    in-out property <string> test-text;
+    in-out property <bool> test-ok: false;
+    in-out property <string> auto-hours: "0";
+    callback sources-refresh(int);
+    callback sources-refresh-all();
+    callback sources-check(int);
+    callback sources-edit(int);
+    callback sources-delete(int);
+    callback sources-cancel-delete();
+    callback form-paste-edited(string);
+    callback form-choose-file();
+    callback form-ua-selected(int);
+    callback form-submit();
+    callback form-cancel();
+    callback form-test();
+    callback auto-hours-commit(string);
+
+    // Settings: tab 0 Playback, 1 Players, 2 Appearance.
+    in-out property <int> settings-tab: 0;
+    in property <[string]> player-kinds;
+    in property <[string]> player-kinds-opt;
+    in-out property <int> set-default: 0;
+    in-out property <int> set-live: 0;
+    in-out property <int> set-movie: 0;
+    in-out property <int> set-episode: 0;
+    in-out property <bool> set-low-latency: false;
+    in-out property <bool> set-catchup: false;
+    in-out property <string> set-mpv-path;
+    in-out property <string> set-vlc-path;
+    in-out property <string> set-template;
+    in-out property <string> set-mpv-args;
+    in-out property <string> set-detected;
+    callback settings-detect();
+    callback settings-save();
+
+    // Profiles
+    in property <[ProfileRow]> profile-rows;
+    in-out property <string> profile-new-name;
+    in-out property <string> profile-rename-text;
+    callback profile-create();
+    callback profile-switch(int);
+    callback profile-rename-start(int);
+    callback profile-rename-save(int);
+    callback profile-rename-cancel();
+    callback profile-duplicate(int);
+    callback profile-delete(int);
+    callback profile-delete-cancel();
+    callback profile-copy-favorites(int, int);
+
+    // Group: set the context first, then open-dialog("group"). group-id -1 creates a new group;
+    // group-add-source -1 adds nothing to the new group.
+    in-out property <int> group-id: -1;
+    in-out property <string> group-name;
+    in-out property <int> group-add-source: -1;
+    in-out property <string> group-add-key;
+    callback group-save();
+}

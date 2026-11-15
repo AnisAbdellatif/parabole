@@ -1,3 +1,3 @@
-fn main() -> eframe::Result {
-    iptv_player::ui::run()
+fn main() -> anyhow::Result<()> {
+    iptv_player::slint_ui::run()
 }

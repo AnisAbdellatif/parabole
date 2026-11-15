@@ -1,0 +1,48 @@
+// Center area: list header + list / poster grid / empty state, or the series page; details overlay on top.
+// Owned by the browse area.
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { BrowseApi } from "browse-api.slint";
+import { ListHeader } from "list-header.slint";
+import { StreamList } from "stream-list.slint";
+import { PosterGrid } from "browse-grid.slint";
+import { Skeleton } from "skeleton.slint";
+import { EmptyState } from "browse-empty.slint";
+import { SeriesPage } from "browse-series.slint";
+import { DetailsPanel } from "browse-details.slint";
+import { Hero } from "browse-hero.slint";
+import { HeroExtra } from "types.slint";
+
+export component BrowseHost inherits Rectangle {
+    callback interacted();
+    property <length> full-h: clamp(root.height * 0.34, 180px, 320px);
+    // the Hero must exist to report focus, but only takes height once this list produced a backdrop
+    property <bool> hero-live: Core.tab != 0 && !BrowseApi.series-open && Core.streams.length > 0;
+    property <string> list-key: Core.tab + ":" + Core.list-title;
+    property <string> latched-key: "";
+    property <HeroExtra> hero: BrowseApi.hero;
+    changed hero => { if (root.hero.has-backdrop) { root.latched-key = root.list-key; } }
+    property <bool> hero-on: root.hero-live && root.latched-key == root.list-key;
+    property <bool> collapsed: false;
+    property <length> sy: BrowseApi.scroll-y;
+    // collapse only when the list is long enough that the freed space can't clamp the scroll back to 0
+    changed sy => {
+        if (root.sy > 40px && BrowseApi.scroll-room > root.full-h + 40px) { root.collapsed = true; }
+        else if (root.sy < 4px) { root.collapsed = false; }
+    }
+    // animated; the hero sits outside the layout so its height can follow root.height without a binding loop
+    property <length> hero-h: (root.hero-on && !root.collapsed) ? root.full-h : 0px;
+    animate hero-h { duration: Theme.motion * 1.5; easing: ease-in-out; }
+    if root.hero-live: Hero { x: 0px; y: 0px; width: root.width; height: root.hero-h; }
+    VerticalLayout {
+        y: root.hero-h;
+        height: root.height - root.hero-h;
+        if BrowseApi.series-open: SeriesPage { }
+        if !BrowseApi.series-open: ListHeader { }
+        if !BrowseApi.series-open && Core.streams.length > 0 && !BrowseApi.grid-view: StreamList { interacted => { root.interacted(); } }
+        if !BrowseApi.series-open && Core.streams.length > 0 && BrowseApi.grid-view: PosterGrid { interacted => { root.interacted(); } }
+        if !BrowseApi.series-open && Core.streams.length == 0 && Core.syncing: Skeleton { }
+        if !BrowseApi.series-open && Core.streams.length == 0 && !Core.syncing: EmptyState { }
+    }
+    if BrowseApi.details-open: DetailsPanel { }
+}

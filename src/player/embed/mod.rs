@@ -2,21 +2,21 @@
 //! libmpv and its GL state live on the UI thread; the worker never touches this.
 
 mod commands;
+mod core;
 mod events;
-mod render;
+pub(crate) mod render;
 mod stats;
 
-use super::{Notice, PlayerSettings, PlayerState, live};
+pub use self::core::MpvCore;
+use super::PlayerSettings;
 use anyhow::{Context, Result};
-use libmpv2::Mpv;
 use render::VideoOutput;
+use std::ops::{Deref, DerefMut};
 
 pub struct EmbeddedPlayer {
-    // Field order matters: the video output must drop before the Mpv it renders from.
+    // Field order matters: the video output must drop before the Mpv (in `core`) it renders from.
     video: VideoOutput,
-    mpv: Box<Mpv>,
-    state: PlayerState,
-    last: Option<crate::model::PlayRequest>,
+    core: MpvCore,
 }
 
 /// Options set once at init; headers and low-latency options are per file (see `commands`).
@@ -40,51 +40,28 @@ impl EmbeddedPlayer {
             .get_proc_address
             .as_ref()
             .context("no OpenGL proc address loader")?;
-        let mut mpv = Box::new(
-            Mpv::with_initializer(|init| {
-                for (k, v) in INIT_OPTIONS {
-                    init.set_option(k, v)?;
-                }
-                for arg in &settings.mpv_args {
-                    if let Some((k, v)) = split_mpv_arg(arg) {
-                        // best effort: an option this libmpv rejects must not disable the player
-                        let _ = init.set_option(k, v);
-                    }
-                }
-                Ok(())
-            })
-            .map_err(|e| anyhow::anyhow!("libmpv init failed: {e}"))?,
-        );
         let ctx = cc.egui_ctx.clone();
-        mpv.set_wakeup_callback(move || ctx.request_repaint());
-        events::observe_all(&mpv).map_err(|e| anyhow::anyhow!("observe properties: {e}"))?;
-        let video = VideoOutput::new(&mpv, &**loader, &cc.egui_ctx)
+        let core = MpvCore::new(settings, move || ctx.request_repaint())?;
+        let video = VideoOutput::new(core.mpv(), &**loader, &cc.egui_ctx)
             .map_err(|e| anyhow::anyhow!("libmpv render context: {e}"))?;
-        if let Some(script) = live::script_path(settings) {
-            let _ = mpv.command("load-script", &[&script.to_string_lossy()]);
-        }
-        Ok(Self {
-            video,
-            mpv,
-            state: PlayerState {
-                volume: 100.0,
-                ..Default::default()
-            },
-            last: None,
-        })
-    }
-
-    pub fn state(&self) -> &PlayerState {
-        &self.state
-    }
-
-    /// Applies pending mpv events to `state()`.
-    pub fn poll(&mut self) -> Vec<Notice> {
-        events::poll(&self.mpv, &mut self.state)
+        Ok(Self { video, core })
     }
 
     pub fn paint(&self, ui: &egui::Ui, frame: &mut eframe::Frame, rect: egui::Rect) {
         self.video.paint(ui, frame, rect);
+    }
+}
+
+impl Deref for EmbeddedPlayer {
+    type Target = MpvCore;
+    fn deref(&self) -> &MpvCore {
+        &self.core
+    }
+}
+
+impl DerefMut for EmbeddedPlayer {
+    fn deref_mut(&mut self) -> &mut MpvCore {
+        &mut self.core
     }
 }
 

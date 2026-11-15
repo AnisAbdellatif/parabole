@@ -1,0 +1,155 @@
+// Docked embedded-player pane (right or bottom) and the fullscreen/mini overlay.
+// Owned by the player area; zero size until a session is active.
+import { Theme } from "theme.slint";
+import { PlayerApi } from "player-api.slint";
+import { VideoSurface } from "player-surface.slint";
+import { LogoTile } from "logo-tile.slint";
+import { StreamItem } from "types.slint";
+import { ListView } from "std-widgets.slint";
+
+component PaneInfo inherits VerticalLayout {
+    spacing: 4px;
+    Text { text: PlayerApi.title; color: Theme.text; font-size: Theme.fs-lg; font-weight: Theme.semibold; overflow: elide; }
+    Text { text: PlayerApi.meta; color: Theme.text-muted; font-size: Theme.fs-sm; overflow: elide; }
+    if PlayerApi.tech != "": Text { text: PlayerApi.tech; color: Theme.text-dim; font-size: Theme.fs-sm; overflow: elide; }
+    if !PlayerApi.is-live && PlayerApi.dur-text != "": Text {
+        text: PlayerApi.pos-text + " / " + PlayerApi.dur-text;
+        color: Theme.text-dim;
+        font-size: Theme.fs-sm;
+    }
+}
+
+// Live channels around the playing one; a click zaps.
+component PaneChannels inherits VerticalLayout {
+    in property <int> current: PlayerApi.pane-current;
+    in property <[StreamItem]> items: PlayerApi.pane-items;
+    spacing: 6px;
+    // Centres the playing row; the list is rebuilt on every zap, often with the same index.
+    function reveal() {
+        if (root.current < 0) { return; }
+        let room = max(0px, root.items.length * 40px - list.visible-height);
+        list.content-y = -clamp(root.current * 40px - (list.visible-height - 40px) / 2, 0px, room);
+    }
+    init => { root.reveal(); }
+    changed current => { root.reveal(); }
+    changed items => { root.reveal(); }
+    Text {
+        text: "CHANNELS";
+        color: Theme.text-dim;
+        font-size: Theme.fs-xs;
+        font-weight: Theme.semibold;
+        letter-spacing: 1.2px;
+    }
+    list := ListView {
+        vertical-stretch: 1;
+        for it[i] in root.items: Rectangle {
+            accessible-role: list-item;
+            accessible-label: it.name;
+            accessible-item-selectable: true;
+            accessible-item-selected: it.playing;
+            accessible-item-index: i;
+            accessible-item-count: root.items.length;
+            accessible-action-default => { PlayerApi.pane-play(i); }
+            height: 40px;
+            border-radius: Theme.radius;
+            background: it.playing ? Theme.selected-bg : ta.has-hover ? Theme.row-hover : transparent;
+            if it.playing: Rectangle {
+                x: 0px;
+                y: 8px;
+                width: 3px;
+                height: parent.height - 16px;
+                border-radius: 2px;
+                background: Theme.accent;
+            }
+            HorizontalLayout {
+                padding-left: 10px;
+                padding-right: 10px;
+                spacing: 10px;
+                cross-axis-alignment: center;
+                LogoTile { width: 28px; height: 28px; initials: it.initials; logo: it.logo; has-logo: it.has-logo; }
+                Text {
+                    horizontal-stretch: 1;
+                    text: it.name;
+                    color: it.playing ? Theme.text : Theme.text-muted;
+                    font-size: Theme.fs-sm;
+                    overflow: elide;
+                }
+                if it.meta != "": Text { text: it.meta; color: Theme.text-dim; font-size: Theme.fs-xs; }
+            }
+            ta := TouchArea { mouse-cursor: pointer; clicked => { PlayerApi.pane-play(i); } }
+        }
+    }
+}
+
+export component PlayerPane inherits Rectangle {
+    private property <bool> shown: PlayerApi.active && !PlayerApi.dock-bottom && !PlayerApi.fullscreen && !PlayerApi.mini;
+    width: shown ? PlayerApi.pane-w : 0px;
+    background: Theme.panel;
+    clip: true;
+    if shown: Rectangle {
+        Rectangle { x: 0px; width: 1px; background: Theme.divider; }
+        VerticalLayout {
+            padding: 16px;
+            spacing: 16px;
+            VideoSurface {
+                docked: true;
+                height: self.width * 9 / 16;
+            }
+            PaneInfo { }
+            if PlayerApi.is-live: PaneChannels { vertical-stretch: 1; }
+            if !PlayerApi.is-live: Rectangle { vertical-stretch: 1; }
+        }
+        TouchArea {
+            x: 0px;
+            width: 6px;
+            mouse-cursor: col-resize;
+            moved => {
+                if (self.pressed) { PlayerApi.pane-w = clamp(PlayerApi.pane-w - (self.mouse-x - self.pressed-x), 240px, 900px); }
+            }
+        }
+    }
+}
+
+export component PlayerPaneBottom inherits Rectangle {
+    private property <bool> shown: PlayerApi.active && PlayerApi.dock-bottom && !PlayerApi.fullscreen && !PlayerApi.mini;
+    height: shown ? PlayerApi.pane-h : 0px;
+    background: Theme.panel;
+    clip: true;
+    if shown: Rectangle {
+        Rectangle { y: 0px; height: 1px; background: Theme.divider; }
+        HorizontalLayout {
+            padding: 16px;
+            spacing: 12px;
+            VideoSurface {
+                docked: true;
+                width: min(self.height * 16 / 9, parent.width * 0.5);
+            }
+            VerticalLayout {
+                spacing: 12px;
+                PaneInfo { }
+                if PlayerApi.is-live: PaneChannels { vertical-stretch: 1; }
+                if !PlayerApi.is-live: Rectangle { vertical-stretch: 1; }
+            }
+        }
+        TouchArea {
+            y: 0px;
+            height: 6px;
+            mouse-cursor: row-resize;
+            moved => {
+                if (self.pressed) { PlayerApi.pane-h = clamp(PlayerApi.pane-h - (self.mouse-y - self.pressed-y), 180px, 700px); }
+            }
+        }
+    }
+}
+
+// Covers the whole window in fullscreen and mini mode.
+export component PlayerOverlay inherits Rectangle {
+    private property <bool> shown: PlayerApi.active && (PlayerApi.fullscreen || PlayerApi.mini);
+    visible: shown;
+    background: black;
+    if shown: VideoSurface {
+        compact: PlayerApi.mini;
+        width: parent.width;
+        height: parent.height;
+    }
+}

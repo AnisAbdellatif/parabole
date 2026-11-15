@@ -7,8 +7,8 @@ use egui::{Ui, vec2};
 /// `None` = follow the current tab / top-bar source; `Some(x)` = chip override (`x: None` = all).
 #[derive(Default)]
 pub struct SearchFilter {
-    media: Option<Option<MediaKind>>,
-    source: Option<Option<SourceId>>,
+    pub(crate) media: Option<Option<MediaKind>>,
+    pub(crate) source: Option<Option<SourceId>>,
 }
 
 impl SearchFilter {
@@ -21,7 +21,7 @@ impl SearchFilter {
     }
 }
 
-const MEDIA_CHIPS: [(&str, Option<MediaKind>); 4] = [
+pub(crate) const MEDIA_CHIPS: [(&str, Option<MediaKind>); 4] = [
     ("All", None),
     ("Live", Some(MediaKind::Live)),
     ("Movies", Some(MediaKind::Movie)),

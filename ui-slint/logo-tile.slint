@@ -1,0 +1,28 @@
+import { Theme } from "theme.slint";
+
+export component LogoTile inherits Rectangle {
+    in property <string> initials;
+    in property <image> logo;
+    in property <bool> has-logo;
+    width: Theme.logo;
+    height: Theme.logo;
+    background: Theme.surface;
+    border-radius: Theme.radius-l;
+    border-width: 1px;
+    border-color: Theme.border;
+
+    if !root.has-logo: Text {
+        text: root.initials;
+        color: Theme.text-muted;
+        font-size: Theme.fs-md;
+        font-weight: Theme.semibold;
+    }
+    if root.has-logo: Image {
+        x: 5px;
+        y: 5px;
+        width: parent.width - 10px;
+        height: parent.height - 10px;
+        source: root.logo;
+        image-fit: contain;
+    }
+}

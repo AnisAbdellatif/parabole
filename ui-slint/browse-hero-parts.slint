@@ -1,0 +1,37 @@
+import { Theme } from "theme.slint";
+import { Icon } from "icon.slint";
+
+// Pill button of the hero banner.
+export component HeroBtn inherits Rectangle {
+    in property <bool> primary: false;
+    in property <image> icon;
+    in property <color> icon-tint: root.primary ? Theme.on-accent : Theme.text;
+    in property <string> label;
+    callback clicked();
+    accessible-role: button;
+    accessible-label: root.label;
+    accessible-action-default => { root.clicked(); }
+    height: 34px;
+    width: txt.preferred-width + (root.icon.width > 0 ? 54px : 32px);
+    border-radius: 17px;
+    border-width: root.primary ? 0px : 1px;
+    border-color: Theme.border;
+    background: root.primary ? (ta.has-hover ? Theme.accent.brighter(0.15) : Theme.accent) : (ta.has-hover ? Theme.surface-hover : Theme.surface);
+    animate background { duration: Theme.motion; }
+    ta := TouchArea { clicked => { root.clicked(); } }
+    HorizontalLayout {
+        padding-left: 16px;
+        padding-right: 16px;
+        spacing: 8px;
+        alignment: center;
+        cross-axis-alignment: center;
+        if root.icon.width > 0: Icon { source: root.icon; tint: root.icon-tint; size: 14px; }
+        txt := Text {
+            text: root.label;
+            color: root.primary ? Theme.on-accent : Theme.text;
+            font-size: Theme.fs-md;
+            font-weight: Theme.semibold;
+            vertical-alignment: center;
+        }
+    }
+}

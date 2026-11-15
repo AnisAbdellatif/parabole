@@ -2,7 +2,7 @@
 use super::session::Session;
 use crate::db::Db;
 use crate::db::track_prefs::{LangKind, TrackLangs};
-use crate::player::embed::EmbeddedPlayer;
+use crate::player::embed::MpvCore;
 use crate::player::{TrackInfo, TrackKind};
 use std::time::{Duration, Instant};
 
@@ -38,15 +38,14 @@ fn selected(tracks: &[TrackInfo], kind: TrackKind) -> Option<&TrackInfo> {
     tracks.iter().find(|t| t.kind == kind && t.selected)
 }
 
-pub fn tick(db: &Db, player: &mut EmbeddedPlayer, s: &mut Session, ctx: &egui::Context) {
+/// Returns when to call again (a settle timer is pending), if at all.
+pub fn tick(db: &Db, player: &MpvCore, s: &mut Session) -> Option<Duration> {
     let tracks = player.state().tracks.clone();
     if tracks.is_empty() {
         s.memory = TrackMemory::default();
-        return;
+        return None;
     }
-    let Some(track) = s.track.clone() else {
-        return;
-    };
+    let track = s.track.clone()?;
     let m = &mut s.memory;
     if !m.applied {
         let langs = db
@@ -55,17 +54,16 @@ pub fn tick(db: &Db, player: &mut EmbeddedPlayer, s: &mut Session, ctx: &egui::C
         apply(player, &tracks, &langs);
         m.applied = true;
         m.settle_until = Some(Instant::now() + SETTLE);
-        ctx.request_repaint_after(SETTLE + Duration::from_millis(100));
-        return;
+        return Some(SETTLE + Duration::from_millis(100));
     }
     if !m.armed {
         if m.settle_until.is_some_and(|t| Instant::now() < t) {
-            return;
+            return None;
         }
         m.audio = selected(&tracks, TrackKind::Audio).map(|t| t.id);
         m.sub = selected(&tracks, TrackKind::Sub).map(|t| t.id);
         m.armed = true;
-        return;
+        return None;
     }
     let audio = selected(&tracks, TrackKind::Audio);
     if audio.map(|t| t.id) != m.audio {
@@ -99,9 +97,10 @@ pub fn tick(db: &Db, player: &mut EmbeddedPlayer, s: &mut Session, ctx: &egui::C
             );
         }
     }
+    None
 }
 
-fn apply(player: &EmbeddedPlayer, tracks: &[TrackInfo], langs: &TrackLangs) {
+fn apply(player: &MpvCore, tracks: &[TrackInfo], langs: &TrackLangs) {
     if let Some(id) = choose(tracks, TrackKind::Audio, langs.audio.as_deref()) {
         player.select_track(TrackKind::Audio, id);
     }

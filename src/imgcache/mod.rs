@@ -4,10 +4,11 @@ mod fetch;
 mod store;
 
 use anyhow::{Context as _, Result};
+use directories::ProjectDirs;
 use egui::Context;
 use egui::load::{Bytes, BytesLoadResult, BytesLoader, BytesPoll, LoadError};
 use std::collections::HashMap;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::sync::{Arc, Mutex, MutexGuard, PoisonError};
 
@@ -133,4 +134,39 @@ pub fn install(ctx: &Context, dir: PathBuf) -> Result<()> {
     }
     ctx.add_bytes_loader(Arc::new(DiskCacheLoader { shared, jobs }));
     Ok(())
+}
+
+pub use fetch::client as http_client;
+
+/// Cache dir shared by every UI toolkit.
+pub fn default_dir() -> Option<PathBuf> {
+    ProjectDirs::from("dev", "iptv-player", "IPTV Player").map(|d| d.cache_dir().join("images"))
+}
+
+/// Cached bytes for `url`, downloading and storing them on a miss. Blocking; call off the UI thread.
+pub fn get_or_fetch(dir: &Path, client: &reqwest::blocking::Client, url: &str) -> Result<Vec<u8>> {
+    let path = dir.join(store::file_name(url));
+    if let Some(bytes) = store::read_cached(&path) {
+        return Ok(bytes);
+    }
+    let bytes = fetch::download(client, url)?;
+    std::fs::create_dir_all(dir).context("create image cache dir")?;
+    store::write_atomic(&path, &bytes)?;
+    Ok(bytes)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_or_fetch_hits_cache_without_network() {
+        let dir = std::env::temp_dir().join(format!("imgcache-test-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let url = "http://127.0.0.1:1/never.png";
+        store::write_atomic(&dir.join(store::file_name(url)), b"png").unwrap();
+        let client = http_client().unwrap();
+        assert_eq!(get_or_fetch(&dir, &client, url).unwrap(), b"png");
+        std::fs::remove_dir_all(&dir).unwrap();
+    }
 }

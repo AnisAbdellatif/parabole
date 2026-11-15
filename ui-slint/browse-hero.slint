@@ -1,0 +1,97 @@
+import { Theme } from "theme.slint";
+import { Core } from "core.slint";
+import { StreamItem } from "types.slint";
+import { Icons } from "icons.slint";
+import { BrowseApi } from "browse-api.slint";
+import { HeroBtn } from "browse-hero-parts.slint";
+
+// Banner for the focused Movies/Series row: cross-faded backdrop, info and actions.
+export component Hero inherits Rectangle {
+    property <int> fidx: (BrowseApi.grid-view && BrowseApi.hover-index >= 0) ? BrowseApi.hover-index : Core.cursor;
+    property <bool> fresh: BrowseApi.hero.index == root.fidx;
+    property <bool> show-bd: root.fresh && BrowseApi.hero.has-backdrop;
+    property <image> bd: BrowseApi.hero.backdrop;
+    property <image> img-a;
+    property <image> img-b;
+    property <bool> a-on: true;
+    property <duration> fade: Theme.motion * 2.5;
+    clip: true;
+    background: Theme.bg;
+
+    init => { BrowseApi.hero-focused(root.fidx); }
+    changed fidx => { BrowseApi.hero-focused(root.fidx); }
+    changed bd => {
+        if (BrowseApi.hero.has-backdrop) {
+            if (root.a-on) { root.img-b = root.bd; root.a-on = false; } else { root.img-a = root.bd; root.a-on = true; }
+        }
+    }
+
+    Image {
+        source: root.img-a;
+        width: parent.width;
+        height: parent.height;
+        image-fit: cover;
+        opacity: (root.show-bd && root.a-on) ? 1 : 0;
+        animate opacity { duration: root.fade; }
+    }
+    Image {
+        source: root.img-b;
+        width: parent.width;
+        height: parent.height;
+        image-fit: cover;
+        opacity: (root.show-bd && !root.a-on) ? 1 : 0;
+        animate opacity { duration: root.fade; }
+    }
+    Rectangle { background: @linear-gradient(0deg, Theme.bg 0%, Theme.bg.with-alpha(0.6) 45%, Theme.bg.with-alpha(0) 100%); }
+    Rectangle { background: @linear-gradient(90deg, Theme.bg.with-alpha(0.7) 0%, Theme.bg.with-alpha(0) 65%); }
+
+    property <StreamItem> item: Core.streams[root.fidx];
+    HorizontalLayout {
+        padding-left: 24px;
+        padding-right: 24px;
+        padding-bottom: 18px;
+        alignment: start;
+        VerticalLayout {
+            alignment: end;
+            spacing: 8px;
+            Text { text: root.item.name; color: Theme.text; font-size: Theme.fs-hero; font-weight: Theme.semibold; overflow: elide; }
+            if root.fresh && BrowseApi.hero.meta != "": Text { text: BrowseApi.hero.meta; color: Theme.text-muted; font-size: Theme.fs-md; }
+            if root.fresh && BrowseApi.hero.plot != "": Text {
+                text: BrowseApi.hero.plot;
+                color: Theme.text-row;
+                font-size: Theme.fs-md;
+                wrap: word-wrap;
+                overflow: elide;
+                max-height: Theme.fs-md * 3;
+                width: min(620px, root.width - 48px);
+            }
+            if root.item.progress > 0 && !root.item.watched: Rectangle {
+                width: 220px;
+                height: 3px;
+                background: #ffffff30;
+                Rectangle { width: parent.width * root.item.progress; background: Theme.accent; }
+            }
+            HorizontalLayout {
+                spacing: 10px;
+                alignment: start;
+                HeroBtn {
+                    primary: true;
+                    icon: Icons.play;
+                    label: root.fresh ? BrowseApi.hero.action : "Play";
+                    clicked => { Core.stream-activated(root.fidx); }
+                }
+                HeroBtn {
+                    icon: root.item.favorite ? Icons.star-filled : Icons.star;
+                    icon-tint: root.item.favorite ? Theme.star : Theme.text;
+                    label: root.item.favorite ? "Favorited" : "Favorite";
+                    clicked => { Core.favorite-toggled(root.fidx); }
+                }
+                HeroBtn {
+                    icon: Icons.info;
+                    label: "Details";
+                    clicked => { BrowseApi.hero-details(root.fidx); }
+                }
+            }
+        }
+    }
+}

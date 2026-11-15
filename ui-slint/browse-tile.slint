@@ -1,0 +1,152 @@
+import { Theme } from "theme.slint";
+import { TileItem } from "types.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+
+// One poster card of the Movies/Series grid (see src/ui/poster_grid.rs).
+export component Tile inherits Rectangle {
+    in property <TileItem> item;
+    in property <bool> cursor;
+    in property <bool> playing;
+    callback clicked();
+    callback double-clicked();
+    callback favorite-clicked();
+    callback hide-clicked();
+    callback right-clicked(length, length);
+    accessible-role: button;
+    accessible-label: root.item.name;
+    accessible-action-default => { root.clicked(); }
+
+    property <bool> hovered: area.has-hover;
+    property <bool> focused: root.cursor || root.hovered;
+    changed hovered => {
+        if (root.hovered) { BrowseApi.hover-index = root.item.index; }
+        else if (BrowseApi.hover-index == root.item.index) { BrowseApi.hover-index = -1; }
+    }
+
+    border-radius: Theme.radius-card;
+    border-width: root.focused ? 2px : 1px;
+    background: Theme.card;
+    clip: true;
+    border-color: root.focused ? Theme.accent : root.playing ? Theme.accent : Theme.card-border;
+    transform-scale: (root.focused && !Theme.reduce-motion) ? 1.06 : 1.0;
+    drop-shadow-blur: root.focused ? 18px : 0px;
+    drop-shadow-offset-y: 6px;
+    drop-shadow-color: #000000b0;
+    animate transform-scale { duration: Theme.motion; easing: ease-out; }
+    animate drop-shadow-blur { duration: Theme.motion; }
+    opacity: (root.item.missing || root.item.hidden) ? 0.5 : 1;
+
+    area := TouchArea {
+        clicked => { root.clicked(); }
+        double-clicked => { root.double-clicked(); }
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.right && e.kind == PointerEventKind.up) {
+                root.right-clicked(self.absolute-position.x + self.mouse-x, self.absolute-position.y + self.mouse-y);
+            }
+        }
+    }
+    Rectangle {
+        x: 0px;
+        y: 0px;
+        width: parent.width;
+        // rounded like the tile; extends under the label zone, covered by the filler below
+        height: root.width * 1.5 + Theme.radius-card;
+        border-radius: Theme.radius-card;
+        clip: true;
+        background: Theme.poster-bg;
+        if !root.item.has-poster: Text {
+            text: root.item.initials;
+            y: 0px;
+            width: parent.width;
+            height: root.width * 1.5;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+            color: Theme.text-faint;
+            font-size: Theme.fs-hero;
+            font-weight: Theme.semibold;
+        }
+        if root.item.has-poster: Image {
+            width: parent.width;
+            height: root.width * 1.5;
+            source: root.item.poster;
+            image-fit: cover;
+        }
+        if root.item.progress > 0 && !root.item.watched: Rectangle {
+            x: 0px;
+            y: root.width * 1.5 - 3px;
+            height: 3px;
+            background: #00000096;
+            Rectangle { x: 0px; width: parent.width * root.item.progress; background: Theme.accent; }
+        }
+        if root.item.watched: Rectangle {
+            x: 7px;
+            y: root.width * 1.5 - 25px;
+            width: 20px;
+            height: 20px;
+            border-radius: 10px;
+            background: #000000aa;
+            Icon { source: Icons.check; tint: Theme.accent; size: 14px; x: 3px; y: 3px; }
+        }
+    }
+    Rectangle { x: 0px; y: root.width * 1.5; width: root.width; height: Theme.radius-card; background: Theme.card; }
+    Text {
+        x: 12px;
+        y: parent.width * 1.5 + 10px;
+        width: parent.width - 24px;
+        height: root.item.sub == "" ? 36px : 18px;
+        text: root.item.name;
+        color: Theme.text;
+        font-size: Theme.fs-md;
+        font-weight: Theme.semibold;
+        wrap: word-wrap;
+        overflow: elide;
+    }
+    if root.item.sub != "": Text {
+        x: 12px;
+        y: parent.width * 1.5 + 30px;
+        width: parent.width - 24px;
+        height: 28px;
+        text: root.item.sub;
+        color: Theme.text-muted;
+        font-size: Theme.fs-xs;
+        wrap: word-wrap;
+        overflow: elide;
+    }
+    if root.item.favorite || area.has-hover: Rectangle {
+        x: parent.width - 36px;
+        y: 6px;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: #0000008c;
+        TouchArea {
+            accessible-role: button;
+            accessible-label: root.item.favorite ? "Remove from favorites" : "Add to favorites";
+            accessible-action-default => { root.favorite-clicked(); }
+            clicked => { root.favorite-clicked(); }
+            Icon {
+                source: root.item.favorite ? Icons.star-filled : Icons.star;
+                tint: root.item.favorite ? Theme.star : #ffffff;
+                x: 7px;
+                y: 7px;
+            }
+        }
+    }
+    if BrowseApi.edit-on: Rectangle {
+        x: 6px;
+        y: 6px;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        background: #0000008c;
+        TouchArea {
+            accessible-role: button;
+            accessible-label: root.item.hidden ? "Show" : "Hide";
+            accessible-action-default => { root.hide-clicked(); }
+            clicked => { root.hide-clicked(); }
+            Icon { source: root.item.hidden ? Icons.eye-off : Icons.eye; tint: #ffffff; x: 7px; y: 7px; }
+        }
+    }
+}
