@@ -56,6 +56,7 @@ impl App {
                     self.player_ui.last_error = Some(msg.clone());
                     self.toast(msg);
                 }
+                Event::SearchResults { .. } => {}
                 Event::UrlReady(url) => {
                     ctx.copy_text(url);
                     self.toast("Stream URL copied");

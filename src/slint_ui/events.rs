@@ -11,6 +11,9 @@ pub fn drain() {
             let Some(ev) = super::dialogs::on_event(a, ev) else {
                 continue;
             };
+            let Some(ev) = super::palette::on_event(a, ev) else {
+                continue;
+            };
             let Some(ev) = super::player::on_event(a, ev) else {
                 continue;
             };
@@ -46,6 +49,7 @@ pub fn drain() {
                 | Event::UrlReady(_)
                 | Event::InfoLoaded { .. }
                 | Event::SeriesLoaded { .. }
+                | Event::SearchResults { .. }
                 | Event::TestResult(_)
                 | Event::AccountChecked(..) => {}
             }

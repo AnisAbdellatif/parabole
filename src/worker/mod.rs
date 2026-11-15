@@ -13,7 +13,8 @@ pub use embed::{EmbedPlay, SeriesCtx, Track, episode_key};
 
 use crate::db::Db;
 use crate::model::{
-    Episode, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Season, Source, SourceId,
+    Episode, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Season, Source,
+    SourceId, StreamRow,
 };
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
@@ -64,6 +65,12 @@ pub enum Command {
     CopyUrl {
         stream_id: i64,
     },
+    /// Command-palette search across every media kind; answered by `Event::SearchResults`.
+    Search {
+        profile: ProfileId,
+        query: String,
+        seq: u64,
+    },
     /// Hand an already-resolved request to a player (embedded-player fallback).
     LaunchRequest {
         req: PlayRequest,
@@ -100,6 +107,10 @@ pub enum Event {
         source: SourceId,
         key: String,
         result: Result<Vec<Season>, String>,
+    },
+    SearchResults {
+        seq: u64,
+        rows: Vec<StreamRow>,
     },
     Playing {
         title: String,
@@ -209,6 +220,13 @@ impl Worker {
                 series,
             } => self.play_episode(profile, source, &episode, title, kind.as_ref(), series),
             Command::CopyUrl { stream_id } => self.copy_url(stream_id),
+            Command::Search {
+                profile,
+                query,
+                seq,
+            } => self.db.search(profile, None, None, &query, 20).map(|rows| {
+                self.emit(Event::SearchResults { seq, rows });
+            }),
             Command::LaunchRequest {
                 req,
                 kind,

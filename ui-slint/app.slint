@@ -13,8 +13,11 @@ import { DialogHost } from "dialog-host.slint";
 import { PlayerApi } from "player-api.slint";
 import { BrowseApi } from "browse-api.slint";
 import { DialogApi } from "dialog-api.slint";
+import { CommandPalette } from "palette.slint";
+import { PaletteApi } from "palette-api.slint";
+import { AppearanceApi } from "dialog-appearance.slint";
 
-export { Core, Theme, PlayerApi, BrowseApi, DialogApi }
+export { Core, Theme, PlayerApi, BrowseApi, DialogApi, PaletteApi, AppearanceApi }
 export { StreamItem, SidebarItem, ToastItem, SourceRow, ProfileRow, TrackItem } from "types.slint";
 
 export component AppWindow inherits Window {
@@ -34,7 +37,7 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(e) => {
-            if (DialogApi.key(e) || PlayerApi.key(e) || BrowseApi.key(e)) { return accept; }
+            if (PaletteApi.key(e) || DialogApi.key(e) || PlayerApi.key(e) || BrowseApi.key(e)) { return accept; }
             if (e.modifiers.meta || e.modifiers.control) {
                 if (e.text == "1") { Core.tab-selected(0); return accept; }
                 if (e.text == "2") { Core.tab-selected(1); return accept; }
@@ -74,6 +77,8 @@ export component AppWindow inherits Window {
         height: parent.height;
         closed => { keys.focus(); }
     }
+
+    CommandPalette { width: parent.width; height: parent.height; closed => { keys.focus(); } }
 
     Toasts {
         x: parent.width - self.width - 16px;
