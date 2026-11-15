@@ -1,5 +1,64 @@
 // Player area state and callbacks. Owned by the player area. Rust: win.global::<PlayerApi>().
+import { TrackItem } from "types.slint";
+
 export global PlayerApi {
     // Tried first for every key the window gets; return true when handled.
     callback key(KeyEvent) -> bool;
+
+    // Current embedded session; the pane is hidden while false.
+    in property <bool> active: false;
+    in property <image> frame;
+    // Video box size in logical px, written by whichever surface is showing; Rust renders at physical size.
+    in-out property <length> video-w: 0px;
+    in-out property <length> video-h: 0px;
+
+    in property <bool> paused: false;
+    in property <bool> buffering: false;
+    in property <bool> is-live: false;
+    in property <bool> muted: false;
+    in property <float> volume: 100;
+    // Seconds; duration 0 = unknown.
+    in property <float> position: 0;
+    in property <float> duration: 0;
+    in property <string> title;
+    in property <string> meta;
+    in property <string> error;
+    in property <string> retry-hint;
+    in property <[TrackItem]> audio-tracks;
+    in property <[TrackItem]> sub-tracks;
+
+    // Pointer is over the video: keys act on the player instead of the list.
+    in-out property <bool> hover: false;
+    in-out property <bool> dock-bottom: false;
+    in property <bool> fullscreen: false;
+    in property <bool> mini: false;
+    in-out property <bool> show-stats: false;
+    // Nerd stats: one label / value per line, in the same order.
+    in property <string> stats-labels;
+    in property <string> stats-values;
+    in property <string> pos-text;
+    in property <string> dur-text;
+    // "LIVE", "VOD" or "" for the corner tag.
+    in property <string> tag;
+    in-out property <length> pane-w: 420px;
+    in-out property <length> pane-h: 300px;
+    in property <string> zap-text;
+    // Auto-next card: empty label = hidden.
+    in property <string> next-label;
+    in property <int> next-secs: 0;
+
+    callback toggle-pause();
+    callback seek(float);
+    callback set-volume(float);
+    callback toggle-mute();
+    callback select-audio(int);
+    callback select-sub(int);
+    callback stop();
+    callback toggle-fullscreen();
+    callback toggle-mini();
+    callback toggle-stats();
+    callback toggle-dock();
+    callback go-live();
+    callback next-cancel();
+    callback next-now();
 }

@@ -28,6 +28,10 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Dialogs: account panel is one coloured text line (not separate labelled fields); dropdowns use the std-widgets `ComboBox` (platform style, not `dialog-kit` styled); dialog card max body height is fixed at 600px (a binding to window height formed a layout loop).
 - Dialogs: saving settings does not call the embedded player's `apply_mpv_args` (player area owns that); group dialog is only reachable via `DialogApi.open-dialog("group")` with the context properties set by browse.
 - Dialogs: no automated UI test of clicks/typing (osascript click was not delivered); verified by screenshots of each dialog and unit tests for the form builder.
+- Player: mini mode is not always-on-top (needs the `unstable-winit-*` slint feature); the window just shrinks to 480x270 and restores.
+- Player: dock side and splitter size are not persisted; status-bar "Stop" (`Core.stop-playback`) only stops external players, the pane has its own stop; mpv args from Settings are read per play, not applied live.
+- Player: `slint-ui` needs the default `embedded-mpv` feature (no `--no-default-features --features slint-ui` build). Fullscreen was not screenshotted (macOS Space changes the window id); mini/docked right/bottom/stats were.
+- Player: key handling uses a `PlayerApi.hover` flag (pointer over video) in place of egui's hover rect; arrows seek/volume only act while the pointer is over the video or in fullscreen/mini.
 
 ## Comparison
 (filled in phase 3: lines of UI code, clean build time, incremental build time, binary size, RSS at idle and with 290k streams loaded, idle CPU, scroll smoothness, and the dev-experience notes each agent collects as it goes)
@@ -42,3 +46,7 @@ Goal: port the egui UI (`src/ui/`, ~6.7k lines) to Slint, to compare the two too
 - Dialogs: a `FocusScope` in `DialogHost` is needed for Esc, because the overlay is a sibling of the main `keys` scope and key events never bubble to it; focus is handed back to `keys` via a `closed` callback.
 - Dialogs: `slint::include_modules!` only exports structs exported from `app.slint`, so new row structs must be added to its export line.
 - Dialogs: a component cannot override a built-in `focus()`; use a differently named public function. `viewport-height` is deprecated for `content-height`.
+- Player: mpv renders into its own FBO texture sized to the pane's physical px; `BorrowedOpenGLTextureBuilder` with `flip_y=false` + `BottomLeft` origin shows it upright. Rebuilding the `Image` only on resize is enough, since femtovg re-reads the texture each redraw.
+- Player: femtovg keeps GL state, so the mpv render is wrapped in a save/restore of fbo, program, VAO, buffers, texture, viewport and the blend/scissor/depth/stencil/cull toggles.
+- Player: `parent` is not allowed on a component's root element in `.slint`; position it at the instantiation site. A `PopupWindow` track menu and `Timer`-based control auto-hide (compare `animation-tick()`) both worked without Rust help.
+- Player: `mod core;` next to the `core` crate works if you import with `self::core`; python's `http.server` can't seek, so test media needs `-movflags +faststart`.

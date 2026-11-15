@@ -2,7 +2,7 @@
 use super::Core;
 use super::state::with_app;
 use crate::player::PlayerKind;
-use crate::worker::{Command, Event};
+use crate::worker::Event;
 use slint::ComponentHandle;
 
 pub fn drain() {
@@ -34,16 +34,9 @@ pub fn drain() {
                 Event::PlayerStopped => set_playing(a, "", ""),
                 Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
                 Event::UrlReady(_) => {} // Gap: no clipboard crate in deps
-                Event::PlayEmbedded(play) => {
-                    a.toast("Embedded player not yet in Slint UI; using mpv");
-                    a.worker.send(Command::LaunchRequest {
-                        req: play.req,
-                        kind: PlayerKind::Mpv,
-                        track: play.track,
-                        stream_id: play.stream_id,
-                    });
-                }
-                Event::InfoLoaded { .. }
+                // consumed by the player area before it gets here
+                Event::PlayEmbedded(_)
+                | Event::InfoLoaded { .. }
                 | Event::SeriesLoaded { .. }
                 | Event::TestResult(_)
                 | Event::AccountChecked(..) => {}

@@ -49,3 +49,10 @@ export struct ProfileRow {
     can-delete: bool,
     others: [string],
 }
+
+// Player track-menu row. id -1 = "off" (subtitles only).
+export struct TrackItem {
+    id: int,
+    label: string,
+    selected: bool,
+}

@@ -10,17 +10,17 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 
 /// Address of a `&dyn Fn` that lives on the caller's stack for the duration of context creation.
-pub struct ProcAddress(usize);
+pub(crate) struct ProcAddress(usize);
 
-type Loader<'a> = &'a dyn Fn(&CStr) -> *const c_void;
+pub(crate) type Loader<'a> = &'a dyn Fn(&CStr) -> *const c_void;
 
 impl ProcAddress {
-    pub fn new(loader: &Loader<'_>) -> Self {
+    pub(crate) fn new(loader: &Loader<'_>) -> Self {
         Self(loader as *const Loader<'_> as usize)
     }
 }
 
-fn proc_address(ctx: &ProcAddress, name: &str) -> *mut c_void {
+pub(crate) fn proc_address(ctx: &ProcAddress, name: &str) -> *mut c_void {
     let Ok(name) = CString::new(name) else {
         return std::ptr::null_mut();
     };
@@ -169,7 +169,7 @@ impl VideoOutput {
 }
 
 /// Texture size to allocate for a pane of `used` pixels: at least 512x288, rounded up to 256 steps.
-fn alloc_size((w, h): (i32, i32)) -> (i32, i32) {
+pub(crate) fn alloc_size((w, h): (i32, i32)) -> (i32, i32) {
     (round_up(w.max(512)), round_up(h.max(288)))
 }
 
@@ -179,7 +179,7 @@ fn round_up(v: i32) -> i32 {
 
 /// # Safety
 /// The GL context behind `gl` must be current.
-unsafe fn allocate_storage(gl: &glow::Context, tex: glow::Texture, (w, h): (i32, i32)) {
+pub(crate) unsafe fn allocate_storage(gl: &glow::Context, tex: glow::Texture, (w, h): (i32, i32)) {
     unsafe {
         gl.bind_texture(glow::TEXTURE_2D, Some(tex));
         gl.tex_image_2d(
@@ -199,7 +199,7 @@ unsafe fn allocate_storage(gl: &glow::Context, tex: glow::Texture, (w, h): (i32,
 
 /// # Safety
 /// The GL context behind `gl` must be current.
-unsafe fn create_target(
+pub(crate) unsafe fn create_target(
     gl: &glow::Context,
     size: (i32, i32),
 ) -> Option<(glow::Framebuffer, glow::Texture)> {

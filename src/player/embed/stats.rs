@@ -1,4 +1,4 @@
-use super::EmbeddedPlayer;
+use super::core::MpvCore;
 use crate::player::Stats;
 use libmpv2::{GetData, Mpv};
 
@@ -6,7 +6,7 @@ fn get<T: GetData>(mpv: &Mpv, name: &str) -> Option<T> {
     mpv.get_property(name).ok()
 }
 
-impl EmbeddedPlayer {
+impl MpvCore {
     /// Reads the numbers on demand; only called while the overlay is shown.
     pub fn stats(&self) -> Stats {
         let m = &*self.mpv;

@@ -1,4 +1,4 @@
-use super::EmbeddedPlayer;
+use super::core::MpvCore;
 use crate::model::PlayRequest;
 use crate::player::PlayerSettings;
 use crate::player::argv::origin_header;
@@ -25,7 +25,7 @@ fn file_options(settings: &PlayerSettings, req: &PlayRequest) -> Vec<(&'static s
     opts
 }
 
-impl EmbeddedPlayer {
+impl MpvCore {
     /// Validates and loads a stream, replacing the current one.
     pub fn play(&mut self, settings: &PlayerSettings, req: &PlayRequest) -> Result<()> {
         let req = crate::player::validate::clean_request(req)?;

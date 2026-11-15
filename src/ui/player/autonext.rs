@@ -20,7 +20,7 @@ pub enum Choice {
 }
 
 /// The episode after the one `s` was playing, when it came from the series view.
-fn find_next(s: &Session) -> Option<AutoNext> {
+pub(crate) fn find_next(s: &Session) -> Option<AutoNext> {
     let ctx = s.series.as_ref()?;
     let id = s.track.as_ref()?.key.strip_prefix("ep:")?;
     let (season, ep) = crate::episodes::next(&ctx.seasons, id)?;

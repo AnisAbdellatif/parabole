@@ -15,7 +15,7 @@ mod kit;
 mod list_header;
 mod menu_data;
 mod nav_keys;
-mod player;
+pub(crate) mod player;
 mod poster_grid;
 mod profiles_view;
 mod progress_marks;
