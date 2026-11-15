@@ -27,7 +27,7 @@ Needs Rust (MSVC), a Visual Studio developer shell (for `lib.exe`), and `7z`.
 ## Linux (AppImage)
 
 ```sh
-sudo apt-get install libmpv-dev   # plus the windowing dev packages listed in .github/workflows/ci.yml
+sudo apt-get install libmpv-dev imagemagick   # plus the windowing dev packages listed in .github/workflows/ci.yml
 packaging/linux.sh          # dist/Parabole-<ver>-x86_64.AppImage
 ```
 

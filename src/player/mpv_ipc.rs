@@ -2,11 +2,8 @@ use crate::model::PlayRequest;
 use crate::player::argv::origin_header;
 use crate::player::{PlayerSettings, live};
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde_json::json;
 use std::path::{Path, PathBuf};
-use std::time::Duration;
-
-const TIMEOUT: Duration = Duration::from_millis(500);
 
 pub fn socket_path() -> PathBuf {
     let pid = std::process::id();
@@ -52,7 +49,9 @@ pub fn send(path: &Path, payload: &str) -> Result<()> {
     use anyhow::{Context, bail};
     use std::io::{BufRead, BufReader, Write};
     use std::os::unix::net::UnixStream;
+    use std::time::Duration;
 
+    const TIMEOUT: Duration = Duration::from_millis(500);
     let mut stream = UnixStream::connect(path).context("mpv IPC connect failed")?;
     stream.set_write_timeout(Some(TIMEOUT))?;
     stream.set_read_timeout(Some(TIMEOUT))?;
@@ -62,10 +61,10 @@ pub fn send(path: &Path, payload: &str) -> Result<()> {
     let mut lines = BufReader::new(stream).lines();
     for _ in 0..50 {
         let line = lines.next().context("mpv IPC closed")??;
-        let Ok(v) = serde_json::from_str::<Value>(&line) else {
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(&line) else {
             continue;
         };
-        match v.get("error").and_then(Value::as_str) {
+        match v.get("error").and_then(serde_json::Value::as_str) {
             Some("success") => return Ok(()),
             Some(_) => bail!("mpv rejected loadfile"),
             None => continue,
@@ -93,6 +92,7 @@ pub fn send(path: &Path, payload: &str) -> Result<()> {
 mod tests {
     use super::*;
     use crate::model::{Headers, MediaKind};
+    use serde_json::Value;
 
     fn req() -> PlayRequest {
         PlayRequest {

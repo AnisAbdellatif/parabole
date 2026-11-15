@@ -1,6 +1,6 @@
 #!/bin/sh
 # Builds dist/Parabole-<version>-x86_64.AppImage with libmpv bundled (linuxdeploy). Linux only.
-# Needs: libmpv-dev + windowing dev packages (see ci.yml), curl, and FUSE or APPIMAGE_EXTRACT_AND_RUN=1.
+# Needs: libmpv-dev + windowing dev packages (see ci.yml), curl, imagemagick, and FUSE or APPIMAGE_EXTRACT_AND_RUN=1.
 set -eu
 cd "$(dirname "$0")/.."
 VERSION=$(sed -n 's/^version = "\(.*\)"/\1/p' Cargo.toml | head -1)
@@ -13,13 +13,15 @@ TOOLS=$(mktemp -d)
 curl -sSfL -o "$TOOLS/linuxdeploy" \
   "https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$ARCH.AppImage"
 chmod +x "$TOOLS/linuxdeploy"
+# linuxdeploy accepts icons up to 512x512; the source icon is 1024x1024.
+convert packaging/icon.png -resize 512x512 "$TOOLS/parabole.png"
 
 # linuxdeploy follows ldd, so libmpv and its dependencies land in AppDir/usr/lib.
 # GL/EGL/Vulkan drivers are on linuxdeploy's excludelist and must come from the host.
 "$TOOLS/linuxdeploy" --appdir AppDir \
   --executable target/release/parabole \
   --desktop-file packaging/parabole.desktop \
-  --icon-file packaging/icon.png --icon-filename parabole \
+  --icon-file "$TOOLS/parabole.png" --icon-filename parabole \
   --output appimage
 mv Parabole-*.AppImage "dist/Parabole-$VERSION-$ARCH.AppImage"
 echo "built dist/Parabole-$VERSION-$ARCH.AppImage"
