@@ -51,7 +51,8 @@ pub fn drain() {
                 | Event::SeriesLoaded { .. }
                 | Event::SearchResults { .. }
                 | Event::TestResult(_)
-                | Event::AccountChecked(..) => {}
+                | Event::AccountChecked(..)
+                | Event::Football(_) => {}
             }
         }
     });

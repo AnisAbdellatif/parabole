@@ -87,7 +87,7 @@ fn migrations_are_idempotent_on_reopen() {
         .conn
         .query_row("PRAGMA user_version", [], |r| r.get(0))
         .unwrap();
-    assert_eq!(v, 6);
+    assert_eq!(v, 7);
     drop(db); // Windows can't delete a directory holding an open file
     std::fs::remove_dir_all(dir).unwrap();
 }

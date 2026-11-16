@@ -19,6 +19,7 @@ mod resume;
 mod search;
 mod settings;
 mod sources;
+mod sports_cache;
 #[cfg(test)]
 mod tests;
 pub mod track_prefs;

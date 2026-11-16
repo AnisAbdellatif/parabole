@@ -3,6 +3,8 @@
 
 pub mod auto_refresh;
 mod embed;
+mod football;
+pub mod football_settings;
 mod jobs;
 mod play;
 pub mod player_settings;
@@ -10,6 +12,7 @@ pub mod player_settings;
 mod tests;
 
 pub use embed::{EmbedPlay, SeriesCtx, Track, episode_key};
+pub use football::FootballUpdate;
 
 use crate::db::Db;
 use crate::model::{
@@ -22,6 +25,7 @@ use anyhow::{Context, Result};
 use std::collections::{HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::thread;
 use std::time::Duration;
@@ -30,6 +34,10 @@ pub type Repaint = Arc<dyn Fn() + Send + Sync>;
 
 #[derive(Debug)]
 pub enum Command {
+    /// Loads the Football tab: cached data at once, then refreshes stale parts in the background.
+    Football {
+        langs: Vec<String>,
+    },
     AddSource(ProfileId, Source),
     UpdateSource(Source),
     DeleteSource(SourceId),
@@ -92,6 +100,7 @@ pub enum Command {
 
 #[derive(Debug)]
 pub enum Event {
+    Football(FootballUpdate),
     SourceChanged,
     RefreshStarted(SourceId),
     RefreshDone(SourceId, Result<(), String>),
@@ -141,6 +150,8 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
     let (ev_tx, rx) = channel();
     let mut worker = Worker {
         db,
+        db_path: db_path.clone(),
+        football_busy: Arc::new(AtomicBool::new(false)),
         player: ExternalPlayer::default(),
         cmd_tx: tx.clone(),
         ev_tx,
@@ -158,6 +169,8 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
 
 struct Worker {
     db: Db,
+    db_path: PathBuf,
+    football_busy: Arc<AtomicBool>,
     player: ExternalPlayer,
     cmd_tx: Sender<Command>,
     ev_tx: Sender<Event>,
@@ -243,6 +256,7 @@ impl Worker {
                 self.player.stop();
                 Ok(())
             }
+            Command::Football { langs } => self.football(langs),
             Command::Quit => Ok(()),
         };
         if let Err(e) = result {
