@@ -44,9 +44,10 @@ impl Worker {
                         let res = epg::fetch_all(
                             &job.urls,
                             job.user_agent.as_deref(),
-                            &job.channels,
                             Window::around(now()),
+                            &mut |_| job.channels.clone(),
                         )
+                        .map(|g| g.programmes)
                         .map_err(|e| format!("{e:#}"));
                         let _ = tx.send(Command::EpgFetched(id, res));
                         repaint();

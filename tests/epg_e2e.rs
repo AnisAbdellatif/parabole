@@ -119,7 +119,9 @@ fn fetches_parses_stores_and_answers_now_next() {
     let urls = guide_urls(&source, epg_url.as_deref()).unwrap();
     assert_eq!(urls.len(), 1);
     let channels = db.epg_channels(sid).unwrap();
-    let progs = fetch_all(&urls, None, &channels, Window::around(now)).unwrap();
+    let progs = fetch_all(&urls, None, Window::around(now), &mut |_| channels.clone())
+        .unwrap()
+        .programmes;
     db.replace_epg(sid, &progs, now).unwrap();
 
     let nn = db.epg_now_next(&[tf1, arte], now).unwrap();

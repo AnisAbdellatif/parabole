@@ -20,7 +20,9 @@ fn prog(channel: &str, start: i64) -> Programme {
 #[test]
 fn parse_filters_and_unescapes() {
     let xml = include_bytes!("../../tests/fixtures/epg/small.xml");
-    let got = parse::parse(&xml[..], &chans(), Window::around(NOW)).unwrap();
+    let got = parse::parse(&xml[..], Window::around(NOW), &mut |_| chans())
+        .unwrap()
+        .programmes;
     let titles: Vec<_> = got.iter().map(|p| p.title.as_str()).collect();
     assert_eq!(titles, ["News", "Tom & Jerry", "Movie"]);
     assert_eq!(got[0].descr.as_deref(), Some("Daily news"));
@@ -32,7 +34,11 @@ fn parse_filters_and_unescapes() {
 
 #[test]
 fn parse_rejects_malformed_xml() {
-    let err = parse::parse(&b"<tv><programme></tv>"[..], &chans(), Window::around(NOW));
+    let err = parse::parse(
+        &b"<tv><programme></tv>"[..],
+        Window::around(NOW),
+        &mut |_| chans(),
+    );
     assert!(format!("{:#}", err.unwrap_err()).contains("invalid guide XML"));
 }
 
@@ -59,21 +65,78 @@ fn decode_plain_and_gzip() {
 fn merge_dedups_first_wins() {
     let mut a = prog("c", 1);
     a.title = "first".into();
+    let ch = |names: &[&str]| GuideChannel {
+        id: "c".into(),
+        names: names.iter().map(|s| s.to_string()).collect(),
+    };
     let got = merge(vec![
-        vec![a, prog("c", 2)],
-        vec![prog("c", 1), prog("d", 1)],
+        ParsedGuide {
+            channels: vec![ch(&["A"])],
+            programmes: vec![a, prog("c", 2)],
+        },
+        ParsedGuide {
+            channels: vec![ch(&["A", "B"])],
+            programmes: vec![prog("c", 1), prog("d", 1)],
+        },
     ]);
-    assert_eq!(got.len(), 3);
-    assert_eq!(got[0].title, "first");
+    assert_eq!(got.programmes.len(), 3);
+    assert_eq!(got.programmes[0].title, "first");
+    assert_eq!(got.channels.len(), 1);
+    assert_eq!(got.channels[0].names, ["A", "B"]);
 }
 
 #[test]
 fn fetch_all_edge_cases() {
     assert!(
-        fetch_all(&[], None, &chans(), Window::around(NOW))
+        fetch_all(&[], None, Window::around(NOW), &mut |_| chans())
             .unwrap()
+            .programmes
             .is_empty()
     );
-    let err = fetch_all(&["ftp://x/y".into()], None, &chans(), Window::around(NOW)).unwrap_err();
+    let err = fetch_all(
+        &["ftp://x/y".into()],
+        None,
+        Window::around(NOW),
+        &mut |_| chans(),
+    )
+    .unwrap_err();
     assert!(format!("{err:#}").contains("guide download failed"));
+}
+
+#[test]
+fn parse_lists_channels_and_selects() {
+    let xml = r#"<tv>
+<channel id=" One.Example "><display-name>One &amp; Co</display-name><display-name><![CDATA[Uno]]></display-name><display-name>Uno</display-name><display-name> </display-name><icon src="x"/></channel>
+<channel id="two.example"><display-name>Two</display-name></channel>
+<programme start="20260101120000 +0000" stop="20260101130000 +0000" channel="one.example"><title>A</title></programme>
+<programme start="20260101120000 +0000" stop="20260101130000 +0000" channel="two.example"><title>B</title></programme>
+<channel id="late"><display-name>Late</display-name></channel>
+</tv>"#;
+    let mut seen = Vec::new();
+    let got = parse::parse(xml.as_bytes(), Window::around(NOW), &mut |c| {
+        seen.push(c.len());
+        ["two.example".to_string()].into()
+    })
+    .unwrap();
+    assert_eq!(seen, [2]);
+    let ids: Vec<_> = got.channels.iter().map(|c| c.id.as_str()).collect();
+    assert_eq!(ids, ["one.example", "two.example", "late"]);
+    assert_eq!(got.channels[0].names, ["One & Co", "Uno"]);
+    assert_eq!(got.programmes.len(), 1);
+    assert_eq!(got.programmes[0].title, "B");
+}
+
+#[test]
+fn parse_calls_select_at_eof_without_programmes() {
+    let mut n = 0;
+    let got = parse::parse(
+        &b"<tv><channel id=\"a\"><display-name>A</display-name></channel></tv>"[..],
+        Window::around(NOW),
+        &mut |c| {
+            n = c.len();
+            HashSet::new()
+        },
+    )
+    .unwrap();
+    assert_eq!((n, got.channels.len()), (1, 1));
 }

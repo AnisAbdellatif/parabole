@@ -1,6 +1,7 @@
+use super::ParsedGuide;
 use super::Window;
 use super::time::parse_time;
-use crate::model::Programme;
+use crate::model::{GuideChannel, Programme};
 use anyhow::{Context, Result};
 use quick_xml::events::{BytesStart, Event};
 use quick_xml::{Reader, XmlVersion};
@@ -19,17 +20,20 @@ struct Pending {
 enum Field {
     Title,
     Desc,
+    Name,
 }
 
-/// Streams XMLTV, keeping programmes of `channels` that overlap `window`.
+/// `select` is called once with the guide's channels (when the first `<programme>` starts, or at EOF) and returns the lowercased channel ids whose programmes to keep.
 pub fn parse(
     r: impl BufRead,
-    channels: &HashSet<String>,
     window: Window,
-) -> Result<Vec<Programme>> {
+    select: &mut dyn FnMut(&[GuideChannel]) -> HashSet<String>,
+) -> Result<ParsedGuide> {
     let mut reader = Reader::from_reader(r);
     let mut buf = Vec::new();
-    let mut out = Vec::new();
+    let mut out = ParsedGuide::default();
+    let mut selected: Option<HashSet<String>> = None;
+    let mut chan: Option<GuideChannel> = None;
     let mut cur: Option<Pending> = None;
     let mut field: Option<(Field, String)> = None;
     loop {
@@ -40,7 +44,13 @@ pub fn parse(
         {
             Event::Eof => break,
             Event::Start(e) => match e.name().as_ref() {
-                b"programme" => cur = open_programme(&e, channels, window)?,
+                b"channel" => chan = open_channel(&e),
+                b"display-name" if chan.is_some() => field = Some((Field::Name, String::new())),
+                b"programme" => {
+                    // shortcut: channels listed after the first programme are not offered to select, upgrade if a real guide does that
+                    let keep = selected.get_or_insert_with(|| select(&out.channels));
+                    cur = open_programme(&e, keep, window)?;
+                }
                 b"title" => start_field(&cur, &mut field, Field::Title, |p| p.title.is_none()),
                 b"desc" => start_field(&cur, &mut field, Field::Desc, |p| p.descr.is_none()),
                 _ => {}
@@ -65,12 +75,22 @@ pub fn parse(
                 }
             }
             Event::End(e) => match e.name().as_ref() {
+                b"display-name" => {
+                    if let (Some((Field::Name, s)), Some(c)) = (field.take(), chan.as_mut()) {
+                        let s = s.trim().to_string();
+                        if !s.is_empty() && !c.names.contains(&s) {
+                            c.names.push(s);
+                        }
+                    }
+                }
+                b"channel" => out.channels.extend(chan.take()),
                 b"title" | b"desc" => {
                     if let (Some((f, s)), Some(p)) = (field.take(), cur.as_mut()) {
                         let s = s.trim().to_string();
                         match f {
                             Field::Title => p.title = Some(s),
                             Field::Desc => p.descr = (!s.is_empty()).then_some(s),
+                            Field::Name => {}
                         }
                     }
                 }
@@ -78,7 +98,7 @@ pub fn parse(
                     if let Some(p) = cur.take()
                         && let Some(title) = p.title.filter(|t| !t.is_empty())
                     {
-                        out.push(Programme {
+                        out.programmes.push(Programme {
                             channel: p.channel,
                             start: p.start,
                             stop: p.stop,
@@ -92,7 +112,20 @@ pub fn parse(
             _ => {}
         }
     }
+    if selected.is_none() {
+        select(&out.channels);
+    }
     Ok(out)
+}
+
+fn open_channel(e: &BytesStart) -> Option<GuideChannel> {
+    let a = e.try_get_attribute("id").ok()??;
+    let id = a.normalized_value(XmlVersion::Implicit1_0).ok()?;
+    let id = id.trim().to_lowercase();
+    (!id.is_empty()).then(|| GuideChannel {
+        id,
+        names: Vec::new(),
+    })
 }
 
 fn start_field(
@@ -119,7 +152,7 @@ fn predefined(name: &str) -> Option<char> {
 
 fn open_programme(
     e: &BytesStart,
-    channels: &HashSet<String>,
+    keep: &HashSet<String>,
     window: Window,
 ) -> Result<Option<Pending>> {
     let (mut channel, mut start, mut stop) = (None, None, None);
@@ -138,7 +171,7 @@ fn open_programme(
     let (Some(channel), Some(start), Some(stop)) = (channel, start, stop) else {
         return Ok(None);
     };
-    if !channels.contains(&channel) || stop <= start || stop <= window.from || start >= window.to {
+    if !keep.contains(&channel) || stop <= start || stop <= window.from || start >= window.to {
         return Ok(None);
     }
     Ok(Some(Pending {
