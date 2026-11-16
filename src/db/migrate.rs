@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use rusqlite::Connection;
 
 /// Ordered; index + 1 is the `user_version` after applying. Append only, never edit.
-const MIGRATIONS: &[&str] = &[
+pub(super) const MIGRATIONS: &[&str] = &[
     include_str!("schema.sql"),
     include_str!("migration_2.sql"),
     include_str!("migration_3.sql"),
@@ -12,6 +12,7 @@ const MIGRATIONS: &[&str] = &[
     include_str!("migration_7.sql"),
     include_str!("migration_8.sql"),
     include_str!("migration_9.sql"),
+    include_str!("migration_10.sql"),
 ];
 
 pub fn run(conn: &mut Connection) -> Result<()> {

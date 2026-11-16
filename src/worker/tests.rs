@@ -203,5 +203,4 @@ fn epg_without_urls_stamps_refreshed_and_reports_ok() {
         rx.try_iter()
             .any(|e| matches!(e, Event::EpgUpdated(i, Ok(())) if i == id))
     );
-    assert!(w.db.epg_stale_sources(profile, 0).unwrap().is_empty());
 }

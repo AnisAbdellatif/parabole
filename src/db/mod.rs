@@ -9,6 +9,7 @@ mod browse;
 mod bulk;
 mod copy_favorites;
 mod epg;
+mod epg_links;
 mod epg_query;
 mod groups;
 mod import;
