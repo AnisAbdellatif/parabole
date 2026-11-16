@@ -3,7 +3,7 @@
 
 pub mod auto_refresh;
 mod embed;
-mod epg;
+pub mod epg;
 mod jobs;
 mod play;
 pub mod player_settings;
@@ -19,8 +19,8 @@ pub use sports::SportsUpdate;
 
 use crate::db::Db;
 use crate::model::{
-    Episode, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Programme, Season,
-    Source, SourceId, StreamRow,
+    Episode, GuideId, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Season, Source,
+    SourceId, StreamRow,
 };
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
@@ -100,8 +100,9 @@ pub enum Command {
     StopPlayer,
     Fetched(SourceId, Result<ParsedPlaylist, String>),
     /// Refreshes one source's TV guide; guide jobs run one at a time.
-    RefreshEpg(SourceId),
-    EpgFetched(SourceId, Result<Vec<Programme>, String>),
+    RefreshEpg(GuideId),
+    EpgFetched(GuideId, Result<crate::epg::ParsedGuide, String>),
+    RelinkEpg,
     Quit,
 }
 
@@ -112,7 +113,8 @@ pub enum Event {
     SourceChanged,
     RefreshStarted(SourceId),
     RefreshDone(SourceId, Result<(), String>),
-    EpgUpdated(SourceId, Result<(), String>),
+    EpgUpdated(GuideId, Result<(), String>),
+    EpgRelinked,
     AccountChecked(SourceId, Result<(), String>),
     TestResult(Result<String, String>),
     InfoLoaded {
@@ -193,8 +195,8 @@ struct Worker {
     was_playing: bool,
     auto_queue: VecDeque<SourceId>,
     in_flight: HashSet<SourceId>,
-    epg_queue: VecDeque<SourceId>,
-    epg_busy: Option<SourceId>,
+    epg_queue: VecDeque<GuideId>,
+    epg_busy: Option<GuideId>,
 }
 
 impl Worker {
@@ -239,6 +241,10 @@ impl Worker {
             Command::Fetched(id, res) => self.apply_fetched(id, res),
             Command::RefreshEpg(id) => {
                 self.queue_epg(id);
+                Ok(())
+            }
+            Command::RelinkEpg => {
+                self.relink_epg();
                 Ok(())
             }
             Command::EpgFetched(id, res) => {
@@ -338,7 +344,10 @@ impl Worker {
         let imported = outcome.is_ok();
         self.emit(Event::RefreshDone(id, outcome));
         if imported {
-            self.queue_epg(id);
+            epg::relink(&mut self.db)?;
+            if let Some(g) = self.db.provider_guide(id)? {
+                self.queue_epg(g);
+            }
         }
         self.next_auto();
         Ok(())

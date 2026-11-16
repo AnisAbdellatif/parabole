@@ -180,27 +180,82 @@ fn second_refresh_of_same_source_is_skipped_until_done() {
 #[test]
 fn epg_refresh_is_serialized_and_deduped() {
     let db = Db::open_in_memory().unwrap();
+    let a = db.add_epg_guide("http://a.test/g.xml", "A").unwrap();
+    let b = db.add_epg_guide("http://b.test/g.xml", "B").unwrap();
     let (mut w, _rx) = worker(db);
-    w.epg_busy = Some(1);
-    w.queue_epg(1);
-    w.queue_epg(2);
-    w.queue_epg(2);
-    assert_eq!(w.epg_queue, [2]);
-    w.apply_epg(1, Err("x".into()));
-    // source 2 does not exist: skipped, queue drains, nothing wedged
-    assert!(w.epg_queue.is_empty() && w.epg_busy.is_none());
+    w.epg_busy = Some(a);
+    w.queue_epg(a);
+    w.queue_epg(b);
+    w.queue_epg(b);
+    assert_eq!(w.epg_queue, [b]);
+    w.apply_epg(a, Err("x".into()));
+    // b's fetch thread is running: busy, queue drained
+    assert_eq!(w.epg_busy, Some(b));
+    assert!(w.epg_queue.is_empty());
 }
 
 #[test]
-fn epg_without_urls_stamps_refreshed_and_reports_ok() {
+fn guide_without_urls_stamps_refreshed_and_reports_ok() {
     let db = Db::open_in_memory().unwrap();
     let profile = db.ensure_default_profile().unwrap();
-    let id = db.add_source(profile, &m3u_source("/x.m3u")).unwrap();
+    let sid = db.add_source(profile, &m3u_source("/x.m3u")).unwrap();
+    let id = db.provider_guide(sid).unwrap().unwrap();
     let (mut w, rx) = worker(db);
     w.queue_epg(id);
     assert!(w.epg_busy.is_none());
+    assert!(w.db.epg_guide(id).unwrap().refreshed_at.is_some());
     assert!(
         rx.try_iter()
             .any(|e| matches!(e, Event::EpgUpdated(i, Ok(())) if i == id))
     );
+}
+
+#[test]
+fn disabled_guide_is_skipped() {
+    let db = Db::open_in_memory().unwrap();
+    let id = db.add_epg_guide("http://a.test/g.xml", "A").unwrap();
+    db.set_epg_guide_enabled(id, false).unwrap();
+    let (mut w, rx) = worker(db);
+    w.queue_epg(id);
+    assert!(w.epg_busy.is_none() && w.epg_queue.is_empty());
+    assert!(rx.try_iter().next().is_none());
+}
+
+#[test]
+fn relink_creates_links_and_keeps_manual() {
+    use crate::model::*;
+    let mut db = Db::open_in_memory().unwrap();
+    let profile = db.ensure_default_profile().unwrap();
+    let sid = db.add_source(profile, &m3u_source("/x.m3u")).unwrap();
+    let stream = |k: &str, n: &str, e: &str| ParsedStream {
+        media: MediaKind::Live,
+        ext_key: k.into(),
+        name: n.into(),
+        epg_id: Some(e.into()),
+        ..Default::default()
+    };
+    db.replace_source_data(
+        sid,
+        &ParsedPlaylist {
+            streams: vec![stream("1", "A", "a.tv"), stream("2", "B", "zz")],
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    let g = db.add_epg_guide("http://a.test/g.xml", "G").unwrap();
+    let chans = [GuideChannel {
+        id: "a.tv".into(),
+        names: vec!["A".into()],
+    }];
+    let progs = [Programme {
+        channel: "a.tv".into(),
+        start: 0,
+        stop: i64::MAX / 2,
+        title: "T".into(),
+        descr: None,
+    }];
+    db.replace_guide(g, &chans, &progs, 1).unwrap();
+    db.set_manual_link(sid, "2", g, "a.tv").unwrap();
+    assert_eq!(super::epg::relink(&mut db).unwrap(), 1);
+    assert_eq!(db.manual_link(sid, "2").unwrap(), Some((g, "a.tv".into())));
 }

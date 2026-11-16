@@ -1,9 +1,10 @@
 use chrono::{TimeZone, Utc};
 use flate2::{Compression, write::GzEncoder};
 use parabole::db::Db;
+use parabole::epg::matching;
 use parabole::epg::{Window, fetch_all};
 use parabole::model::*;
-use parabole::sources::guide::guide_urls;
+use parabole::worker::epg::relink;
 use std::io::{Read, Write};
 use std::net::TcpListener;
 
@@ -69,24 +70,35 @@ fn source() -> Source {
 }
 
 #[test]
-#[ignore = "epg2: rewritten with the worker"]
 fn fetches_parses_stores_and_answers_now_next() {
     let now = Utc::now().timestamp();
+    let ch = |id: &str, n: &str| {
+        format!("<channel id=\"{id}\"><display-name>{n}</display-name></channel>")
+    };
     let xml = format!(
-        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><tv>{}{}{}{}</tv>",
-        prog("tf1.fr", now - 1800, now + 1800, "Journal"),
-        prog("tf1.fr", now + 1800, now + 5400, "Météo &amp; Sport"),
-        prog("arte.fr", now - 4 * 3600, now - 3 * 3600, "Old"),
-        prog("zzz", now - 600, now + 600, "Unknown"),
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?><tv>{}{}{}{}{}</tv>",
+        ch("HannibalTV.tn@SD", "Hannibal TV"),
+        ch("Tunisia.Nat.1.ae", "Tunisia Nat 1"),
+        prog("HannibalTV.tn@SD", now - 1800, now + 1800, "Journal"),
+        prog(
+            "HannibalTV.tn@SD",
+            now + 1800,
+            now + 5400,
+            "Météo &amp; Sport"
+        ),
+        prog("Tunisia.Nat.1.ae", now - 600, now + 600, "Watania"),
     );
     let mut gz = GzEncoder::new(Vec::new(), Compression::default());
     gz.write_all(xml.as_bytes()).unwrap();
     let url = serve(gz.finish().unwrap());
+    let url_host = url
+        .trim_start_matches("http://")
+        .trim_end_matches("/guide.xml.gz")
+        .to_string();
 
     let mut db = Db::open_in_memory().unwrap();
     let profile = db.create_profile("p").unwrap();
-    let src = source();
-    let sid = db.add_source(profile, &src).unwrap();
+    let sid = db.add_source(profile, &source()).unwrap();
     db.replace_source_data(
         sid,
         &ParsedPlaylist {
@@ -96,16 +108,16 @@ fn fetches_parses_stores_and_answers_now_next() {
                 name: "C".into(),
             }],
             streams: vec![
-                live("1", "TF1", "TF1.fr ", MediaKind::Live),
-                live("2", "Arte", "arte.fr", MediaKind::Live),
-                live("3", "Movie", "tf1.fr", MediaKind::Movie),
+                live("1", "AR: Hannibal ◉", "hannibaltv.tn", MediaKind::Live),
+                live("2", "AR: Nessma", "ts", MediaKind::Live),
+                live("3", "Movie", "hannibaltv.tn", MediaKind::Movie),
             ],
-            epg_url: Some(url),
+            epg_url: None,
             account_json: None,
         },
     )
     .unwrap();
-    let ids = |name: &str| {
+    let id = |name: &str| {
         db.streams_in_category(profile, sid, MediaKind::Live, "c", true)
             .unwrap()
             .into_iter()
@@ -113,30 +125,51 @@ fn fetches_parses_stores_and_answers_now_next() {
             .unwrap()
             .id
     };
-    let (tf1, arte) = (ids("TF1"), ids("Arte"));
+    let (hannibal, nessma) = (id("AR: Hannibal ◉"), id("AR: Nessma"));
 
-    let epg_url = db.source_epg_url(sid).unwrap();
-    let source = db.source(sid).unwrap();
-    let urls = guide_urls(&source, epg_url.as_deref()).unwrap();
-    assert_eq!(urls.len(), 1);
-    // TODO(epg2): rewrite with the worker
-    let channels: std::collections::HashSet<String> = Default::default();
-    let progs = fetch_all(&urls, None, Window::around(now), &mut |_| channels.clone())
-        .unwrap()
-        .programmes;
-    let g = db.provider_guide(sid).unwrap().unwrap();
-    db.replace_guide(g, &[], &progs, now).unwrap();
+    let provider = db.provider_guide(sid).unwrap().unwrap();
+    assert!(db.source_epg_url(sid).unwrap().is_none());
+    let user = db.add_epg_guide(&url, "Extra").unwrap();
+    let streams = db.epg_stream_keys().unwrap();
+    assert_eq!(streams.len(), 2, "movie ignored");
+    let g = fetch_all(&[url], None, Window::around(now), &mut |c| {
+        matching::wanted(&streams, c)
+    })
+    .unwrap();
+    db.replace_guide(user, &g.channels, &g.programmes, now)
+        .unwrap();
+    relink(&mut db).unwrap();
 
-    let nn = db.epg_now_next(&[tf1, arte], now).unwrap();
-    let t = &nn[&tf1];
+    let nn = db.epg_now_next(&[hannibal, nessma], now).unwrap();
+    let t = &nn[&hannibal];
     assert_eq!(t.now.title, "Journal");
     assert_eq!(t.next.as_ref().unwrap().title, "Météo & Sport");
-    assert!(!nn.contains_key(&arte));
-    assert!(progs.iter().all(|p| p.channel != "zzz"));
-    let sched = db.epg_schedule(tf1, now - 7200, now + 86400).unwrap();
+    assert!(!nn.contains_key(&nessma));
+    let cov = db.epg_coverage().unwrap();
+    assert_eq!(cov.get(&user), Some(&1));
+    assert!(!cov.contains_key(&provider));
+    let sched = db.epg_schedule(hannibal, now - 7200, now + 86400).unwrap();
     let titles: Vec<_> = sched.iter().map(|p| p.title.as_str()).collect();
     assert_eq!(titles, ["Journal", "Météo & Sport"]);
-    assert!(db.epg_schedule(arte, 0, i64::MAX).unwrap().is_empty());
+
+    db.set_manual_link(sid, "2", user, "tunisia.nat.1.ae")
+        .unwrap();
+    // `wanted` ignores manual links, so the worker would not keep this channel's programmes yet
+    let url = format!("http://{}/guide.xml.gz", url_host);
+    let g = fetch_all(&[url], None, Window::around(now), &mut |c| {
+        let mut w = matching::wanted(&streams, c);
+        w.insert("tunisia.nat.1.ae".into());
+        w
+    })
+    .unwrap();
+    db.replace_guide(user, &g.channels, &g.programmes, now)
+        .unwrap();
+    relink(&mut db).unwrap();
+    for _ in 0..2 {
+        let nn = db.epg_now_next(&[nessma], now).unwrap();
+        assert_eq!(nn[&nessma].now.title, "Watania");
+        relink(&mut db).unwrap();
+    }
 }
 
 #[test]
@@ -146,48 +179,52 @@ fn real_guide_smoke() {
         eprintln!("PARABOLE_DB unset; skipping");
         return;
     };
-    let db = Db::open(std::path::Path::new(&path)).unwrap();
+    let mut db = Db::open(std::path::Path::new(&path)).unwrap();
     let now = Utc::now().timestamp();
-    let mut ids = Vec::new();
+    if let Ok(url) = std::env::var("PARABOLE_EXTRA_GUIDE") {
+        let id = db.add_epg_guide(&url, "Extra").unwrap();
+        let streams = db.epg_stream_keys().unwrap();
+        let g = fetch_all(&[url], None, Window::around(now), &mut |c| {
+            matching::wanted(&streams, c)
+        })
+        .unwrap();
+        db.replace_guide(id, &g.channels, &g.programmes, now)
+            .unwrap();
+    }
+    let t = std::time::Instant::now();
+    let n = relink(&mut db).unwrap();
+    println!("relink: {n} links in {:?}", t.elapsed());
+    let cov = db.epg_coverage().unwrap();
+    for g in db.epg_guides().unwrap() {
+        println!(
+            "guide {}: coverage {}",
+            g.name,
+            cov.get(&g.id).unwrap_or(&0)
+        );
+    }
+    let keys = [
+        "tunisia", "hannibal", "nessma", "hiwar", "watania", "carthage",
+    ];
     for p in db.profiles().unwrap() {
         for s in db.profile_sources(p.id).unwrap() {
-            let mut n = 0;
+            let mut rows = Vec::new();
             for c in db
                 .categories(p.id, Some(s.id), MediaKind::Live, true)
                 .unwrap()
             {
-                for st in db
-                    .streams_in_category(p.id, s.id, MediaKind::Live, &c.key, true)
-                    .unwrap()
-                {
-                    n += db
-                        .epg_schedule(st.id, now - 7200, now + 3 * 86400)
+                rows.extend(
+                    db.streams_in_category(p.id, s.id, MediaKind::Live, &c.key, true)
                         .unwrap()
-                        .len();
-                    ids.push((st.id, st.name));
-                }
+                        .into_iter()
+                        .filter(|st| keys.iter().any(|k| st.name.to_lowercase().contains(k))),
+                );
             }
-            println!(
-                "source {} ({}): {n} programmes in window (summed per stream)",
-                s.id, s.name
-            );
+            let ids: Vec<i64> = rows.iter().map(|r| r.id).collect();
+            let nn = db.epg_now_next(&ids, now).unwrap();
+            for r in rows {
+                let title = nn.get(&r.id).map_or("—", |x| x.now.title.as_str());
+                println!("{} → {title}", r.name);
+            }
         }
     }
-    ids.sort();
-    ids.dedup_by_key(|x| x.0);
-    let only: Vec<i64> = ids.iter().map(|x| x.0).collect();
-    let nn = db.epg_now_next(&only, now).unwrap();
-    println!("live streams: {}, airing now: {}", ids.len(), nn.len());
-    let hm = |t: i64| Utc.timestamp_opt(t, 0).unwrap().format("%H:%M").to_string();
-    for (id, name) in ids.iter().filter(|(id, _)| nn.contains_key(id)).take(5) {
-        let x = &nn[id];
-        println!(
-            "{name}: {} {}-{} → {}",
-            x.now.title,
-            hm(x.now.start),
-            hm(x.now.stop),
-            x.next.as_ref().map_or("-", |n| n.title.as_str())
-        );
-    }
-    assert!(!nn.is_empty());
 }

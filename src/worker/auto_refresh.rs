@@ -43,7 +43,9 @@ impl Worker {
             .map(|s| s.id)
             .collect();
         self.next_auto();
-        // TODO(epg2): worker rewrite queues stale guides here
+        for g in self.db.stale_epg_guides(now - 12 * 3600)? {
+            self.queue_epg(g);
+        }
         Ok(())
     }
 

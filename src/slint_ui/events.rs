@@ -37,7 +37,7 @@ pub fn drain() {
                     a.reload_sources();
                 }
                 Event::EpgUpdated(_, Err(e)) => a.toast(format!("Guide update failed: {e}")),
-                Event::EpgUpdated(_, Ok(())) => super::epg::refresh(a),
+                Event::EpgUpdated(_, Ok(())) | Event::EpgRelinked => super::epg::refresh(a),
                 Event::Playing { title, kind, .. } => {
                     a.playing_id = a.play_req;
                     a.streams.set_playing(a.playing_id);
