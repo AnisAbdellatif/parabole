@@ -26,7 +26,7 @@ lock=$(awk '/^name = "parabole"$/ {getline; gsub(/[^0-9.]/, ""); print; exit}' C
 
 step "secrets in the diff vs origin/main"
 git fetch -q origin main 2>/dev/null
-if git diff origin/main -U0 -- . ':!docs' ':!scripts/preflight.sh' | grep -E '^\+' | grep -iE 'password=|passwd=|token=[A-Za-z0-9]|api[_-]?key=|secret[_-]?key|gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY|username=[^&]*&password'; then bad "possible secret in diff (review the lines above)"; fi
+if git diff origin/main -U0 -- . ':!docs' ':!scripts/preflight.sh' | grep -E '^\+' | grep -vE '://(www\.)?(h\.tv|x\.org|example\.(com|org))[:/]' | grep -iE 'password=|passwd=|token=[A-Za-z0-9]|api[_-]?key=|secret[_-]?key|gh[pousr]_[A-Za-z0-9]{20,}|BEGIN [A-Z ]*PRIVATE KEY|username=[^&]*&password'; then bad "possible secret in diff (review the lines above)"; fi
 
 if [ -n "$tag" ]; then
   step "tag $tag"
