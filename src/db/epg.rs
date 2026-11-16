@@ -40,6 +40,15 @@ impl Db {
         Ok(())
     }
 
+    /// The M3U `url-tvg` list (comma-separated) saved by the last import.
+    pub fn source_epg_url(&self, source: SourceId) -> Result<Option<String>> {
+        Ok(self
+            .conn
+            .query_row("SELECT epg_url FROM sources WHERE id = ?1", [source], |r| {
+                r.get(0)
+            })?)
+    }
+
     /// Deletes programmes that ended before `before`, all sources.
     pub fn epg_prune(&self, before: i64) -> Result<()> {
         self.conn

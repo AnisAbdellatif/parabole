@@ -3,6 +3,7 @@
 
 pub mod auto_refresh;
 mod embed;
+mod epg;
 mod jobs;
 mod play;
 pub mod player_settings;
@@ -18,8 +19,8 @@ pub use sports::SportsUpdate;
 
 use crate::db::Db;
 use crate::model::{
-    Episode, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Season, Source,
-    SourceId, StreamRow,
+    Episode, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Programme, Season,
+    Source, SourceId, StreamRow,
 };
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
@@ -98,6 +99,9 @@ pub enum Command {
     GoLive,
     StopPlayer,
     Fetched(SourceId, Result<ParsedPlaylist, String>),
+    /// Refreshes one source's TV guide; guide jobs run one at a time.
+    RefreshEpg(SourceId),
+    EpgFetched(SourceId, Result<Vec<Programme>, String>),
     Quit,
 }
 
@@ -108,6 +112,7 @@ pub enum Event {
     SourceChanged,
     RefreshStarted(SourceId),
     RefreshDone(SourceId, Result<(), String>),
+    EpgUpdated(SourceId, Result<(), String>),
     AccountChecked(SourceId, Result<(), String>),
     TestResult(Result<String, String>),
     InfoLoaded {
@@ -166,6 +171,8 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
         was_playing: false,
         auto_queue: VecDeque::new(),
         in_flight: HashSet::new(),
+        epg_queue: VecDeque::new(),
+        epg_busy: None,
     };
     thread::Builder::new()
         .name("worker".into())
@@ -186,6 +193,8 @@ struct Worker {
     was_playing: bool,
     auto_queue: VecDeque<SourceId>,
     in_flight: HashSet<SourceId>,
+    epg_queue: VecDeque<SourceId>,
+    epg_busy: Option<SourceId>,
 }
 
 impl Worker {
@@ -228,6 +237,14 @@ impl Worker {
             Command::LoadInfo { source, media, key } => self.load_info(source, media, key),
             Command::LoadSeries { source, key } => self.load_series(source, key),
             Command::Fetched(id, res) => self.apply_fetched(id, res),
+            Command::RefreshEpg(id) => {
+                self.queue_epg(id);
+                Ok(())
+            }
+            Command::EpgFetched(id, res) => {
+                self.apply_epg(id, res);
+                Ok(())
+            }
             Command::Play {
                 profile,
                 stream_id,
@@ -318,7 +335,11 @@ impl Worker {
         };
         self.db
             .set_refresh_result(id, outcome.as_ref().err().map(String::as_str))?;
+        let imported = outcome.is_ok();
         self.emit(Event::RefreshDone(id, outcome));
+        if imported {
+            self.queue_epg(id);
+        }
         self.next_auto();
         Ok(())
     }

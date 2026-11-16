@@ -133,18 +133,10 @@ fn play_failure_is_reported_not_fatal() {
     let _ = std::fs::remove_file(path);
 }
 
-#[test]
-fn second_refresh_of_same_source_is_skipped_until_done() {
-    let db = Db::open_in_memory().unwrap();
-    let profile = db.ensure_default_profile().unwrap();
-    let fixture = concat!(
-        env!("CARGO_MANIFEST_DIR"),
-        "/tests/fixtures/sources/messy.m3u"
-    );
-    let id = db.add_source(profile, &m3u_source(fixture)).unwrap();
+fn worker(db: Db) -> (Worker, Receiver<Event>) {
     let (cmd_tx, _cmd_rx) = channel();
     let (ev_tx, ev_rx) = channel();
-    let mut w = Worker {
+    let w = Worker {
         scan: Arc::default(),
         db,
         db_path: PathBuf::new(),
@@ -156,7 +148,22 @@ fn second_refresh_of_same_source_is_skipped_until_done() {
         was_playing: false,
         auto_queue: VecDeque::new(),
         in_flight: HashSet::new(),
+        epg_queue: VecDeque::new(),
+        epg_busy: None,
     };
+    (w, ev_rx)
+}
+
+#[test]
+fn second_refresh_of_same_source_is_skipped_until_done() {
+    let db = Db::open_in_memory().unwrap();
+    let profile = db.ensure_default_profile().unwrap();
+    let fixture = concat!(
+        env!("CARGO_MANIFEST_DIR"),
+        "/tests/fixtures/sources/messy.m3u"
+    );
+    let id = db.add_source(profile, &m3u_source(fixture)).unwrap();
+    let (mut w, ev_rx) = worker(db);
     w.start_refresh(id).unwrap();
     w.start_refresh(id).unwrap();
     let started = |rx: &Receiver<Event>| {
@@ -168,4 +175,33 @@ fn second_refresh_of_same_source_is_skipped_until_done() {
     w.apply_fetched(id, Ok(ParsedPlaylist::default())).unwrap();
     w.start_refresh(id).unwrap();
     assert_eq!(started(&ev_rx), 1);
+}
+
+#[test]
+fn epg_refresh_is_serialized_and_deduped() {
+    let db = Db::open_in_memory().unwrap();
+    let (mut w, _rx) = worker(db);
+    w.epg_busy = Some(1);
+    w.queue_epg(1);
+    w.queue_epg(2);
+    w.queue_epg(2);
+    assert_eq!(w.epg_queue, [2]);
+    w.apply_epg(1, Err("x".into()));
+    // source 2 does not exist: skipped, queue drains, nothing wedged
+    assert!(w.epg_queue.is_empty() && w.epg_busy.is_none());
+}
+
+#[test]
+fn epg_without_urls_stamps_refreshed_and_reports_ok() {
+    let db = Db::open_in_memory().unwrap();
+    let profile = db.ensure_default_profile().unwrap();
+    let id = db.add_source(profile, &m3u_source("/x.m3u")).unwrap();
+    let (mut w, rx) = worker(db);
+    w.queue_epg(id);
+    assert!(w.epg_busy.is_none());
+    assert!(
+        rx.try_iter()
+            .any(|e| matches!(e, Event::EpgUpdated(i, Ok(())) if i == id))
+    );
+    assert!(w.db.epg_stale_sources(profile, 0).unwrap().is_empty());
 }

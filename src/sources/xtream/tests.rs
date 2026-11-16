@@ -294,3 +294,12 @@ fn series_info_section() {
         MediaInfo::default()
     );
 }
+
+#[test]
+fn xmltv_url() {
+    let s = source("http://h.tv:8080/panel/", "us er", "p&a");
+    assert_eq!(
+        urls::xmltv(&s).unwrap(),
+        "http://h.tv:8080/panel/xmltv.php?username=us+er&password=p%26a"
+    );
+}

@@ -4,6 +4,12 @@ use crate::model::ProfileId;
 use anyhow::Result;
 use std::time::{SystemTime, UNIX_EPOCH};
 
+pub(super) fn now() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |d| d.as_secs() as i64)
+}
+
 const KEY: &str = "auto_refresh_hours";
 const DEFAULT_HOURS: u32 = 24;
 
@@ -27,9 +33,7 @@ impl Worker {
         if hours == 0 {
             return Ok(());
         }
-        let now = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |d| d.as_secs() as i64);
+        let now = now();
         let cutoff = now - i64::from(hours) * 3600;
         self.auto_queue = self
             .db
@@ -39,6 +43,9 @@ impl Worker {
             .map(|s| s.id)
             .collect();
         self.next_auto();
+        for id in self.db.epg_stale_sources(profile, now - 12 * 3600)? {
+            self.queue_epg(id);
+        }
         Ok(())
     }
 

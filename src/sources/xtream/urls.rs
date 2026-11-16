@@ -32,3 +32,18 @@ fn build(source: &Source, kind: &str, key: &str, ext: &str) -> Result<String> {
         .extend([kind, user, pass, file.as_str()]);
     Ok(url.into())
 }
+
+/// The provider's XMLTV guide URL (carries the credentials; never log it).
+pub fn xmltv(source: &Source) -> Result<String> {
+    let source = &failover::pick(source);
+    let (user, pass) = credentials(source)?;
+    let mut url = Url::parse(&source.url).context("invalid server URL")?;
+    url.path_segments_mut()
+        .map_err(|_| anyhow!("invalid server URL"))?
+        .pop_if_empty()
+        .push("xmltv.php");
+    url.query_pairs_mut()
+        .append_pair("username", user)
+        .append_pair("password", pass);
+    Ok(url.into())
+}

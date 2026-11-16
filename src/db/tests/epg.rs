@@ -176,3 +176,18 @@ fn source_delete_cascades() {
         .unwrap();
     assert_eq!(n, 0);
 }
+
+#[test]
+fn source_epg_url_roundtrip() {
+    let mut db = Db::open_in_memory().unwrap();
+    let p = db.ensure_default_profile().unwrap();
+    let s = db.add_source(p, &source("a")).unwrap();
+    assert_eq!(db.source_epg_url(s).unwrap(), None);
+    let mut data = playlist(&["c"], &[]);
+    data.epg_url = Some("http://a/x.xml,http://b/y.xml".into());
+    db.replace_source_data(s, &data).unwrap();
+    assert_eq!(
+        db.source_epg_url(s).unwrap().as_deref(),
+        Some("http://a/x.xml,http://b/y.xml")
+    );
+}
