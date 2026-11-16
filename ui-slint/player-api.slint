@@ -52,6 +52,8 @@ export global PlayerApi {
     in property <bool> zap-open: false;
     // Top-bar tech info, e.g. "1080p · 5.1".
     in property <string> tech;
+    // Airing programme of the playing live channel, e.g. "News · 12 min left".
+    in property <string> epg-now;
     // Seconds the live playhead trails the fetched edge.
     in property <float> behind: 0;
     // Real picture-in-picture: the window is small, frameless and always on top.

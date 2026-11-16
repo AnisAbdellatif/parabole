@@ -5,6 +5,7 @@ mod callbacks;
 mod data;
 mod dialogs;
 mod dock_icon;
+mod epg;
 mod events;
 pub mod fonts;
 mod images;
@@ -113,6 +114,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
             dialogs: Default::default(),
             palette: Default::default(),
             sports: sports::SportsArea::new(sports_settings_loaded),
+            epg: Default::default(),
         });
     });
     callbacks::connect(&win);
@@ -121,9 +123,11 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     player::connect(&win);
     browse::connect(&win);
     sports::connect(&win);
+    epg::guide::connect(&win);
     wiring::connect(&win);
     with_app(|a| {
         a.reload_all();
+        epg::install(a);
         a.worker.send(Command::AutoRefresh(profile));
     });
     win.window().on_close_requested(|| {

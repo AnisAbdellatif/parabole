@@ -67,9 +67,11 @@ fn entries(a: &mut SlintApp, row: &StreamRow) -> Vec<MenuEntry> {
             v.push(item("rmgroup", "Remove from group"));
         }
     }
-    if row.media != MediaKind::Live {
-        v.push(item("info", "Info…"));
-    }
+    v.push(if row.media == MediaKind::Live {
+        item("info", "TV guide")
+    } else {
+        item("info", "Info…")
+    });
     if row.media == MediaKind::Series {
         return v;
     }

@@ -1,6 +1,6 @@
 // Browse area state and callbacks (poster grid, series, details, menus, edit mode). Owned by the browse area.
 import { Core } from "core.slint";
-import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup, GridRow, EpisodeItem, InfoView, HeroExtra } from "types.slint";
+import { ChipItem, MenuEntry, SideRow, EditCat, EditGroup, GridRow, EpisodeItem, InfoView, HeroExtra, GuideItem } from "types.slint";
 
 export global BrowseApi {
     // Tried after DialogApi and PlayerApi; return true when handled.
@@ -14,6 +14,10 @@ export global BrowseApi {
             if (e.text == Key.LeftArrow && Core.has-sources) { root.sidebar-focus = true; return true; }
             if (e.text == Key.RightArrow) { root.sidebar-focus = false; return true; }
             return false;
+        }
+        if (root.guide-open) {
+            if (e.text == Key.Escape) { root.guide-closed(); }
+            return e.text == Key.Escape || e.text == Key.Return || e.text == Key.UpArrow || e.text == Key.DownArrow;
         }
         if (root.details-open) {
             if (e.text == Key.Escape) { root.details-closed(); }
@@ -147,5 +151,10 @@ export global BrowseApi {
     in property <string> details-title;
     in property <InfoView> details;
     callback details-closed();
+    in property <bool> guide-open: false;
+    in property <string> guide-title;
+    in property <[GuideItem]> guide;
+    in property <int> guide-scroll-to: 0;
+    callback guide-closed();
     callback details-retry();
 }

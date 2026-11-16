@@ -42,6 +42,13 @@ export component TopChrome inherits Rectangle {
             font-size: Theme.fs-sm;
             vertical-alignment: center;
         }
+        Text {
+            text: PlayerApi.epg-now != "" ? "· " + PlayerApi.epg-now : "";
+            color: #cbd5e1;
+            font-size: Theme.fs-sm;
+            vertical-alignment: center;
+            overflow: elide;
+        }
         Rectangle { horizontal-stretch: 1; }
     }
 }

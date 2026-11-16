@@ -35,6 +35,7 @@ pub fn on_embed_play(a: &mut SlintApp, play: EmbedPlay) {
             a.play_req = play.stream_id;
             a.playing_id = play.stream_id;
             a.streams.set_playing(a.playing_id);
+            crate::slint_ui::epg::push_player(a);
             a.player.session = Some(Session::new(play));
             a.worker.scan.embedded_playing.store(true, Relaxed);
             carousel::fill_pane(a);

@@ -10,6 +10,7 @@ import { Skeleton } from "skeleton.slint";
 import { EmptyState } from "browse-empty.slint";
 import { SeriesPage } from "browse-series.slint";
 import { DetailsPanel } from "browse-details.slint";
+import { GuidePanel } from "epg-guide.slint";
 import { Hero } from "browse-hero.slint";
 import { HeroExtra } from "types.slint";
 
@@ -45,4 +46,5 @@ export component BrowseHost inherits Rectangle {
         if !BrowseApi.series-open && Core.streams.length == 0 && !Core.syncing: EmptyState { }
     }
     if BrowseApi.details-open: DetailsPanel { }
+    if BrowseApi.guide-open: GuidePanel { }
 }

@@ -1,0 +1,89 @@
+import { Theme } from "theme.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
+import { BrowseApi } from "browse-api.slint";
+
+// Channel guide card; same look as DetailsPanel. Rows have a fixed height so the airing one can be scrolled to.
+export component GuidePanel inherits Rectangle {
+    property <length> row-h: 64px;
+    background: #000000b0;
+    TouchArea { clicked => { BrowseApi.guide-closed(); } }
+    card := Rectangle {
+        width: min(parent.width - 48px, 620px);
+        height: min(parent.height - 48px, 520px);
+        background: Theme.card;
+        border-radius: Theme.radius-card;
+        border-width: 1px;
+        border-color: Theme.card-border-hover;
+        TouchArea { }
+        Text {
+            x: 20px;
+            y: 10px;
+            width: parent.width - 80px;
+            height: 32px;
+            vertical-alignment: center;
+            text: BrowseApi.guide-title;
+            color: Theme.text;
+            font-size: Theme.fs-lg;
+            font-weight: Theme.semibold;
+            overflow: elide;
+        }
+        TouchArea {
+            x: parent.width - 44px;
+            y: 10px;
+            width: 32px;
+            height: 32px;
+            accessible-role: button;
+            accessible-label: "Close";
+            accessible-action-default => { BrowseApi.guide-closed(); }
+            clicked => { BrowseApi.guide-closed(); }
+            Icon { source: Icons.close; x: 8px; y: 8px; tint: Theme.text-muted; }
+        }
+        if BrowseApi.guide.length == 0: Text {
+            x: 20px;
+            y: 56px;
+            text: "No guide data for this channel.";
+            color: Theme.text-muted;
+            font-size: Theme.fs-md;
+        }
+        list := Flickable {
+            x: 20px;
+            y: 56px;
+            width: parent.width - 40px;
+            height: parent.height - 72px;
+            content-height: BrowseApi.guide.length * root.row-h;
+            init => {
+                self.content-y = -min(BrowseApi.guide-scroll-to * root.row-h, max(0px, self.content-height - self.height));
+            }
+            for g[i] in BrowseApi.guide: Rectangle {
+                y: i * root.row-h;
+                height: root.row-h;
+                background: g.now ? Theme.selected-bg : transparent;
+                border-radius: 8px;
+                HorizontalLayout {
+                    padding: 8px;
+                    spacing: 14px;
+                    Text {
+                        width: 110px;
+                        text: g.time;
+                        color: g.now ? Theme.accent : Theme.text-dim;
+                        font-size: Theme.fs-sm;
+                        vertical-alignment: top;
+                    }
+                    VerticalLayout {
+                        spacing: 2px;
+                        alignment: start;
+                        Text { text: g.title; color: Theme.text; font-size: Theme.fs-md; font-weight: Theme.semibold; overflow: elide; }
+                        Text { text: g.descr; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; overflow: elide; max-height: 2 * self.font-size * 1.3; }
+                        if g.now: Rectangle {
+                            height: 3px;
+                            border-radius: 2px;
+                            background: Theme.surface-hover;
+                            Rectangle { width: parent.width * g.progress; border-radius: 2px; background: Theme.accent; }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

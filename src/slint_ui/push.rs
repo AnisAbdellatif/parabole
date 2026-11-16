@@ -67,6 +67,7 @@ impl SlintApp {
             .map(|s| (s.id, s.name.clone()))
             .collect();
         self.streams.set_badges(self.row_badges(&rows));
+        self.streams.set_epg(super::epg::row_epg(self, &rows));
         self.streams.set_rows(rows, prefix, names);
         let Some(win) = self.win.upgrade() else {
             return;

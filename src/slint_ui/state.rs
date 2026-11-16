@@ -134,6 +134,7 @@ pub struct SlintApp {
     pub dialogs: super::dialogs::DialogArea,
     pub palette: super::palette::PaletteArea,
     pub sports: super::sports::SportsArea,
+    pub epg: super::epg::EpgArea,
 }
 
 thread_local! {

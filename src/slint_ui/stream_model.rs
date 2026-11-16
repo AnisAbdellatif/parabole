@@ -1,9 +1,10 @@
 //! Lazy list model: rows stay as `StreamRow`; `StreamItem`s are built per visible row.
 use super::browse::GridModel;
+use super::epg::format;
 use super::images::{Images, Size};
 use super::{StreamItem, TileItem};
 use crate::db::progress::{Watch, classify};
-use crate::model::{SourceId, StreamRow};
+use crate::model::{MediaKind, NowNext, SourceId, StreamRow};
 use slint::{Model, ModelNotify, ModelTracker};
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
@@ -22,6 +23,7 @@ pub struct StreamModel {
     on_reset: RefCell<Option<Rc<dyn Fn()>>>,
     playing: Cell<Option<i64>>,
     badges: RefCell<HashMap<i64, String>>,
+    epg: RefCell<HashMap<i64, NowNext>>,
 }
 
 fn initials(name: &str) -> String {
@@ -45,12 +47,26 @@ impl StreamModel {
             on_reset: Default::default(),
             playing: Cell::new(None),
             badges: Default::default(),
+            epg: Default::default(),
         }
     }
 
     /// Quality badge per stream id, shown first in the meta line. Call before `set_rows`.
     pub fn set_badges(&self, badges: HashMap<i64, String>) {
         *self.badges.borrow_mut() = badges;
+    }
+
+    /// Now/next per live stream id. Call before `set_rows`.
+    pub fn set_epg(&self, map: HashMap<i64, NowNext>) {
+        *self.epg.borrow_mut() = map;
+    }
+
+    /// Replaces the guide data and repaints rows in place (keeps scroll and cursor).
+    pub fn refresh_epg(&self, map: HashMap<i64, NowNext>) {
+        *self.epg.borrow_mut() = map;
+        for i in 0..self.rows.borrow().len() {
+            self.notify.row_changed(i);
+        }
     }
 
     pub fn set_rows(
@@ -160,12 +176,14 @@ impl StreamModel {
         if let Some(b) = self.badges.borrow().get(&r.id).filter(|b| !b.is_empty()) {
             parts.push(b.clone());
         }
+        let now_line = self.epg.borrow().get(&r.id).map(format::now_line);
+        parts.extend(now_line.clone());
         if self.show_source.get()
             && let Some(n) = self.source_names.borrow().get(&r.source_id)
         {
             parts.push(n.clone());
         }
-        if let Some(n) = r.num {
+        if let (None, Some(n)) = (&now_line, r.num) {
             parts.push(format!("Channel {n}"));
         }
         parts.join(" · ")
@@ -182,6 +200,14 @@ impl Model for StreamModel {
     fn row_data(&self, i: usize) -> Option<StreamItem> {
         let rows = self.rows.borrow();
         let r = rows.get(i)?;
+        let airing = (r.media == MediaKind::Live)
+            .then(|| {
+                self.epg
+                    .borrow()
+                    .get(&r.id)
+                    .map(|n| format::fraction(&n.now, format::now_secs()))
+            })
+            .flatten();
         let logo = r
             .logo
             .as_deref()
@@ -193,12 +219,12 @@ impl Model for StreamModel {
             has_logo: logo.is_some(),
             logo: logo.unwrap_or_default(),
             favorite: r.favorite,
-            progress: if classify(r.progress) == Watch::Partial {
+            progress: airing.unwrap_or(if classify(r.progress) == Watch::Partial {
                 r.progress.unwrap_or(0.0)
             } else {
                 0.0
-            },
-            watched: classify(r.progress) == Watch::Watched,
+            }),
+            watched: airing.is_none() && classify(r.progress) == Watch::Watched,
             missing: r.missing,
             hidden: r.hidden,
             playing: self.playing.get() == Some(r.id),

@@ -37,16 +37,18 @@ pub fn drain() {
                     a.reload_sources();
                 }
                 Event::EpgUpdated(_, Err(e)) => a.toast(format!("Guide update failed: {e}")),
-                Event::EpgUpdated(_, Ok(())) => {}
+                Event::EpgUpdated(_, Ok(())) => super::epg::refresh(a),
                 Event::Playing { title, kind, .. } => {
                     a.playing_id = a.play_req;
                     a.streams.set_playing(a.playing_id);
                     set_playing(a, &title, kind_name(kind));
+                    super::epg::push_player(a);
                 }
                 Event::PlayerStopped => {
                     a.playing_id = None;
                     a.streams.set_playing(None);
                     set_playing(a, "", "");
+                    super::epg::push_player(a);
                 }
                 Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
                 Event::ScanStatus(s) => super::browse::scan::on_status(a, s),
