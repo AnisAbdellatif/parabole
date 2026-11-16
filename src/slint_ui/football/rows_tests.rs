@@ -153,3 +153,24 @@ fn status_text() {
     );
     assert_eq!(status(&[], false, None, tz()), "");
 }
+
+#[test]
+fn details_merge_same_channel_across_countries() {
+    let m = game(
+        "s365:1",
+        now(),
+        MatchStatus::Upcoming,
+        vec![
+            bc("beIN Sport 1 HD", "SA", Some("ar")),
+            bc("beIN Sport 1 HD", "EG", Some("ar")),
+            bc("ON Time Sports", "EG", Some("ar")),
+        ],
+    );
+    let (_, _, ch) = details(&m, &strs(&["ar"]), tz());
+    let text: Vec<&str> = ch.iter().map(|c| c.text.as_str()).collect();
+    assert_eq!(
+        text,
+        ["Arabic", "beIN Sport 1 HD (EG, SA)", "ON Time Sports (EG)"]
+    );
+    assert_eq!(ch[1].channel, "beIN Sport 1 HD");
+}

@@ -14,6 +14,7 @@ use std::time::Duration;
 const TODAY_TTL_S: i64 = 60;
 const DAY_TTL_S: i64 = 30 * 60;
 const TV_TTL_S: i64 = 6 * 3600;
+const TV_EMPTY_TTL_S: i64 = 3600;
 const TV_HORIZON_S: i64 = 48 * 3600;
 const PAST_S: i64 = 3 * 3600;
 const AHEAD_DAYS: i64 = 7;
@@ -190,10 +191,18 @@ fn load(db: &Db, langs: &[String], emit: &dyn Fn(FootballUpdate)) {
     'tv: for id in candidates {
         for country in &countries {
             let key = tv_key(id, country);
-            if matches!(
-                db.sports_cache_get(&key, s365::SCHEMA, TV_TTL_S, now),
-                Ok(Some(_))
-            ) {
+            // 365scores fills most countries' listings only on match day, so re-ask empty ones sooner.
+            let fresh = match db.sports_cache_get(&key, s365::SCHEMA, TV_TTL_S, now) {
+                Ok(Some(json)) => {
+                    json != "[]"
+                        || matches!(
+                            db.sports_cache_get(&key, s365::SCHEMA, TV_EMPTY_TTL_S, now),
+                            Ok(Some(_))
+                        )
+                }
+                _ => false,
+            };
+            if fresh {
                 continue;
             }
             std::thread::sleep(TV_PAUSE);

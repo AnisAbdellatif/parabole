@@ -41,7 +41,8 @@ pub const LANGUAGES: &[Language] = &[
     Language {
         code: "ar",
         name: "Arabic",
-        countries: &["SA", "EG", "AE", "QA", "MA"],
+        // AE and QA only repeat the beIN MENA listings that SA already returns.
+        countries: &["SA", "EG", "MA"],
     },
     Language {
         code: "nl",

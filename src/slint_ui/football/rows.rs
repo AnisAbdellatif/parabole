@@ -156,10 +156,20 @@ fn channels(b: &[Broadcast], user: &[String]) -> Vec<ChannelText> {
             text: code.map_or_else(|| "Other / multilingual".into(), |c| lang::name(c).into()),
             channel: String::new(),
         });
-        out.extend(group.into_iter().map(|x| ChannelText {
+        // One line per channel, listing every country it airs in (sorted, so same channels are adjacent).
+        let mut lines: Vec<(&str, Vec<&str>)> = Vec::new();
+        for x in group {
+            match lines.last_mut() {
+                Some((ch, cs)) if ch.to_lowercase() == x.channel.to_lowercase() => {
+                    cs.push(&x.country)
+                }
+                _ => lines.push((&x.channel, vec![&x.country])),
+            }
+        }
+        out.extend(lines.into_iter().map(|(ch, cs)| ChannelText {
             header: false,
-            text: format!("{} ({})", x.channel, x.country),
-            channel: x.channel.clone(),
+            text: format!("{ch} ({})", cs.join(", ")),
+            channel: ch.to_string(),
         }));
     }
     out
