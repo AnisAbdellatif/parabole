@@ -230,3 +230,48 @@ pub struct MediaInfo {
     pub cover: Option<String>,
     pub backdrop: Option<String>,
 }
+
+/// A football match for the Football tab, independent of the provider it came from.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct Match {
+    /// Provider-prefixed id, e.g. "s365:4672273" or "livescore:1738288".
+    pub key: String,
+    pub competition: String,
+    pub home: String,
+    pub away: String,
+    /// Unix seconds, UTC.
+    pub kickoff_utc: i64,
+    pub status: MatchStatus,
+    pub broadcasts: Vec<Broadcast>,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum MatchStatus {
+    Upcoming,
+    /// `clock` is the provider's display text, e.g. "67'" or "HT".
+    Live {
+        clock: String,
+        home: u16,
+        away: u16,
+    },
+    Finished,
+}
+
+/// One channel showing a match in one country.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Broadcast {
+    pub channel: String,
+    /// ISO 3166-1 alpha-2, uppercase.
+    pub country: String,
+    /// ISO 639-1, None when unknown or multilingual. Always inferred, never given by a provider.
+    pub lang: Option<String>,
+    /// Provider display name, e.g. "365scores".
+    pub provider: String,
+}
+
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub struct ProviderStatus {
+    pub name: String,
+    pub ok: bool,
+    pub error: Option<String>,
+}

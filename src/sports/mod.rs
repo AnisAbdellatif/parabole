@@ -1,0 +1,30 @@
+//! Football fixtures and TV channels from free, unofficial public endpoints. No DB, no UI.
+//! Each provider lives in its own directory; nothing provider-specific leaks out of it.
+pub mod lang;
+pub mod livescore;
+pub mod merge;
+pub mod s365;
+#[cfg(test)]
+mod tests_live;
+
+use anyhow::{Context, Result};
+use reqwest::blocking::Client;
+use std::io::Read;
+
+/// Browser-like agent: both providers serve their public site's JSON to browsers.
+pub const USER_AGENT: &str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36";
+const MAX_BODY: u64 = 8 * 1024 * 1024;
+
+pub fn client() -> Result<Client> {
+    crate::sources::http::client(Some(USER_AGENT))
+}
+
+pub(crate) fn get_text(client: &Client, url: &str) -> Result<String> {
+    let resp = crate::sources::http::get(client, url, Some(USER_AGENT))?;
+    let mut body = String::new();
+    crate::sources::http::SafeRead(resp)
+        .take(MAX_BODY)
+        .read_to_string(&mut body)
+        .context("read response")?;
+    Ok(body)
+}
