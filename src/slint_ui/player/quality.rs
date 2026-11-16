@@ -11,18 +11,22 @@ fn live_track(s: &Session) -> Option<&Track> {
 
 /// Notes startup time, then saves one measurement once playback is stable.
 pub fn on_tick(db: &Db, core: &MpvCore, s: &mut Session) {
-    let Some(pos) = core.state().time_pos else {
+    if core.state().time_pos.is_none() {
         return;
-    };
-    if s.startup_ms.is_none() {
-        s.startup_ms = Some(s.opened_at.elapsed().as_millis() as i64);
     }
-    if !s.is_live() || pos <= STABLE_AFTER_S || s.quality_saved {
+    let elapsed_ms = s.opened_at.elapsed().as_millis() as i64;
+    let startup_ms = *s.startup_ms.get_or_insert(elapsed_ms);
+    // Live time_pos can start at the stream's own timestamp, so count wall time since the first frame.
+    let stable = (elapsed_ms - startup_ms) as f64 > STABLE_AFTER_S * 1000.0;
+    if !s.is_live() || !stable || s.quality_saved {
+        return;
+    }
+    let stats = core.stats();
+    if stats.height.is_none() {
         return;
     }
     s.quality_saved = true;
-    let stats = core.stats();
-    let (Some(track), Some(_)) = (live_track(s), stats.height) else {
+    let Some(track) = live_track(s) else {
         return;
     };
     let q = Quality {

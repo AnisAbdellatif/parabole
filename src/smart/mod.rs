@@ -100,8 +100,8 @@ impl Bucket {
         match self {
             Bucket::All => true,
             Bucket::Uhd => h.is_some_and(|h| h >= 2000),
-            Bucket::FullHd => h.is_some_and(|h| h >= 1000),
-            Bucket::Hd => h.is_some_and(|h| h >= 700),
+            Bucket::FullHd => h.is_some_and(|h| (1000..2000).contains(&h)),
+            Bucket::Hd => h.is_some_and(|h| (700..1000).contains(&h)),
             Bucket::Sd => h.is_some_and(|h| (1..700).contains(&h)),
             Bucket::HighFps => best.fps().is_some_and(|f| f >= 48.0),
             Bucket::Unknown => h.is_none(),

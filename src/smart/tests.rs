@@ -148,8 +148,8 @@ fn buckets() {
     };
     assert_eq!(names(Bucket::All).len(), 4);
     assert_eq!(names(Bucket::Uhd), ["A"]);
-    assert_eq!(names(Bucket::FullHd), ["A", "B"]);
-    assert_eq!(names(Bucket::Hd), ["A", "B"]);
+    assert_eq!(names(Bucket::FullHd), ["B"]);
+    assert!(names(Bucket::Hd).is_empty());
     assert_eq!(names(Bucket::Sd), ["C"]);
     assert_eq!(names(Bucket::HighFps), ["B"]);
     assert_eq!(names(Bucket::Unknown), ["D"]);
