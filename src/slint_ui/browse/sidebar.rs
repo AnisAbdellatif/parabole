@@ -30,6 +30,9 @@ fn matches(label: &str, filter: &str) -> bool {
 
 impl SlintApp {
     pub fn push_sidebar(&self) {
+        if self.state.smart {
+            return self.push_smart_sidebar();
+        }
         let Some(win) = self.win.upgrade() else {
             return;
         };

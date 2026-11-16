@@ -21,6 +21,7 @@ pub struct StreamModel {
     on_image: RefCell<Option<ImageHook>>,
     on_reset: RefCell<Option<Rc<dyn Fn()>>>,
     playing: Cell<Option<i64>>,
+    badges: RefCell<HashMap<i64, String>>,
 }
 
 fn initials(name: &str) -> String {
@@ -43,7 +44,13 @@ impl StreamModel {
             on_image: Default::default(),
             on_reset: Default::default(),
             playing: Cell::new(None),
+            badges: Default::default(),
         }
+    }
+
+    /// Quality badge per stream id, shown first in the meta line. Call before `set_rows`.
+    pub fn set_badges(&self, badges: HashMap<i64, String>) {
+        *self.badges.borrow_mut() = badges;
     }
 
     pub fn set_rows(
@@ -150,6 +157,9 @@ impl StreamModel {
             return "No longer listed by the provider".into();
         }
         let mut parts = Vec::new();
+        if let Some(b) = self.badges.borrow().get(&r.id).filter(|b| !b.is_empty()) {
+            parts.push(b.clone());
+        }
         if self.show_source.get()
             && let Some(n) = self.source_names.borrow().get(&r.source_id)
         {

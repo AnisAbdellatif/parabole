@@ -2,6 +2,7 @@
 use super::ToastItem;
 use super::state::{Sel, SlintApp};
 use crate::model::{MediaKind, SourceId};
+use crate::smart::{self, Bucket, Variant};
 use slint::Model;
 use std::time::Instant;
 
@@ -105,7 +106,10 @@ impl SlintApp {
             Ok(g) => self.groups = g,
             Err(e) => self.toast(format!("{e:#}")),
         }
+        self.reload_smart();
         let valid = match &self.state.sel {
+            Some(Sel::Quality(b)) => self.state.smart && Bucket::from_index(*b).is_some(),
+            Some(_) if self.state.smart => false,
             Some(Sel::Group(id)) => self.groups.iter().any(|g| g.id == *id),
             Some(Sel::Category(s, k)) => self
                 .categories
@@ -115,7 +119,9 @@ impl SlintApp {
             Some(_) => true,
             None => false,
         };
-        if !valid {
+        if !valid && self.state.smart {
+            self.state.sel = Some(Sel::Quality(Bucket::All.index()));
+        } else if !valid {
             self.state.sel = self
                 .categories
                 .iter()
@@ -124,6 +130,22 @@ impl SlintApp {
         }
         self.push_sidebar();
         self.reload_streams();
+    }
+
+    fn reload_smart(&mut self) {
+        if !self.state.smart {
+            return self.smart.clear();
+        }
+        match self.db.live_variants(self.profile(), self.state.source) {
+            Ok(v) => {
+                let v = v.into_iter().map(|(row, quality)| Variant { row, quality });
+                self.smart = smart::group(v.collect());
+            }
+            Err(e) => {
+                self.smart.clear();
+                self.toast(format!("{e:#}"));
+            }
+        }
     }
 
     pub fn reload_streams(&mut self) {
@@ -144,6 +166,7 @@ impl SlintApp {
                 Some(Sel::Recent) => self.db.recent(profile, tab, RECENT_LIMIT),
                 Some(Sel::Continue) => self.db.continue_watching(profile, tab, RECENT_LIMIT),
                 Some(Sel::Group(id)) => self.db.group_streams(profile, *id, tab),
+                Some(Sel::Quality(b)) => Ok(self.smart_rows(*b)),
                 Some(Sel::Category(s, k)) => self
                     .db
                     .streams_in_category(profile, *s, tab, k, self.browse.edit)

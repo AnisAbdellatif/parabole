@@ -40,6 +40,10 @@ pub struct Session {
     pub series: Option<SeriesCtx>,
     pub autonext: Option<AutoNext>,
     pub memory: TrackMemory,
+    pub opened_at: Instant,
+    /// Time to the first decoded position; measured once per session.
+    pub startup_ms: Option<i64>,
+    pub quality_saved: bool,
 }
 
 impl Session {
@@ -56,6 +60,9 @@ impl Session {
             series: play.series,
             autonext: None,
             memory: TrackMemory::default(),
+            opened_at: Instant::now(),
+            startup_ms: None,
+            quality_saved: false,
         }
     }
 

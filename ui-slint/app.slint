@@ -52,6 +52,7 @@ export component AppWindow inherits Window {
                 if (e.text == "2") { Core.tab-selected(1); return accept; }
                 if (e.text == "3") { Core.tab-selected(2); return accept; }
                 if (e.text == "4" && Core.sports-enabled) { Core.tab-selected(3); return accept; }
+                if (e.text == "5") { Core.tab-selected(4); return accept; }
                 if (e.text == "f" && Core.tab != 3) { header.focus-search(); return accept; }
             }
             if (Core.tab == 3) { return reject; }

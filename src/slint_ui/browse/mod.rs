@@ -11,6 +11,7 @@ mod rows;
 mod search_filter;
 mod series;
 mod sidebar;
+mod smart;
 mod sort;
 
 use super::state::{Sel, SlintApp, with_app};

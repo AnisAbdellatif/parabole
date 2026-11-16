@@ -66,6 +66,7 @@ impl SlintApp {
             .iter()
             .map(|s| (s.id, s.name.clone()))
             .collect();
+        self.streams.set_badges(self.row_badges(&rows));
         self.streams.set_rows(rows, prefix, names);
         let Some(win) = self.win.upgrade() else {
             return;
@@ -90,6 +91,9 @@ impl SlintApp {
                     .find(|c| c.source_id == *s && c.key == *k)
                     .map(|c| c.name.clone())
                     .unwrap_or_default(),
+                Some(Sel::Quality(b)) => crate::smart::Bucket::from_index(*b)
+                    .map_or("", |b| b.label())
+                    .into(),
                 None => String::new(),
             }
         };

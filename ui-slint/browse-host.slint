@@ -17,7 +17,7 @@ export component BrowseHost inherits Rectangle {
     callback interacted();
     property <length> full-h: clamp(root.height * 0.34, 180px, 320px);
     // the Hero must exist to report focus, but only takes height once this list produced a backdrop
-    property <bool> hero-live: Core.tab != 0 && !BrowseApi.series-open && Core.streams.length > 0;
+    property <bool> hero-live: (Core.tab == 1 || Core.tab == 2) && !BrowseApi.series-open && Core.streams.length > 0;
     property <string> list-key: Core.tab + ":" + Core.list-title;
     property <string> latched-key: "";
     property <HeroExtra> hero: BrowseApi.hero;

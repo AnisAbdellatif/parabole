@@ -80,6 +80,9 @@ impl SlintApp {
             Some(Sel::Group(_)) => {
                 return Content::new("Empty group", "Right-click an item and pick Add to group.");
             }
+            Some(Sel::Quality(_)) if !self.categories.is_empty() => {
+                return Content::new("No channels here", "Pick another quality in the sidebar.");
+            }
             _ => {}
         }
         if self.categories.is_empty() {

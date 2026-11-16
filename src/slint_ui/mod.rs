@@ -72,7 +72,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     let core = win.global::<Core>();
     core.set_streams(ModelRc::from(streams.clone()));
     core.set_toasts(ModelRc::from(toasts.clone()));
-    core.set_tab(state.tab as i32);
+    core.set_tab(if state.smart { 4 } else { state.tab as i32 });
     core.set_sports_enabled(sports_settings_loaded.enabled);
     core.set_mod_label(push::MOD_LABEL.into());
     state.appearance.apply(&win);
@@ -94,6 +94,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
             sources: Vec::new(),
             categories: Vec::new(),
             groups: Vec::new(),
+            smart: Vec::new(),
             streams,
             play_req: None,
             playing_id: None,

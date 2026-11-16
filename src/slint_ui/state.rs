@@ -21,6 +21,8 @@ pub enum Sel {
     Continue,
     Group(i64),
     Category(SourceId, String),
+    /// Smart tab quality bucket (`smart::Bucket::index`).
+    Quality(u8),
 }
 
 impl Sel {
@@ -31,6 +33,7 @@ impl Sel {
             Sel::Continue => "continue".into(),
             Sel::Group(id) => format!("g:{id}"),
             Sel::Category(s, k) => format!("c:{s}:{k}"),
+            Sel::Quality(b) => format!("q:{b}"),
         }
     }
 
@@ -42,6 +45,9 @@ impl Sel {
             _ => {
                 if let Some(id) = s.strip_prefix("g:") {
                     return id.parse().ok().map(Sel::Group);
+                }
+                if let Some(b) = s.strip_prefix("q:") {
+                    return b.parse().ok().map(Sel::Quality);
                 }
                 let (src, key) = s.strip_prefix("c:")?.split_once(':')?;
                 Some(Sel::Category(src.parse().ok()?, key.to_owned()))
@@ -55,6 +61,8 @@ impl Sel {
 pub struct Persisted {
     pub profile: Option<ProfileId>,
     pub tab: MediaKind,
+    /// The Smart tab is showing; `tab` is then Live.
+    pub smart: bool,
     pub source: Option<SourceId>,
     pub sel: Option<Sel>,
     pub sidebar_width: f32,
@@ -69,6 +77,7 @@ impl Default for Persisted {
         Self {
             profile: None,
             tab: MediaKind::default(),
+            smart: false,
             source: None,
             sel: None,
             sidebar_width: 260.0,
@@ -105,6 +114,8 @@ pub struct SlintApp {
     pub sources: Vec<Source>,
     pub categories: Vec<CategoryRow>,
     pub groups: Vec<StreamGroup>,
+    /// Smart tab channels; empty outside it.
+    pub smart: Vec<crate::smart::Channel>,
     pub streams: Rc<StreamModel>,
     pub play_req: Option<i64>,
     pub playing_id: Option<i64>,
@@ -145,6 +156,7 @@ mod tests {
             Sel::Continue,
             Sel::Group(7),
             Sel::Category(3, "a:b:c".into()),
+            Sel::Quality(4),
         ] {
             assert_eq!(Sel::from_id(&sel.to_id()), Some(sel));
         }

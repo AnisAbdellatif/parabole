@@ -35,10 +35,14 @@ pub(crate) fn select(a: &mut SlintApp, sel: Sel) {
 
 pub(crate) fn switch_tab(a: &mut SlintApp, i: i32) {
     if i == 3 {
+        if a.sports.settings.enabled {
+            a.state.smart = false;
+        }
         super::sports::open(a);
         return;
     }
     super::sports::leave(a);
+    a.state.smart = i == 4;
     a.state.tab = match i {
         1 => MediaKind::Movie,
         2 => MediaKind::Series,

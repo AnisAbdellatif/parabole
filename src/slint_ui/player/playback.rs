@@ -2,7 +2,7 @@
 use super::super::Core;
 use super::super::state::{SlintApp, with_app};
 use super::session::{EndAction, SAVE_EVERY, STABLE_AFTER_S, Session, end_action};
-use super::{autonext, track_memory};
+use super::{autonext, quality, track_memory};
 use super::{carousel, sync};
 use crate::player::{Notice, PlayerKind};
 use crate::worker::{Command, EmbedPlay, Track, player_settings};
@@ -120,10 +120,14 @@ pub fn tick(a: &mut SlintApp) {
             EndAction::GiveUp => {
                 s.error = Some("The stream stopped and could not be reopened".into());
                 give_up = s.stream_id.filter(|_| s.is_live());
+                if s.is_live() {
+                    quality::on_give_up(db, s);
+                }
             }
             EndAction::Finish => finished = true,
         }
     }
+    quality::on_tick(db, core, s);
     if let Some(pos) = core.state().time_pos {
         if pos > STABLE_AFTER_S {
             s.attempt = 0;
@@ -219,6 +223,21 @@ fn switch_to_alternate(a: &mut SlintApp, failed: i64) {
         return;
     }
     let profile = a.profile();
+    if let Some(next) = a
+        .state
+        .smart
+        .then(|| a.smart_next_variant(failed))
+        .flatten()
+    {
+        let (id, source) = (next.id, next.source_id);
+        a.player.switched_to = Some(id);
+        a.toast(format!("Switched to {}", a.source_name(source)));
+        return a.worker.send(Command::Play {
+            profile,
+            stream_id: id,
+            kind: None,
+        });
+    }
     let alt = match a.db.alternates(profile, failed) {
         Ok(alts) => alts.into_iter().next(),
         Err(e) => return a.toast(format!("{e:#}")),

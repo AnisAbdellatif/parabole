@@ -6,6 +6,7 @@ mod controls;
 mod keys;
 mod pip;
 mod playback;
+mod quality;
 mod session;
 mod sync;
 mod track_memory;

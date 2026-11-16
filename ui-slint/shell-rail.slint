@@ -60,6 +60,7 @@ export component ShellRail inherits Rectangle {
         b-movies := RailButton { icon: Icons.movie; label: "Movies"; active: Core.tab == 1; clicked => { Core.tab-selected(1); } }
         b-series := RailButton { icon: Icons.series; label: "Series"; active: Core.tab == 2; clicked => { Core.tab-selected(2); } }
         if Core.sports-enabled: RailButton { icon: Icons.sports; label: "Sports"; active: Core.tab == 3; clicked => { Core.tab-selected(3); } }
+        b-smart := RailButton { icon: Icons.smart; label: "Smart"; active: Core.tab == 4; clicked => { Core.tab-selected(4); } }
         Rectangle { vertical-stretch: 1; }
         b-sources := RailButton { icon: Icons.sources; label: "Sources"; clicked => { DialogApi.open-dialog("sources"); } }
         b-profile := RailButton {
