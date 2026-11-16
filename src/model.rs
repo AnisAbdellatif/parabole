@@ -277,3 +277,17 @@ pub struct ProviderStatus {
     pub ok: bool,
     pub error: Option<String>,
 }
+
+/// Playback quality measured by the embedded player for one live stream.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct Quality {
+    pub width: Option<i64>,
+    pub height: Option<i64>,
+    pub fps: Option<f64>,
+    pub video_codec: Option<String>,
+    /// Bits per second.
+    pub bitrate: Option<f64>,
+    pub startup_ms: Option<i64>,
+    /// Failures since the last successful play.
+    pub fails: i64,
+}

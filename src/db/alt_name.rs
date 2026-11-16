@@ -53,7 +53,7 @@ fn fold(c: char) -> (char, bool) {
 }
 
 /// Drops a leading country tag such as `US|`, `FR:` or `|UK|`.
-fn strip_country(name: &str) -> &str {
+pub fn strip_country(name: &str) -> &str {
     let trimmed = name.trim_start_matches(['|', '[', '(', ' ']);
     match trimmed.find(['|', ':', ']', ')']) {
         Some(i)

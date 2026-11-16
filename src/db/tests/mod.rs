@@ -7,6 +7,7 @@ mod new_categories;
 mod overlay;
 mod profiles;
 mod progress;
+mod quality;
 mod search;
 mod settings;
 mod track_prefs;
@@ -87,7 +88,7 @@ fn migrations_are_idempotent_on_reopen() {
         .conn
         .query_row("PRAGMA user_version", [], |r| r.get(0))
         .unwrap();
-    assert_eq!(v, 7);
+    assert_eq!(v, 8);
     drop(db); // Windows can't delete a directory holding an open file
     std::fs::remove_dir_all(dir).unwrap();
 }
