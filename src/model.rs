@@ -120,6 +120,22 @@ pub struct ParsedStream {
     pub extra_json: Option<String>,
 }
 
+/// One TV guide entry. `channel` is the XMLTV channel id, lowercased; times are unix seconds.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Programme {
+    pub channel: String,
+    pub start: i64,
+    pub stop: i64,
+    pub title: String,
+    pub descr: Option<String>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct NowNext {
+    pub now: Programme,
+    pub next: Option<Programme>,
+}
+
 /// Everything a refresh produces. Vec order is the provider order.
 #[derive(Clone, Debug, Default, PartialEq)]
 pub struct ParsedPlaylist {
