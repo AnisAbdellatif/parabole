@@ -15,11 +15,13 @@ import { BrowseApi } from "browse-api.slint";
 import { DialogApi } from "dialog-api.slint";
 import { CommandPalette } from "palette.slint";
 import { PaletteApi } from "palette-api.slint";
+import { FootballView } from "football-view.slint";
+import { FootballApi } from "football-api.slint";
 import { AppearanceApi } from "dialog-appearance.slint";
 
-export { Core, Theme, PlayerApi, BrowseApi, DialogApi, PaletteApi, AppearanceApi }
+export { Core, Theme, PlayerApi, BrowseApi, DialogApi, PaletteApi, AppearanceApi, FootballApi }
 export { KeyHint } from "player-api.slint";
-export { StreamItem, SidebarItem, ToastItem, SourceRow, ProfileRow, TrackItem } from "types.slint";
+export { StreamItem, SidebarItem, ToastItem, SourceRow, ProfileRow, TrackItem, FootballRow, FootballChannel, FootballLang } from "types.slint";
 
 export component AppWindow inherits Window {
     title: "Parabole";
@@ -41,13 +43,18 @@ export component AppWindow inherits Window {
 
     keys := FocusScope {
         key-pressed(e) => {
-            if (PaletteApi.key(e) || DialogApi.key(e) || PlayerApi.key(e) || BrowseApi.key(e)) { return accept; }
+            if (PaletteApi.key(e) || DialogApi.key(e) || PlayerApi.key(e)) { return accept; }
+            if (Core.tab == 3) {
+                if (FootballApi.key(e)) { return accept; }
+            } else if (BrowseApi.key(e)) { return accept; }
             if (e.modifiers.meta || e.modifiers.control) {
                 if (e.text == "1") { Core.tab-selected(0); return accept; }
                 if (e.text == "2") { Core.tab-selected(1); return accept; }
                 if (e.text == "3") { Core.tab-selected(2); return accept; }
-                if (e.text == "f") { header.focus-search(); return accept; }
+                if (e.text == "4" && Core.football-enabled) { Core.tab-selected(3); return accept; }
+                if (e.text == "f" && Core.tab != 3) { header.focus-search(); return accept; }
             }
+            if (Core.tab == 3) { return reject; }
             if (e.text == Key.Escape) { Core.search-cleared(); keys.focus(); return accept; }
             if (e.text == Key.DownArrow) { root.move-cursor(1); return accept; }
             if (e.text == Key.UpArrow) { root.move-cursor(-1); return accept; }
@@ -66,10 +73,17 @@ export component AppWindow inherits Window {
                     header := ShellHeader { escaped => { keys.focus(); } }
                     BrowseHost { interacted => { keys.focus(); } }
                 }
-                PlayerPane { }
+                pane := PlayerPane { }
             }
             PlayerPaneBottom { }
             StatusBar { }
+        }
+        if Core.tab == 3: FootballView {
+            x: Theme.rail-w;
+            y: 0px;
+            width: pane.x - Theme.rail-w;
+            height: main.height;
+            interacted => { keys.focus(); }
         }
         ShellRail { x: 0px; y: 0px; height: main.height; }
     }

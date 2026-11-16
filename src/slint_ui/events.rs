@@ -20,6 +20,9 @@ pub fn drain() {
             let Some(ev) = super::browse::on_event(a, ev) else {
                 continue;
             };
+            let Some(ev) = super::football::on_event(a, ev) else {
+                continue;
+            };
             match ev {
                 Event::SourceChanged => a.reload_sources(),
                 Event::RefreshStarted(id) => {

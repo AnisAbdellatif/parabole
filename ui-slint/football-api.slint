@@ -1,0 +1,27 @@
+// Football tab state. Rust: win.global::<FootballApi>(), src/slint_ui/football/.
+import { FootballRow, FootballChannel } from "types.slint";
+
+export global FootballApi {
+    in property <[FootballRow]> rows;
+    in property <int> cursor: -1;
+    in property <string> detail-title;
+    in property <string> detail-sub;
+    in property <[FootballChannel]> channels;
+    in property <string> status;
+    in property <string> empty-text;
+    callback row-selected(int);
+    callback channel-clicked(int);
+    callback refresh();
+    // Keys while the Football tab is shown; return true when handled.
+    callback key(KeyEvent) -> bool;
+    key(e) => {
+        if (root.rows.length == 0) { return false; }
+        if (e.text == Key.DownArrow) { root.row-selected(min(root.rows.length - 1, root.cursor + 1)); return true; }
+        if (e.text == Key.UpArrow) { root.row-selected(max(0, root.cursor - 1)); return true; }
+        if (e.text == Key.PageDown) { root.row-selected(min(root.rows.length - 1, root.cursor + 10)); return true; }
+        if (e.text == Key.PageUp) { root.row-selected(max(0, root.cursor - 10)); return true; }
+        if (e.text == Key.Home) { root.row-selected(0); return true; }
+        if (e.text == Key.End) { root.row-selected(root.rows.length - 1); return true; }
+        return false;
+    }
+}

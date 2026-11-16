@@ -33,24 +33,31 @@ pub(crate) fn select(a: &mut SlintApp, sel: Sel) {
     a.reload_streams();
 }
 
+pub(crate) fn switch_tab(a: &mut SlintApp, i: i32) {
+    if i == 3 {
+        super::football::open(a);
+        return;
+    }
+    super::football::leave(a);
+    a.state.tab = match i {
+        1 => MediaKind::Movie,
+        2 => MediaKind::Series,
+        _ => MediaKind::Live,
+    };
+    a.state.sel = None;
+    reset_cursor(a);
+    super::browse::close_series(a);
+    if let Some(w) = a.win.upgrade() {
+        w.global::<Core>().set_tab(i);
+        w.global::<super::BrowseApi>().set_sidebar_focus(false);
+    }
+    a.reload_categories();
+}
+
 pub fn connect(win: &AppWindow) {
     let core = win.global::<Core>();
     core.on_tab_selected(|i| {
-        with_app(|a| {
-            a.state.tab = match i {
-                1 => MediaKind::Movie,
-                2 => MediaKind::Series,
-                _ => MediaKind::Live,
-            };
-            a.state.sel = None;
-            reset_cursor(a);
-            super::browse::close_series(a);
-            if let Some(w) = a.win.upgrade() {
-                w.global::<Core>().set_tab(i);
-                w.global::<super::BrowseApi>().set_sidebar_focus(false);
-            }
-            a.reload_categories();
-        });
+        with_app(|a| switch_tab(a, i));
     });
     core.on_profile_selected(|i| {
         with_app(|a| {

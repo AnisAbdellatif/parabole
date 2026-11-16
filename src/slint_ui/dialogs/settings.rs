@@ -1,9 +1,12 @@
 //! Settings dialog (mirrors `ui/settings_view.rs`).
 use super::{AppWindow, DialogApi};
 use crate::player::{PlayerKind, PlayerSettings, find_binary};
+use crate::slint_ui::FootballLang;
 use crate::slint_ui::state::{SlintApp, with_app};
+use crate::sports::lang::LANGUAGES;
+use crate::worker::football_settings::{self, FootballSettings};
 use crate::worker::player_settings;
-use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
+use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::PathBuf;
 
 fn kind_label(kind: &PlayerKind) -> &'static str {
@@ -69,8 +72,19 @@ impl SlintApp {
         self.load_appearance_dialog();
         let Some(w) = self.win.upgrade() else { return };
         let s = player_settings::load(&self.db);
+        let f = football_settings::load(&self.db);
         let api = w.global::<DialogApi>();
         api.set_settings_tab(tab);
+        api.set_set_football(f.enabled);
+        let langs: Vec<FootballLang> = LANGUAGES
+            .iter()
+            .map(|l| FootballLang {
+                code: l.code.into(),
+                name: l.name.into(),
+                checked: f.langs.iter().any(|c| c == l.code),
+            })
+            .collect();
+        api.set_football_langs(ModelRc::new(VecModel::from(langs)));
         let names = kind_names();
         let mut opt = vec![SharedString::from("Default")];
         opt.extend(names.iter().cloned());
@@ -107,7 +121,22 @@ impl SlintApp {
             custom_template: api.get_set_template().trim().to_string(),
             mpv_args,
         };
-        player_settings::save(&self.db, &s).map_err(|e| format!("{e:#}"))
+        let football = FootballSettings {
+            enabled: api.get_set_football(),
+            langs: api
+                .get_football_langs()
+                .iter()
+                .filter(|l| l.checked)
+                .map(|l| l.code.to_string())
+                .collect(),
+        };
+        if football.enabled && football.langs.is_empty() {
+            return Err("Pick at least one language for the Football tab".into());
+        }
+        player_settings::save(&self.db, &s).map_err(|e| format!("{e:#}"))?;
+        football_settings::save(&self.db, &football).map_err(|e| format!("{e:#}"))?;
+        crate::slint_ui::football::apply_settings(self, football);
+        Ok(())
     }
 }
 
@@ -118,6 +147,17 @@ pub fn connect(win: &AppWindow) {
             if let Some(w) = a.win.upgrade() {
                 w.global::<DialogApi>()
                     .set_set_detected(detect_text().into());
+            }
+        });
+    });
+    api.on_football_lang_toggled(|i| {
+        with_app(|a| {
+            let Some(w) = a.win.upgrade() else { return };
+            let model = w.global::<DialogApi>().get_football_langs();
+            let Ok(i) = usize::try_from(i) else { return };
+            if let Some(mut l) = model.row_data(i) {
+                l.checked = !l.checked;
+                model.set_row_data(i, l);
             }
         });
     });

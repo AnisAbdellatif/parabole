@@ -145,3 +145,29 @@ export struct HeroExtra {
     plot: string,
     action: string,
 }
+
+// One match row of the Football tab. `section` is set on the first row of a group ("LIVE", "TODAY", "TOMORROW", "WED 18 NOV").
+export struct FootballRow {
+    key: string,
+    section: string,
+    time: string,
+    live: bool,
+    teams: string,
+    score: string,
+    competition: string,
+    langs: string,
+}
+
+// One line of the Football details panel: a language header, or a channel ("Canal+ Foot (FR)") whose name `channel` is copied on click.
+export struct FootballChannel {
+    header: bool,
+    text: string,
+    channel: string,
+}
+
+// One language checkbox in Settings → Football.
+export struct FootballLang {
+    code: string,
+    name: string,
+    checked: bool,
+}

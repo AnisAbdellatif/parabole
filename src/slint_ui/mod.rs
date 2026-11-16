@@ -7,6 +7,7 @@ mod dialogs;
 mod dock_icon;
 mod events;
 pub mod fonts;
+mod football;
 mod images;
 mod palette;
 pub mod paths;
@@ -65,12 +66,14 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     let state_path = path.with_file_name("slint-ui.json");
     let mut state = Persisted::load(&state_path);
     state.profile.get_or_insert(default_profile);
+    let football_settings = crate::worker::football_settings::load(&db);
     let streams = Rc::new(StreamModel::new(images.clone()));
     let toasts = Rc::new(slint::VecModel::default());
     let core = win.global::<Core>();
     core.set_streams(ModelRc::from(streams.clone()));
     core.set_toasts(ModelRc::from(toasts.clone()));
     core.set_tab(state.tab as i32);
+    core.set_football_enabled(football_settings.enabled);
     core.set_mod_label(push::MOD_LABEL.into());
     state.appearance.apply(&win);
     win.global::<BrowseApi>()
@@ -107,6 +110,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
             browse: Default::default(),
             dialogs: Default::default(),
             palette: Default::default(),
+            football: football::FootballArea::new(football_settings),
         });
     });
     callbacks::connect(&win);
@@ -114,6 +118,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     palette::connect(&win);
     player::connect(&win);
     browse::connect(&win);
+    football::connect(&win);
     wiring::connect(&win);
     with_app(|a| {
         a.reload_all();

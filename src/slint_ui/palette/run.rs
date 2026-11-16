@@ -42,7 +42,8 @@ impl SlintApp {
     }
 
     fn palette_open_category(&mut self, media: MediaKind, sel: Sel) {
-        if media != self.state.tab {
+        if media != self.state.tab || self.football.open {
+            crate::slint_ui::football::leave(self);
             let tab = MediaKind::ALL.iter().position(|m| *m == media).unwrap_or(0) as i32;
             self.state.tab = media;
             if let Some(w) = self.win.upgrade() {

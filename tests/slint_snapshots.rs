@@ -11,8 +11,8 @@ mod sw_platform;
 
 use i_slint_backend_testing::ElementHandle;
 use parabole::slint_ui::{
-    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, PlayerApi, StreamItem, Theme,
-    ToastItem, build, fonts,
+    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, FootballApi, FootballChannel, FootballRow,
+    PaletteApi, PlayerApi, StreamItem, Theme, ToastItem, build, fonts,
 };
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
@@ -190,6 +190,96 @@ impl Shots {
         self.shot("toast");
     }
 
+    fn football_screen(&mut self) {
+        let win = self.win.clone_strong();
+        let row = |section: &str,
+                   time: &str,
+                   live: bool,
+                   teams: &str,
+                   score: &str,
+                   comp: &str,
+                   langs: &str| {
+            FootballRow {
+                key: teams.into(),
+                section: section.into(),
+                time: time.into(),
+                live,
+                teams: teams.into(),
+                score: score.into(),
+                competition: comp.into(),
+                langs: langs.into(),
+            }
+        };
+        let ch = |header: bool, text: &str, channel: &str| FootballChannel {
+            header,
+            text: text.into(),
+            channel: channel.into(),
+        };
+        let api = win.global::<FootballApi>();
+        api.set_rows(ModelRc::new(VecModel::from(vec![
+            row(
+                "LIVE",
+                "67'",
+                true,
+                "Real Madrid – Inter",
+                "1–1",
+                "Champions League",
+                "EN ES FR +3",
+            ),
+            row(
+                "TODAY",
+                "20:45",
+                false,
+                "Germany – Netherlands",
+                "",
+                "Nations League",
+                "DE EN FR AR +4",
+            ),
+            row(
+                "",
+                "21:00",
+                false,
+                "France – Italy",
+                "",
+                "Nations League",
+                "FR IT",
+            ),
+            row(
+                "TOMORROW",
+                "18:30",
+                false,
+                "Spain – Portugal",
+                "",
+                "Nations League",
+                "ES PT EN",
+            ),
+        ])));
+        api.set_cursor(1);
+        api.set_detail_title("Germany – Netherlands".into());
+        api.set_detail_sub("Nations League · Mon 16 Nov, 20:45".into());
+        api.set_channels(ModelRc::new(VecModel::from(vec![
+            ch(true, "English", ""),
+            ch(false, "Amazon Prime PPV (GB)", "Amazon Prime PPV"),
+            ch(false, "Fox Sports 1 (US)", "Fox Sports 1"),
+            ch(true, "German", ""),
+            ch(false, "ARD Das Erste (DE)", "ARD Das Erste"),
+            ch(true, "Arabic", ""),
+            ch(false, "beIN Sport 1 HD (SA)", "beIN Sport 1 HD"),
+        ])));
+        api.set_status("Updated 14:32 · LiveScore unavailable".into());
+        api.set_empty_text("".into());
+        let core = win.global::<Core>();
+        core.set_toasts(ModelRc::new(VecModel::default()));
+        core.set_football_enabled(true);
+        core.set_tab(3);
+        self.p.pump(2);
+        self.shot("football");
+        core.set_tab(0);
+        core.set_football_enabled(false);
+        api.set_cursor(-1);
+        self.p.pump(2);
+    }
+
     fn rect(&self, id: &str, nth: usize) -> ink::Rect {
         let el = ElementHandle::find_by_element_id(&self.win, id)
             .nth(nth)
@@ -305,6 +395,7 @@ fn snapshots() {
     s.series_screen();
     s.player_screens();
     s.toast_screen();
+    s.football_screen();
     let failures = std::mem::take(&mut s.failures);
     drop(s);
     slint_seed::cleanup(&dir);

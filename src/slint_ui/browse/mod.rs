@@ -129,6 +129,10 @@ pub fn on_event(a: &mut SlintApp, ev: Event) -> Option<Event> {
 }
 
 fn copy_url(a: &mut SlintApp, url: &str) {
+    copy_text(a, url, "Stream URL copied");
+}
+
+pub(crate) fn copy_text(a: &mut SlintApp, text: &str, done: &str) {
     if a.browse.clipboard.is_none() {
         a.browse.clipboard = arboard::Clipboard::new().ok();
     }
@@ -136,9 +140,9 @@ fn copy_url(a: &mut SlintApp, url: &str) {
         .browse
         .clipboard
         .as_mut()
-        .is_some_and(|c| c.set_text(url).is_ok());
+        .is_some_and(|c| c.set_text(text).is_ok());
     a.toast(if ok {
-        "Stream URL copied"
+        done
     } else {
         "Could not copy to the clipboard"
     });

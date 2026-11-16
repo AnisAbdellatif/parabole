@@ -35,6 +35,29 @@ component PlayersTab inherits VerticalLayout {
     FormRow { label: "Extra mpv args"; DField { text <=> DialogApi.set-mpv-args; } }
 }
 
+component FootballTab inherits VerticalLayout {
+    spacing: 12px;
+    FormRow { label: "Football tab"; DCheck { text: "Show the Football tab"; checked <=> DialogApi.set-football; } }
+    if DialogApi.set-football: FormRow {
+        label: "Languages";
+        VerticalLayout {
+            spacing: 8px;
+            padding-top: 5px;
+            for lang[i] in DialogApi.football-langs: DCheck {
+                text: lang.name;
+                checked: lang.checked;
+                changed checked => { DialogApi.football-lang-toggled(i); }
+            }
+        }
+    }
+    Text {
+        text: "Upcoming and live matches of popular competitions, with the TV channels showing them. Data comes from 365scores and LiveScore (free, unofficial); channels are for information and may not be in your sources.";
+        color: Theme.text-dim;
+        font-size: Theme.fs-sm;
+        wrap: word-wrap;
+    }
+}
+
 export component SettingsDialog inherits DialogFrame {
     title: "Settings";
     card-width: 560px;
@@ -42,7 +65,7 @@ export component SettingsDialog inherits DialogFrame {
         padding: 16px;
         padding-bottom: 0px;
         tabs := Segmented {
-            options: ["Playback", "Players", "Appearance"];
+            options: ["Playback", "Players", "Appearance", "Football"];
             current: DialogApi.settings-tab;
             changed(i) => { DialogApi.settings-tab = i; }
         }
@@ -52,6 +75,7 @@ export component SettingsDialog inherits DialogFrame {
         if DialogApi.settings-tab == 0: PlaybackTab { }
         if DialogApi.settings-tab == 1: PlayersTab { }
         if DialogApi.settings-tab == 2: AppearancePane { }
+        if DialogApi.settings-tab == 3: FootballTab { }
     }
     if DialogApi.settings-tab != 2: DialogFooter {
         DButton { text: "Cancel"; clicked => { DialogApi.close(); } }
