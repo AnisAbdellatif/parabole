@@ -130,6 +130,46 @@ pub struct Programme {
     pub descr: Option<String>,
 }
 
+pub type GuideId = i64;
+
+/// A `<channel>` of an XMLTV guide: lowercased id and its display names.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct GuideChannel {
+    pub id: String,
+    pub names: Vec<String>,
+}
+
+/// A TV guide: the provider's own (`source_id` set, URL derived at fetch time) or a user-added URL.
+#[derive(Clone, Debug, PartialEq)]
+pub struct Guide {
+    pub id: GuideId,
+    pub source_id: Option<SourceId>,
+    pub url: Option<String>,
+    pub name: String,
+    pub enabled: bool,
+    pub position: i64,
+    pub refreshed_at: Option<i64>,
+    pub last_error: Option<String>,
+}
+
+/// What guide matching needs to know about one live stream.
+#[derive(Clone, Debug, PartialEq)]
+pub struct StreamGuideKey {
+    pub source_id: SourceId,
+    pub stream_key: String,
+    pub epg_id: Option<String>,
+    pub name: String,
+}
+
+/// A live stream (by provider key) shown with one guide channel.
+#[derive(Clone, Debug, PartialEq)]
+pub struct EpgLink {
+    pub source_id: SourceId,
+    pub stream_key: String,
+    pub guide_id: GuideId,
+    pub channel: String,
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct NowNext {
     pub now: Programme,
