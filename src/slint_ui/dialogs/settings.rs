@@ -112,6 +112,7 @@ impl SlintApp {
         let args = shlex::try_join(s.mpv_args.iter().map(String::as_str)).unwrap_or_default();
         api.set_set_mpv_args(args.into());
         api.set_set_detected("".into());
+        self.push_guides();
     }
 
     fn save_settings_dialog(&mut self) -> Result<(), String> {

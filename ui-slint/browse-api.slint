@@ -16,7 +16,8 @@ export global BrowseApi {
             return false;
         }
         if (root.guide-open) {
-            if (e.text == Key.Escape) { root.guide-closed(); }
+            if (e.text == Key.Escape) { if (root.guide-picking) { root.guide-pick-cancel(); } else { root.guide-closed(); } }
+            if (root.guide-picking) { return e.text == Key.Escape; }
             return e.text == Key.Escape || e.text == Key.Return || e.text == Key.UpArrow || e.text == Key.DownArrow;
         }
         if (root.details-open) {
@@ -156,5 +157,15 @@ export global BrowseApi {
     in property <[GuideItem]> guide;
     in property <int> guide-scroll-to: 0;
     callback guide-closed();
+    // Manual channel link: Rust sets picking/has-link/hits; query is cleared by Rust on start.
+    in property <bool> guide-picking: false;
+    in property <bool> guide-has-link: false;
+    in-out property <string> guide-query;
+    in property <[string]> guide-hits;
+    callback guide-pick-start();
+    callback guide-pick-cancel();
+    callback guide-auto();
+    callback guide-query-edited(string);
+    callback guide-hit-picked(int);
     callback details-retry();
 }

@@ -2,6 +2,7 @@ import { Theme } from "theme.slint";
 import { Icons } from "icons.slint";
 import { Icon } from "icon.slint";
 import { BrowseApi } from "browse-api.slint";
+import { DButton, DField } from "dialog-kit.slint";
 
 // Channel guide card; same look as DetailsPanel. Rows have a fixed height so the airing one can be scrolled to.
 export component GuidePanel inherits Rectangle {
@@ -19,7 +20,7 @@ export component GuidePanel inherits Rectangle {
         Text {
             x: 20px;
             y: 10px;
-            width: parent.width - 80px;
+            width: parent.width - 80px - (BrowseApi.guide-has-link ? 250px : 140px);
             height: 32px;
             vertical-alignment: center;
             text: BrowseApi.guide-title;
@@ -39,14 +40,48 @@ export component GuidePanel inherits Rectangle {
             clicked => { BrowseApi.guide-closed(); }
             Icon { source: Icons.close; x: 8px; y: 8px; tint: Theme.text-muted; }
         }
-        if BrowseApi.guide.length == 0: Text {
+        HorizontalLayout {
+            x: parent.width - 52px - self.preferred-width;
+            y: 10px;
+            height: 32px;
+            spacing: 8px;
+            if BrowseApi.guide-has-link: DButton { text: "Automatic"; clicked => { BrowseApi.guide-auto(); } }
+            if !BrowseApi.guide-picking: DButton { text: "Change channel…"; clicked => { BrowseApi.guide-pick-start(); } }
+        }
+        if BrowseApi.guide-picking: VerticalLayout {
             x: 20px;
             y: 56px;
-            text: "No guide data for this channel.";
+            width: parent.width - 40px;
+            height: parent.height - 72px;
+            spacing: 8px;
+            q := DField {
+                placeholder: "Search guide channels (2+ letters)";
+                text <=> BrowseApi.guide-query;
+                edited(t) => { BrowseApi.guide-query-edited(t); }
+                init => { self.focus-input(); }
+            }
+            Flickable {
+                content-height: BrowseApi.guide-hits.length * 36px;
+                for h[i] in BrowseApi.guide-hits: Rectangle {
+                    y: i * 36px;
+                    height: 36px;
+                    border-radius: 8px;
+                    background: hit.has-hover ? Theme.surface-hover : transparent;
+                    hit := TouchArea { clicked => { BrowseApi.guide-hit-picked(i); } }
+                    Text { x: 8px; width: parent.width - 16px; text: h; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; overflow: elide; }
+                }
+            }
+        }
+        if BrowseApi.guide.length == 0 && !BrowseApi.guide-picking: Text {
+            x: 20px;
+            y: 56px;
+            width: parent.width - 40px;
+            wrap: word-wrap;
+            text: "No guide data for this channel. Use “Change channel…” to pick it from a guide.";
             color: Theme.text-muted;
             font-size: Theme.fs-md;
         }
-        list := Flickable {
+        if !BrowseApi.guide-picking: list := Flickable {
             x: 20px;
             y: 56px;
             width: parent.width - 40px;

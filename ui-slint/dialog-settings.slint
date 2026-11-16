@@ -4,6 +4,7 @@ import { DialogApi } from "dialog-api.slint";
 import { DButton, DCheck, DField, FormRow, Segmented } from "dialog-kit.slint";
 import { DialogBody, DialogFooter, DialogFrame } from "dialog-frame.slint";
 import { AppearancePane } from "dialog-appearance.slint";
+import { GuidesTab } from "dialog-guides.slint";
 
 component PlaybackTab inherits VerticalLayout {
     spacing: 12px;
@@ -77,7 +78,7 @@ export component SettingsDialog inherits DialogFrame {
         padding: 16px;
         padding-bottom: 0px;
         tabs := Segmented {
-            options: ["Playback", "Players", "Appearance", "Sports"];
+            options: ["Playback", "Players", "Appearance", "Sports", "TV guides"];
             current: DialogApi.settings-tab;
             changed(i) => { DialogApi.settings-tab = i; }
         }
@@ -88,12 +89,13 @@ export component SettingsDialog inherits DialogFrame {
         if DialogApi.settings-tab == 1: PlayersTab { }
         if DialogApi.settings-tab == 2: AppearancePane { }
         if DialogApi.settings-tab == 3: SportsTab { }
+        if DialogApi.settings-tab == 4: GuidesTab { }
     }
-    if DialogApi.settings-tab != 2: DialogFooter {
+    if DialogApi.settings-tab != 2 && DialogApi.settings-tab != 4: DialogFooter {
         DButton { text: "Cancel"; clicked => { DialogApi.close(); } }
         DButton { text: "Save"; kind: 1; clicked => { DialogApi.settings-save(); } }
     }
-    if DialogApi.settings-tab == 2: DialogFooter {
+    if DialogApi.settings-tab == 2 || DialogApi.settings-tab == 4: DialogFooter {
         Text { text: "Applied immediately"; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; horizontal-stretch: 1; }
         DButton { text: "Done"; clicked => { DialogApi.close(); } }
     }

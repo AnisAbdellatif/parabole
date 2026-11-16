@@ -1,6 +1,7 @@
 //! TV guide: now-line on live rows, per-channel guide panel, player now-line.
 pub mod format;
 pub mod guide;
+mod guide_pick;
 
 use super::PlayerApi;
 use super::state::{SlintApp, with_app};
@@ -14,7 +15,7 @@ const TICK: Duration = Duration::from_secs(60);
 #[derive(Default)]
 pub struct EpgArea {
     timer: slint::Timer,
-    pub guide: Option<(i64, String)>,
+    pub guide: Option<guide::Open>,
 }
 
 /// Now/next for the live rows; DB errors give an empty map (the line is a hint).

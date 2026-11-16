@@ -1,5 +1,5 @@
 // Dialog area state and callbacks (sources, settings, profiles, groups). Owned by the dialogs area.
-import { SourceRow, ProfileRow, CheckItem } from "types.slint";
+import { SourceRow, ProfileRow, CheckItem, GuideRowItem } from "types.slint";
 
 export global DialogApi {
     // "", "sources", "settings", "profiles", "group" or "scan" ("appearance" opens settings tab 2).
@@ -50,7 +50,7 @@ export global DialogApi {
     callback form-test();
     callback auto-hours-commit(string);
 
-    // Settings: tab 0 Playback, 1 Players, 2 Appearance, 3 Sports.
+    // Settings: tab 0 Playback, 1 Players, 2 Appearance, 3 Sports, 4 TV guides.
     in-out property <int> settings-tab: 0;
     in-out property <bool> set-sports: false;
     in property <[CheckItem]> sports-list;
@@ -72,6 +72,15 @@ export global DialogApi {
     in-out property <string> set-detected;
     callback settings-detect();
     callback settings-save();
+
+    // Settings → TV guides (changes apply immediately). Callbacks take the guide id.
+    in property <[GuideRowItem]> guides;
+    in-out property <string> guide-url;
+    callback guide-toggled(int);
+    callback guide-moved(int, int);
+    callback guide-removed(int);
+    callback guide-added(string);
+    callback guides-refresh-all();
 
     // Profiles
     in property <[ProfileRow]> profile-rows;

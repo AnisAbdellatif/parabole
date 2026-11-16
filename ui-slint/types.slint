@@ -180,3 +180,13 @@ export struct GuideItem {
     now: bool,
     progress: float,
 }
+
+// One TV guide in Settings → TV guides.
+export struct GuideRowItem {
+    id: int,
+    name: string,
+    detail: string,
+    enabled: bool,
+    removable: bool,
+    error: bool,
+}

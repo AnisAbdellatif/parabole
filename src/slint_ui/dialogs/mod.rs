@@ -1,6 +1,7 @@
 //! Dialog area. Ownership and spec: docs/slint-phase2.md.
 pub(crate) mod appearance;
 mod group;
+mod guides;
 mod profiles;
 mod scan;
 mod settings;
@@ -35,6 +36,7 @@ pub fn connect(win: &AppWindow) {
     });
     source_callbacks::connect(win);
     settings::connect(win);
+    guides::connect(win);
     profiles::connect(win);
     group::connect(win);
     appearance::connect(win);
@@ -86,6 +88,15 @@ pub fn on_event(a: &mut SlintApp, ev: Event) -> Option<Event> {
         Event::TestResult(res) => {
             a.set_test_result(res);
             None
+        }
+        Event::EpgUpdated(..) | Event::EpgRelinked => {
+            if a.win
+                .upgrade()
+                .is_some_and(|w| w.global::<DialogApi>().get_open() == "settings")
+            {
+                a.push_guides();
+            }
+            Some(ev)
         }
         Event::SourceChanged | Event::RefreshStarted(_) | Event::RefreshDone(..) => {
             // Core updates `sources`/`refreshing` after this returns, so refresh the list afterwards.
