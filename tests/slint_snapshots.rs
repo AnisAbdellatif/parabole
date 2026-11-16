@@ -194,19 +194,19 @@ impl Shots {
         let win = self.win.clone_strong();
         let row = |section: &str,
                    time: &str,
-                   live: bool,
-                   teams: &str,
-                   score: &str,
-                   comp: &str,
+                   home: &str,
+                   away: &str,
+                   score: (&str, &str),
                    langs: &str| {
             FootballRow {
-                key: teams.into(),
+                key: home.into(),
                 section: section.into(),
                 time: time.into(),
-                live,
-                teams: teams.into(),
-                score: score.into(),
-                competition: comp.into(),
+                live: !score.0.is_empty(),
+                home: home.into(),
+                away: away.into(),
+                home_score: score.0.into(),
+                away_score: score.1.into(),
                 langs: langs.into(),
             }
         };
@@ -218,42 +218,26 @@ impl Shots {
         let api = win.global::<FootballApi>();
         api.set_rows(ModelRc::new(VecModel::from(vec![
             row(
-                "LIVE",
-                "67'",
-                true,
-                "Real Madrid – Inter",
-                "1–1",
                 "Champions League",
+                "67'",
+                "Real Madrid",
+                "Inter",
+                ("1", "1"),
                 "EN ES FR +3",
             ),
             row(
-                "TODAY",
-                "20:45",
-                false,
-                "Germany – Netherlands",
-                "",
                 "Nations League",
+                "20:45",
+                "Germany",
+                "Netherlands",
+                ("", ""),
                 "DE EN FR AR +4",
             ),
-            row(
-                "",
-                "21:00",
-                false,
-                "France – Italy",
-                "",
-                "Nations League",
-                "FR IT",
-            ),
-            row(
-                "TOMORROW",
-                "18:30",
-                false,
-                "Spain – Portugal",
-                "",
-                "Nations League",
-                "ES PT EN",
-            ),
+            row("", "21:00", "France", "Italy", ("", ""), "FR IT"),
         ])));
+        api.set_live_count(1);
+        api.set_day_label("Today".into());
+        api.set_can_next(true);
         api.set_cursor(1);
         api.set_detail_title("Germany – Netherlands".into());
         api.set_detail_sub("Nations League · Mon 16 Nov, 20:45".into());

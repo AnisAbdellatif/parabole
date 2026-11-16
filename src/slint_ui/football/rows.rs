@@ -1,7 +1,8 @@
 //! Text for the Football tab: pure formatting of matches, no Slint types.
+use super::filter;
 use crate::model::{Broadcast, Match, MatchStatus, ProviderStatus};
 use crate::sports::lang;
-use chrono::{DateTime, Duration, FixedOffset};
+use chrono::{DateTime, FixedOffset};
 use std::collections::BTreeSet;
 
 pub struct RowText {
@@ -9,9 +10,10 @@ pub struct RowText {
     pub section: String,
     pub time: String,
     pub live: bool,
-    pub teams: String,
-    pub score: String,
-    pub competition: String,
+    pub home: String,
+    pub away: String,
+    pub home_score: String,
+    pub away_score: String,
     pub langs: String,
 }
 
@@ -35,49 +37,56 @@ fn teams(m: &Match) -> String {
     format!("{} – {}", m.home, m.away)
 }
 
-fn group_label(m: &Match, now: i64, tz: FixedOffset) -> String {
-    if matches!(m.status, MatchStatus::Live { .. }) {
-        return "LIVE".into();
-    }
-    let (Some(k), Some(n)) = (local(m.kickoff_utc, tz), local(now, tz)) else {
-        return String::new();
-    };
-    let (kd, nd) = (k.date_naive(), n.date_naive());
-    if kd == nd {
-        "TODAY".into()
-    } else if kd == nd + Duration::days(1) {
-        "TOMORROW".into()
-    } else {
-        k.format("%a %-d %b").to_string().to_uppercase()
+/// "Today", "Tomorrow" or "Wed 18 Nov" for `day` days after today.
+pub fn day_label(day: i64, now: i64, tz: FixedOffset) -> String {
+    match day {
+        0 => "Today".into(),
+        1 => "Tomorrow".into(),
+        _ => fmt(now + day * 86400, tz, "%a %-d %b"),
     }
 }
 
-pub fn rows(matches: &[Match], langs: &[String], now: i64, tz: FixedOffset) -> Vec<RowText> {
-    let mut prev = String::new();
+/// `matches` in display order; a section header starts each competition (and day, while searching).
+pub fn rows(
+    matches: &[&Match],
+    langs: &[String],
+    searching: bool,
+    now: i64,
+    tz: FixedOffset,
+) -> Vec<RowText> {
+    let mut prev = None;
     matches
         .iter()
         .map(|m| {
-            let label = group_label(m, now, tz);
-            let section = if label != prev {
-                prev.clone_from(&label);
-                label
-            } else {
+            let g = filter::group(m, searching, now, tz);
+            let section = if prev.as_ref() == Some(&g) {
                 String::new()
+            } else if searching {
+                format!("{} · {}", day_label(g.0, now, tz), g.1)
+            } else {
+                g.1.clone()
             };
-            let (time, live, score) = match &m.status {
+            prev = Some(g);
+            let (time, live, home_score, away_score) = match &m.status {
                 MatchStatus::Live { clock, home, away } => {
-                    (clock.clone(), true, format!("{home}–{away}"))
+                    (clock.clone(), true, home.to_string(), away.to_string())
                 }
-                _ => (fmt(m.kickoff_utc, tz, "%H:%M"), false, String::new()),
+                _ => (
+                    fmt(m.kickoff_utc, tz, "%H:%M"),
+                    false,
+                    String::new(),
+                    String::new(),
+                ),
             };
             RowText {
                 key: m.key.clone(),
                 section,
                 time,
                 live,
-                teams: teams(m),
-                score,
-                competition: m.competition.clone(),
+                home: m.home.clone(),
+                away: m.away.clone(),
+                home_score,
+                away_score,
                 langs: chips(&m.broadcasts, langs),
             }
         })
@@ -200,7 +209,7 @@ pub fn empty_text(loading: bool) -> &'static str {
     if loading {
         "Loading matches…"
     } else {
-        "No upcoming matches in the selected competitions."
+        "No matches in the selected competitions on this day."
     }
 }
 

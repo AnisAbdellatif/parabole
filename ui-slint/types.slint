@@ -146,15 +146,16 @@ export struct HeroExtra {
     action: string,
 }
 
-// One match row of the Football tab. `section` is set on the first row of a group ("LIVE", "TODAY", "TOMORROW", "WED 18 NOV").
+// One match row of the Football tab. `section` is set on the first row of a competition ("Serie A", or "Tomorrow · Serie A" while searching).
 export struct FootballRow {
     key: string,
     section: string,
     time: string,
     live: bool,
-    teams: string,
-    score: string,
-    competition: string,
+    home: string,
+    away: string,
+    home-score: string,
+    away-score: string,
     langs: string,
 }
 

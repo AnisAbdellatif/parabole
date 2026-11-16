@@ -3,10 +3,11 @@ import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { FootballRow, FootballChannel } from "types.slint";
 import { FootballApi } from "football-api.slint";
-import { DButton } from "dialog-kit.slint";
+import { DButton, Segmented } from "dialog-kit.slint";
 import { Icons } from "icons.slint";
 import { Icon } from "icon.slint";
 
+// Two-line match row (home over away, scores stacked), under a competition band when `item.section` is set.
 component MatchRow inherits Rectangle {
     in property <FootballRow> item;
     in property <bool> selected;
@@ -14,25 +15,34 @@ component MatchRow inherits Rectangle {
     callback reveal(length, length);
     changed selected => { if (root.selected) { root.reveal(root.y, root.height); } }
     accessible-role: list-item;
-    accessible-label: root.item.teams;
+    accessible-label: root.item.home + " vs " + root.item.away;
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
 
     VerticalLayout {
-        padding-bottom: 4px * Theme.density;
-        if root.item.section != "": HorizontalLayout {
-            padding-left: 12px;
-            height: 28px * Theme.density;
-            Text {
-                text: root.item.section;
-                font-size: Theme.fs-xs;
-                font-weight: Theme.semibold;
-                color: Theme.text-dim;
-                vertical-alignment: bottom;
+        if root.item.section != "": Rectangle {
+            height: 40px * Theme.density;
+            Rectangle {
+                y: 8px * Theme.density;
+                height: parent.height - self.y - 2px;
+                border-radius: Theme.radius;
+                background: Theme.surface;
+                HorizontalLayout {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                    Text {
+                        text: root.item.section;
+                        font-size: Theme.fs-sm;
+                        font-weight: Theme.semibold;
+                        color: Theme.text;
+                        vertical-alignment: center;
+                        overflow: elide;
+                    }
+                }
             }
         }
         Rectangle {
-            height: Theme.channel-row-h;
+            height: 48px * Theme.density;
             border-radius: Theme.radius;
             background: root.selected ? Theme.selected-bg : ta.has-hover ? Theme.row-hover : transparent;
             border-width: 1px;
@@ -48,20 +58,22 @@ component MatchRow inherits Rectangle {
                     font-size: Theme.fs-md;
                     color: root.item.live ? Theme.live-fg : Theme.text-muted;
                     font-weight: root.item.live ? Theme.semibold : Theme.regular;
+                    horizontal-alignment: center;
                     vertical-alignment: center;
                 }
                 VerticalLayout {
                     horizontal-stretch: 1;
                     alignment: center;
-                    Text { text: root.item.teams; font-size: Theme.fs-md; color: Theme.text; overflow: elide; }
-                    Text { text: root.item.competition; font-size: Theme.fs-xs; color: Theme.text-dim; overflow: elide; }
+                    spacing: 3px;
+                    Text { text: root.item.home; font-size: Theme.fs-md; color: Theme.text; overflow: elide; }
+                    Text { text: root.item.away; font-size: Theme.fs-md; color: Theme.text; overflow: elide; }
                 }
-                if root.item.score != "": Text {
-                    text: root.item.score;
-                    font-size: Theme.fs-md;
-                    font-weight: Theme.semibold;
-                    color: Theme.text;
-                    vertical-alignment: center;
+                if root.item.live: VerticalLayout {
+                    width: 24px;
+                    alignment: center;
+                    spacing: 3px;
+                    Text { text: root.item.home-score; font-size: Theme.fs-md; font-weight: Theme.semibold; color: Theme.live-fg; horizontal-alignment: right; }
+                    Text { text: root.item.away-score; font-size: Theme.fs-md; font-weight: Theme.semibold; color: Theme.live-fg; horizontal-alignment: right; }
                 }
                 Text {
                     width: 130px;
@@ -169,6 +181,42 @@ export component FootballView inherits Rectangle {
                 Text { text: FootballApi.status; font-size: Theme.fs-sm; color: Theme.text-muted; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
                 TeamSearch { done => { root.interacted(); } }
                 DButton { text: "Refresh"; clicked => { FootballApi.refresh(); root.interacted(); } }
+            }
+            HorizontalLayout {
+                height: 32px;
+                spacing: 6px;
+                Segmented {
+                    width: 280px;
+                    options: ["All", FootballApi.live-count > 0 ? "Live (" + FootballApi.live-count + ")" : "Live", "Upcoming"];
+                    current: FootballApi.filter;
+                    changed(i) => { FootballApi.filter-picked(i); root.interacted(); }
+                }
+                Rectangle { horizontal-stretch: 1; }
+                HorizontalLayout {
+                    spacing: 6px;
+                    opacity: FootballApi.day-enabled ? 1.0 : 0.4;
+                    DButton {
+                        text: "‹";
+                        label: "Previous day";
+                        enabled: FootballApi.day-enabled && FootballApi.can-prev;
+                        clicked => { FootballApi.day-step(-1); root.interacted(); }
+                    }
+                    Text {
+                        width: 110px;
+                        text: FootballApi.day-label;
+                        font-size: Theme.fs-md;
+                        font-weight: Theme.medium;
+                        color: Theme.text;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                    DButton {
+                        text: "›";
+                        label: "Next day";
+                        enabled: FootballApi.day-enabled && FootballApi.can-next;
+                        clicked => { FootballApi.day-step(1); root.interacted(); }
+                    }
+                }
             }
             if FootballApi.rows.length == 0: Text {
                 text: FootballApi.empty-text;

@@ -47,28 +47,44 @@ fn sections_only_on_group_change() {
         home: 1,
         away: 2,
     };
-    let ms = vec![
+    let mut other = game("c", ts(16, 20, 0), MatchStatus::Upcoming, vec![]);
+    other.competition = "Serie A".into();
+    let ms = [
         game("a", ts(16, 11, 0), live, vec![]),
         game("b", ts(16, 19, 45), MatchStatus::Upcoming, vec![]),
-        game("c", ts(16, 20, 0), MatchStatus::Upcoming, vec![]),
-        game("d", ts(17, 12, 0), MatchStatus::Upcoming, vec![]),
-        game("e", ts(18, 12, 0), MatchStatus::Upcoming, vec![]),
+        other,
     ];
-    let r = rows(&ms, &[], now(), tz());
+    let refs: Vec<&Match> = ms.iter().collect();
+    let r = rows(&refs, &[], false, now(), tz());
     let sections: Vec<&str> = r.iter().map(|x| x.section.as_str()).collect();
-    assert_eq!(sections, ["LIVE", "TODAY", "", "TOMORROW", "WED 18 NOV"]);
-    assert_eq!((r[0].time.as_str(), r[0].score.as_str()), ("67'", "1–2"));
+    assert_eq!(sections, ["Nations League", "", "Serie A"]);
+    assert_eq!(
+        (
+            r[0].time.as_str(),
+            r[0].home_score.as_str(),
+            r[0].away_score.as_str()
+        ),
+        ("67'", "1", "2")
+    );
     assert!(r[0].live);
-    assert_eq!((r[1].time.as_str(), r[1].score.as_str()), ("20:45", ""));
-    assert_eq!(r[1].teams, "Germany – Netherlands");
+    assert_eq!(
+        (r[1].time.as_str(), r[1].home_score.as_str()),
+        ("20:45", "")
+    );
+    assert_eq!(
+        (r[1].home.as_str(), r[1].away.as_str()),
+        ("Germany", "Netherlands")
+    );
 }
 
 #[test]
-fn local_midnight_boundary() {
-    let ms = vec![game("a", ts(16, 23, 30), MatchStatus::Upcoming, vec![])];
-    let r = rows(&ms, &[], now(), tz());
-    assert_eq!(r[0].section, "TOMORROW");
+fn searching_puts_day_in_sections_across_local_midnight() {
+    let ms = [game("a", ts(16, 23, 30), MatchStatus::Upcoming, vec![])];
+    let refs: Vec<&Match> = ms.iter().collect();
+    let r = rows(&refs, &[], true, now(), tz());
+    assert_eq!(r[0].section, "Tomorrow · Nations League");
     assert_eq!(r[0].time, "00:30");
+    assert_eq!(day_label(2, now(), tz()), "Wed 18 Nov");
 }
 
 #[test]

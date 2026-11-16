@@ -100,7 +100,8 @@ The user's language choice also decides which countries are queried (en → GB, 
 
 - New rail button "Football" after Series (`shell-rail.slint`), shortcut `4`, `Core.tab == 3`. Rust state keeps `tab: MediaKind` for media and adds a separate "football screen open" flag, since football isn't a `MediaKind`.
 - Views in `ui-slint/football*.slint`, glue in `src/slint_ui/football/`, reusing `stream-list` / `list-header` styling.
-- List grouped Live / Today / Tomorrow / next 7 days. Row: time or live minute + score, teams, competition, language chips (user's languages first, then `+N`).
+- Header (layout after Flashscore): team search; All / Live (n) / Upcoming filter; one day at a time with ‹ Today › (←/→ keys), up to 7 days ahead. Live and search ignore the day; search adds the day to section headers.
+- List grouped by competition (header band per competition). Row on two lines: time or red live minute, home over away, live scores stacked, language chips (user's languages first, then `+N`).
 - Details panel: channels grouped by language, country in brackets, `~` for derived language, a "Copy channel name" button, and "may be incomplete" note. Later: "Find in my channels" (switch to Live with the search pre-filled).
 - Empty/error states: offline, all providers down, nothing scheduled. Always show cached data with "updated N min ago" when available.
 

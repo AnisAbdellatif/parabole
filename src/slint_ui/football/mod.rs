@@ -1,10 +1,10 @@
 //! Football tab: asks the worker for matches, shows them, refreshes while live.
+mod filter;
 mod rows;
 
 use super::state::{SlintApp, with_app};
 use super::{AppWindow, BrowseApi, Core, FootballApi, FootballChannel, FootballRow};
 use crate::model::{Match, MatchStatus, ProviderStatus};
-use crate::sports::merge;
 use crate::worker::football_settings::FootballSettings;
 use crate::worker::{Command, Event};
 use chrono::FixedOffset;
@@ -24,22 +24,23 @@ pub struct FootballArea {
     updated_at: Option<i64>,
     selected: Option<String>,
     search: String,
+    day: i64,
+    status: filter::Status,
     timer: slint::Timer,
 }
 
-/// Matches whose teams or competition contain every word of `search` (accent- and case-insensitive).
-fn visible<'a>(matches: &'a [Match], search: &str) -> Vec<&'a Match> {
-    let words: Vec<String> = merge::simplify(search)
-        .split_whitespace()
-        .map(str::to_string)
-        .collect();
-    matches
-        .iter()
-        .filter(|m| {
-            let hay = merge::simplify(&format!("{} {} {}", m.home, m.away, m.competition));
-            words.iter().all(|w| hay.contains(w.as_str()))
-        })
-        .collect()
+impl FootballArea {
+    fn query(&self) -> filter::Query<'_> {
+        filter::Query {
+            search: &self.search,
+            day: self.day,
+            status: self.status,
+        }
+    }
+
+    fn shown(&self) -> Vec<&Match> {
+        filter::visible(&self.matches, &self.query(), now(), local_tz())
+    }
 }
 
 impl FootballArea {
@@ -53,6 +54,8 @@ impl FootballArea {
             updated_at: None,
             selected: None,
             search: String::new(),
+            day: 0,
+            status: filter::Status::All,
             timer: Default::default(),
         }
     }
@@ -83,13 +86,26 @@ pub fn connect(win: &AppWindow) {
             let f = &mut a.football;
             f.selected = usize::try_from(i)
                 .ok()
-                .and_then(|i| visible(&f.matches, &f.search).get(i).map(|m| m.key.clone()));
+                .and_then(|i| f.shown().get(i).map(|m| m.key.clone()));
             push(a);
         });
     });
     api.on_search_edited(|text| {
         with_app(|a| {
             a.football.search = text.to_string();
+            push(a);
+        });
+    });
+    api.on_filter_picked(|i| {
+        with_app(|a| {
+            a.football.status = filter::Status::from_index(i);
+            push(a);
+        });
+    });
+    api.on_day_step(|d| {
+        with_app(|a| {
+            let f = &mut a.football;
+            f.day = (f.day + i64::from(d)).clamp(0, filter::LAST_DAY);
             push(a);
         });
     });
@@ -187,20 +203,19 @@ fn push(a: &SlintApp) {
     let f = &a.football;
     let (tz, now) = (local_tz(), now());
     let langs = &f.settings.langs;
-    let shown: Vec<Match> = visible(&f.matches, &f.search)
-        .into_iter()
-        .cloned()
-        .collect();
-    let rows: Vec<FootballRow> = rows::rows(&shown, langs, now, tz)
+    let shown = f.shown();
+    let q = f.query();
+    let rows: Vec<FootballRow> = rows::rows(&shown, langs, q.searching(), now, tz)
         .into_iter()
         .map(|r| FootballRow {
             key: r.key.into(),
             section: r.section.into(),
             time: r.time.into(),
             live: r.live,
-            teams: r.teams.into(),
-            score: r.score.into(),
-            competition: r.competition.into(),
+            home: r.home.into(),
+            away: r.away.into(),
+            home_score: r.home_score.into(),
+            away_score: r.away_score.into(),
             langs: r.langs.into(),
         })
         .collect();
@@ -209,7 +224,7 @@ fn push(a: &SlintApp) {
         .as_ref()
         .and_then(|k| shown.iter().position(|m| &m.key == k));
     let (title, sub, channels) =
-        pos.map_or_else(Default::default, |i| rows::details(&shown[i], langs, tz));
+        pos.map_or_else(Default::default, |i| rows::details(shown[i], langs, tz));
     let channels: Vec<FootballChannel> = channels
         .into_iter()
         .map(|c| FootballChannel {
@@ -227,9 +242,19 @@ fn push(a: &SlintApp) {
     api.set_status(rows::status(&f.providers, f.loading, f.updated_at, tz).into());
     let empty = if f.matches.is_empty() {
         rows::empty_text(f.loading).to_string()
-    } else {
+    } else if q.searching() {
         format!("No match for “{}”.", f.search.trim())
+    } else if f.status == filter::Status::Live {
+        "No live matches right now.".to_string()
+    } else {
+        rows::empty_text(false).to_string()
     };
+    api.set_filter(f.status.index());
+    api.set_live_count(f.matches.iter().filter(|m| filter::is_live(m)).count() as i32);
+    api.set_day_label(rows::day_label(f.day, now, tz).into());
+    api.set_can_prev(f.day > 0);
+    api.set_can_next(f.day < filter::LAST_DAY);
+    api.set_day_enabled(!q.searching() && f.status != filter::Status::Live);
     api.set_empty_text(empty.into());
 }
 
@@ -247,17 +272,6 @@ mod tests {
             status,
             broadcasts: vec![],
         }
-    }
-
-    #[test]
-    fn search_folds_accents_and_needs_every_word() {
-        let mut x = m(MatchStatus::Upcoming, 0);
-        x.home = "Atlético Madrid".into();
-        x.away = "Real Betis".into();
-        let all = [x];
-        assert_eq!(visible(&all, "").len(), 1);
-        assert_eq!(visible(&all, "ATLETICO betis").len(), 1);
-        assert_eq!(visible(&all, "atletico barcelona").len(), 0);
     }
 
     #[test]
