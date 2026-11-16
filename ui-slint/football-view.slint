@@ -4,6 +4,8 @@ import { Theme } from "theme.slint";
 import { FootballRow, FootballChannel } from "types.slint";
 import { FootballApi } from "football-api.slint";
 import { DButton } from "dialog-kit.slint";
+import { Icons } from "icons.slint";
+import { Icon } from "icon.slint";
 
 component MatchRow inherits Rectangle {
     in property <FootballRow> item;
@@ -101,6 +103,53 @@ component ChannelLine inherits Rectangle {
     ta := TouchArea { enabled: !root.item.header; clicked => { root.clicked(); } }
 }
 
+// Team search: filters the list as you type; Escape clears it.
+component TeamSearch inherits Rectangle {
+    callback done();
+    width: 240px;
+    height: 32px;
+    background: Theme.input-bg;
+    border-radius: Theme.radius-l;
+    border-width: 1px;
+    border-color: input.has-focus ? Theme.selected-border : Theme.border;
+    HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 8px;
+        VerticalLayout {
+            alignment: center;
+            Icon { source: Icons.search; tint: Theme.text-muted; size: 14px; }
+        }
+        input := TextInput {
+            accessible-label: "Search teams";
+            text <=> FootballApi.search;
+            color: Theme.text;
+            font-size: Theme.fs-md;
+            vertical-alignment: center;
+            single-line: true;
+            edited => { FootballApi.search-edited(self.text); }
+            accepted => { root.done(); }
+            key-pressed(e) => {
+                if (e.text == Key.Escape) {
+                    self.text = "";
+                    FootballApi.search-edited("");
+                    root.done();
+                    return accept;
+                }
+                reject
+            }
+            if self.text == "" && !self.has-focus: Text {
+                x: 0px;
+                text: "Search a team";
+                color: Theme.text-faint;
+                font-size: Theme.fs-md;
+                vertical-alignment: center;
+                height: parent.height;
+            }
+        }
+    }
+}
+
 export component FootballView inherits Rectangle {
     callback interacted();
     background: Theme.bg;
@@ -118,6 +167,7 @@ export component FootballView inherits Rectangle {
                 alignment: stretch;
                 Text { text: "Football"; font-size: Theme.fs-xl; font-weight: Theme.semibold; color: Theme.text; vertical-alignment: center; }
                 Text { text: FootballApi.status; font-size: Theme.fs-sm; color: Theme.text-muted; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+                TeamSearch { done => { root.interacted(); } }
                 DButton { text: "Refresh"; clicked => { FootballApi.refresh(); root.interacted(); } }
             }
             if FootballApi.rows.length == 0: Text {

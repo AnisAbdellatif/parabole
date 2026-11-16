@@ -4,6 +4,7 @@ mod rows;
 use super::state::{SlintApp, with_app};
 use super::{AppWindow, BrowseApi, Core, FootballApi, FootballChannel, FootballRow};
 use crate::model::{Match, MatchStatus, ProviderStatus};
+use crate::sports::merge;
 use crate::worker::football_settings::FootballSettings;
 use crate::worker::{Command, Event};
 use chrono::FixedOffset;
@@ -22,7 +23,23 @@ pub struct FootballArea {
     loading: bool,
     updated_at: Option<i64>,
     selected: Option<String>,
+    search: String,
     timer: slint::Timer,
+}
+
+/// Matches whose teams or competition contain every word of `search` (accent- and case-insensitive).
+fn visible<'a>(matches: &'a [Match], search: &str) -> Vec<&'a Match> {
+    let words: Vec<String> = merge::simplify(search)
+        .split_whitespace()
+        .map(str::to_string)
+        .collect();
+    matches
+        .iter()
+        .filter(|m| {
+            let hay = merge::simplify(&format!("{} {} {}", m.home, m.away, m.competition));
+            words.iter().all(|w| hay.contains(w.as_str()))
+        })
+        .collect()
 }
 
 impl FootballArea {
@@ -35,6 +52,7 @@ impl FootballArea {
             loading: false,
             updated_at: None,
             selected: None,
+            search: String::new(),
             timer: Default::default(),
         }
     }
@@ -62,10 +80,16 @@ pub fn connect(win: &AppWindow) {
     let api = win.global::<FootballApi>();
     api.on_row_selected(|i| {
         with_app(|a| {
-            a.football.selected = usize::try_from(i)
+            let f = &mut a.football;
+            f.selected = usize::try_from(i)
                 .ok()
-                .and_then(|i| a.football.matches.get(i))
-                .map(|m| m.key.clone());
+                .and_then(|i| visible(&f.matches, &f.search).get(i).map(|m| m.key.clone()));
+            push(a);
+        });
+    });
+    api.on_search_edited(|text| {
+        with_app(|a| {
+            a.football.search = text.to_string();
             push(a);
         });
     });
@@ -163,7 +187,11 @@ fn push(a: &SlintApp) {
     let f = &a.football;
     let (tz, now) = (local_tz(), now());
     let langs = &f.settings.langs;
-    let rows: Vec<FootballRow> = rows::rows(&f.matches, langs, now, tz)
+    let shown: Vec<Match> = visible(&f.matches, &f.search)
+        .into_iter()
+        .cloned()
+        .collect();
+    let rows: Vec<FootballRow> = rows::rows(&shown, langs, now, tz)
         .into_iter()
         .map(|r| FootballRow {
             key: r.key.into(),
@@ -179,10 +207,9 @@ fn push(a: &SlintApp) {
     let pos = f
         .selected
         .as_ref()
-        .and_then(|k| f.matches.iter().position(|m| &m.key == k));
-    let (title, sub, channels) = pos.map_or_else(Default::default, |i| {
-        rows::details(&f.matches[i], langs, tz)
-    });
+        .and_then(|k| shown.iter().position(|m| &m.key == k));
+    let (title, sub, channels) =
+        pos.map_or_else(Default::default, |i| rows::details(&shown[i], langs, tz));
     let channels: Vec<FootballChannel> = channels
         .into_iter()
         .map(|c| FootballChannel {
@@ -198,7 +225,12 @@ fn push(a: &SlintApp) {
     api.set_detail_sub(sub.into());
     api.set_channels(ModelRc::new(VecModel::from(channels)));
     api.set_status(rows::status(&f.providers, f.loading, f.updated_at, tz).into());
-    api.set_empty_text(rows::empty_text(f.loading).into());
+    let empty = if f.matches.is_empty() {
+        rows::empty_text(f.loading).to_string()
+    } else {
+        format!("No match for “{}”.", f.search.trim())
+    };
+    api.set_empty_text(empty.into());
 }
 
 #[cfg(test)]
@@ -215,6 +247,17 @@ mod tests {
             status,
             broadcasts: vec![],
         }
+    }
+
+    #[test]
+    fn search_folds_accents_and_needs_every_word() {
+        let mut x = m(MatchStatus::Upcoming, 0);
+        x.home = "Atlético Madrid".into();
+        x.away = "Real Betis".into();
+        let all = [x];
+        assert_eq!(visible(&all, "").len(), 1);
+        assert_eq!(visible(&all, "ATLETICO betis").len(), 1);
+        assert_eq!(visible(&all, "atletico barcelona").len(), 0);
     }
 
     #[test]

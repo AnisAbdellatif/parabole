@@ -12,6 +12,8 @@ export global FootballApi {
     callback row-selected(int);
     callback channel-clicked(int);
     callback refresh();
+    in-out property <string> search;
+    callback search-edited(string);
     // Keys while the Football tab is shown; return true when handled.
     callback key(KeyEvent) -> bool;
     key(e) => {

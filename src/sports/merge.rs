@@ -33,9 +33,10 @@ pub fn same_team(a: &str, b: &str) -> bool {
     words(a).iter().any(|w| wb.contains(w))
 }
 
-fn words(name: &str) -> Vec<String> {
+/// Lowercase, accents folded ("Atlético" → "atletico"), everything else non-alphanumeric → space.
+pub fn simplify(text: &str) -> String {
     let mut folded = String::new();
-    for c in name.to_lowercase().chars() {
+    for c in text.to_lowercase().chars() {
         match fold(c) {
             Some(s) => folded.push_str(s),
             None if c.is_ascii_alphanumeric() => folded.push(c),
@@ -43,6 +44,10 @@ fn words(name: &str) -> Vec<String> {
         }
     }
     folded
+}
+
+fn words(name: &str) -> Vec<String> {
+    simplify(name)
         .split_whitespace()
         .filter(|w| w.len() >= 3 && !STOP_WORDS.contains(w))
         .map(str::to_string)
