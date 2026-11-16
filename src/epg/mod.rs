@@ -1,6 +1,7 @@
 pub mod catalog;
 pub mod country;
 mod fetch;
+mod fuzzy;
 pub mod matching;
 mod parse;
 mod time;

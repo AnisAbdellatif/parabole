@@ -1,4 +1,5 @@
 //! Matches provider streams to guide channels: exact id, normalised id, then name.
+use super::{country, fuzzy};
 use crate::db::alt_name;
 use crate::model::{EpgLink, GuideChannel, GuideId, StreamGuideKey};
 use std::collections::{HashMap, HashSet};
@@ -48,49 +49,56 @@ fn stream_id(s: &StreamGuideKey) -> Option<String> {
     (id.chars().count() >= 3).then_some(id)
 }
 
-/// Maps a key to the first candidate index having it.
-fn first_index<K: std::hash::Hash + Eq>(
+/// Maps a key to the candidate indexes having it, in priority order.
+fn group<K: std::hash::Hash + Eq>(
     keys: impl Iterator<Item = (K, usize)>,
-) -> HashMap<K, usize> {
-    let mut m = HashMap::new();
+) -> HashMap<K, Vec<usize>> {
+    let mut m: HashMap<K, Vec<usize>> = HashMap::new();
     for (k, i) in keys {
-        m.entry(k).or_insert(i);
+        m.entry(k).or_default().push(i);
     }
     m
 }
 
 /// Links each stream to one guide channel. `candidates` are in guide priority order (only channels that have programmes).
 pub fn link(streams: &[StreamGuideKey], candidates: &[Candidate]) -> Vec<EpgLink> {
-    let exact = first_index(
-        candidates
-            .iter()
-            .enumerate()
-            .map(|(i, c)| (c.channel.to_lowercase(), i)),
-    );
-    let by_id = first_index(
-        candidates
-            .iter()
-            .enumerate()
-            .map(|(i, c)| (norm_id(&c.channel), i)),
-    );
-    let by_name = first_index(candidates.iter().enumerate().flat_map(|(i, c)| {
+    let usable = |c: &Candidate| norm_id(&c.channel).chars().count() >= 3;
+    let live = || candidates.iter().enumerate().filter(|(_, c)| usable(c));
+    let exact = group(live().map(|(i, c)| (c.channel.to_lowercase(), i)));
+    let by_id = group(live().map(|(i, c)| (norm_id(&c.channel), i)));
+    let by_name = group(live().flat_map(|(i, c)| {
         let own = c.names.iter().map(|n| name_key(n));
         own.chain([id_as_name(&c.channel.to_lowercase())])
             .filter(|n| !n.is_empty())
             .map(move |n| (n, i))
     }));
+    let mut index: Option<fuzzy::Index> = None;
+    let mut by_stream_name: HashMap<&str, Option<usize>> = HashMap::new();
     streams
         .iter()
         .filter_map(|s| {
-            let id = stream_id(s);
-            let hit = id
-                .as_ref()
-                .and_then(|id| exact.get(id).or_else(|| by_id.get(&norm_id(id))))
-                .or_else(|| {
+            if s.name.trim().starts_with('#') {
+                return None;
+            }
+            let by_ids = stream_id(s).and_then(|id| {
+                let hit = exact.get(&id).or_else(|| by_id.get(&norm_id(&id)));
+                hit.and_then(|v| v.first().copied())
+            });
+            let hit = by_ids.or_else(|| {
+                *by_stream_name.entry(&s.name).or_insert_with(|| {
                     let n = name_key(&s.name);
-                    (!n.is_empty()).then(|| by_name.get(&n)).flatten()
-                })?;
-            let c = &candidates[*hit];
+                    let named = by_name.get(&n).filter(|_| !n.is_empty()).and_then(|v| {
+                        v.iter()
+                            .copied()
+                            .find(|&i| !country::conflict(&s.name, &candidates[i].channel))
+                    });
+                    named.or_else(|| {
+                        let ix = index.get_or_insert_with(|| fuzzy::Index::new(candidates));
+                        ix.best(&s.name, candidates)
+                    })
+                })
+            })?;
+            let c = &candidates[hit];
             Some(EpgLink {
                 source_id: s.source_id,
                 stream_key: s.stream_key.clone(),
@@ -148,7 +156,7 @@ mod tests {
         assert_eq!(one(st("a", Some(" TF1.FR "), "x"), &c).unwrap().1, "tf1.fr");
         let c = [cand(1, "hannibaltv.tn@sd", &[])];
         assert!(one(st("a", Some("hannibaltv.tn"), "x"), &c).is_some());
-        let c = [cand(1, "x1", &["Canal+ HD"])];
+        let c = [cand(1, "x100", &["Canal+ HD"])];
         assert!(one(st("a", None, "FR: Canal+"), &c).is_some());
         let c = [cand(1, "nessma.tn", &[])];
         assert!(one(st("a", None, "AR: Nessma TV"), &c).is_some());
@@ -157,17 +165,25 @@ mod tests {
 
     #[test]
     fn precedence_and_priority() {
-        let c = [cand(1, "a1", &["Foo"]), cand(2, "foo.fr", &["Bar"])];
+        let c = [cand(1, "a100", &["Foo"]), cand(2, "foo.fr", &["Bar"])];
         let s = st("a", Some("foo.fr"), "Foo");
         assert_eq!(one(s, &c).unwrap().0, 2);
-        let c = [cand(1, "a1", &["Foo"]), cand(2, "a2", &["Foo"])];
+        let c = [cand(1, "a100", &["Foo"]), cand(2, "a200", &["Foo"])];
         assert_eq!(one(st("a", None, "Foo"), &c).unwrap().0, 1);
     }
 
     #[test]
     fn junk_ids_ignored() {
-        let c = [cand(1, "ts", &[])];
+        let c = [cand(1, "ts", &["Zzz Channel"])];
         assert!(one(st("a", Some("ts"), "Zzz"), &c).is_none());
+        assert!(one(st("a", None, "Zzz Channel"), &c).is_none());
+    }
+
+    #[test]
+    fn header_rows_never_link() {
+        let c = [cand(1, "docu.fr", &["DOCUMENTAIRE"])];
+        assert!(one(st("a", None, "DOCUMENTAIRE"), &c).is_some());
+        assert!(one(st("a", None, "#### DOCUMENTAIRE ####"), &c).is_none());
     }
 
     #[test]
@@ -175,9 +191,8 @@ mod tests {
         let c = [cand(1, "hannibaltv.tn@sd", &["Hannibal TV"])];
         assert!(one(st("a", Some("hannibaltv.tn"), "AR: Hannibal ◉"), &c).is_some());
         assert!(one(st("a", None, "AR: Hannibal ◉"), &c).is_some());
-        // different words ("Ejdida" vs "El Jadida"): no match, needs a manual link
         let c = [cand(1, "nessma.tn", &["Nessma El Jadida"])];
-        assert!(one(st("a", Some("ts"), "AR: Nessma Ejdida"), &c).is_none());
+        assert!(one(st("a", Some("ts"), "AR: Nessma Ejdida"), &c).is_some());
         // "al hiwar tunisia" != "al hiwar"
         let c = [cand(1, "alhiwar.tn", &["Al Hiwar TV"])];
         assert!(one(st("a", None, "AR: Al Hiwar Tunisia"), &c).is_none());
