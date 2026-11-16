@@ -1,3 +1,4 @@
+pub mod catalog;
 pub mod country;
 mod fetch;
 pub mod matching;

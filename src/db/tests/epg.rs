@@ -334,3 +334,15 @@ fn search_and_coverage() {
     assert_eq!(db.search_guide_channels("tf1", 10).unwrap().len(), 1);
     assert!(db.epg_coverage().unwrap().is_empty());
 }
+
+#[test]
+fn duplicate_add_returns_same_id_and_delete_added_keeps_provider() {
+    let (db, _, sid) = setup();
+    let a = db.add_epg_guide("https://a.test/g.xml", "A").unwrap();
+    assert_eq!(db.add_epg_guide("https://a.test/g.xml", "A2").unwrap(), a);
+    db.add_epg_guide("https://b.test/g.xml", "B").unwrap();
+    assert_eq!(db.delete_added_epg_guides().unwrap(), 2);
+    let left = db.epg_guides().unwrap();
+    assert_eq!(left.len(), 1);
+    assert_eq!(left[0].source_id, Some(sid));
+}

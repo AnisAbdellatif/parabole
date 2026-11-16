@@ -1,29 +1,36 @@
+import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
 import { DialogApi } from "dialog-api.slint";
 import { DButton, DCheck, DField, FormRow } from "dialog-kit.slint";
 
 export component GuidesTab inherits VerticalLayout {
     spacing: 12px;
-    for g in DialogApi.guides: HorizontalLayout {
-        spacing: 8px;
+    ScrollView {
+        height: min(DialogApi.guides.length * 52px, 300px);
         VerticalLayout {
-            horizontal-stretch: 1;
-            spacing: 2px;
-            DCheck {
-                text: g.name;
-                checked: g.enabled;
-                changed checked => { DialogApi.guide-toggled(g.id); }
-            }
-            Text {
-                text: g.detail;
-                color: g.error ? Theme.error : Theme.text-dim;
-                font-size: Theme.fs-sm;
-                overflow: elide;
+            spacing: 12px;
+            for g in DialogApi.guides: HorizontalLayout {
+                spacing: 8px;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    DCheck {
+                        text: g.name;
+                        checked: g.enabled;
+                        changed checked => { DialogApi.guide-toggled(g.id); }
+                    }
+                    Text {
+                        text: g.detail;
+                        color: g.error ? Theme.error : Theme.text-dim;
+                        font-size: Theme.fs-sm;
+                        overflow: elide;
+                    }
+                }
+                DButton { text: "▲"; label: "Move up"; clicked => { DialogApi.guide-moved(g.id, -1); } }
+                DButton { text: "▼"; label: "Move down"; clicked => { DialogApi.guide-moved(g.id, 1); } }
+                if g.removable: DButton { text: "Remove"; clicked => { DialogApi.guide-removed(g.id); } }
             }
         }
-        DButton { text: "▲"; label: "Move up"; clicked => { DialogApi.guide-moved(g.id, -1); } }
-        DButton { text: "▼"; label: "Move down"; clicked => { DialogApi.guide-moved(g.id, 1); } }
-        if g.removable: DButton { text: "Remove"; clicked => { DialogApi.guide-removed(g.id); } }
     }
     FormRow {
         label: "Add a guide";
@@ -34,10 +41,11 @@ export component GuidesTab inherits VerticalLayout {
         }
         DButton { text: "Add"; clicked => { DialogApi.guide-added(DialogApi.guide-url); } }
     }
-    FormRow {
-        label: "";
-        DButton { text: "Arabic (iimnm)"; clicked => { DialogApi.guide-added("https://raw.githubusercontent.com/iimnm/arabic-epg/output/guide.xml.gz"); } }
-        DButton { text: "Middle East (epgshare01)"; clicked => { DialogApi.guide-added("https://epgshare01.online/epgshare01/epg_ripper_AE1.xml.gz"); } }
+    HorizontalLayout {
+        alignment: start;
+        spacing: 8px;
+        if DialogApi.guide-suggest-count > 0: DButton { text: "Add \{DialogApi.guide-suggest-count} public guides for your channels' countries"; clicked => { DialogApi.guides-add-suggested(); } }
+        if DialogApi.guides-have-added: DButton { text: "Remove added guides"; clicked => { DialogApi.guides-remove-added(); } }
     }
     HorizontalLayout {
         alignment: start;
@@ -45,6 +53,12 @@ export component GuidesTab inherits VerticalLayout {
     }
     Text {
         text: "Guides are checked in this order; the first one that has a channel wins. Your provider's guide is used first by default.";
+        color: Theme.text-dim;
+        font-size: Theme.fs-sm;
+        wrap: word-wrap;
+    }
+    Text {
+        text: "Public guides come from epgshare01, iptv-epg.org, xmltv.live and epg.pw. Each refreshes every 12 h.";
         color: Theme.text-dim;
         font-size: Theme.fs-sm;
         wrap: word-wrap;

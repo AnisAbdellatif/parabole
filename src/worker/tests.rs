@@ -150,6 +150,7 @@ fn worker(db: Db) -> (Worker, Receiver<Event>) {
         in_flight: HashSet::new(),
         epg_queue: VecDeque::new(),
         epg_busy: None,
+        epg_dirty: false,
     };
     (w, ev_rx)
 }
@@ -258,4 +259,19 @@ fn relink_creates_links_and_keeps_manual() {
     db.set_manual_link(sid, "2", g, "a.tv").unwrap();
     assert_eq!(super::epg::relink(&mut db).unwrap(), 1);
     assert_eq!(db.manual_link(sid, "2").unwrap(), Some((g, "a.tv".into())));
+}
+
+#[test]
+fn relink_waits_for_last_queued_guide() {
+    let db = Db::open_in_memory().unwrap();
+    let a = db.add_epg_guide("http://a.test/g.xml", "A").unwrap();
+    let b = db.add_epg_guide("http://b.test/g.xml", "B").unwrap();
+    let (mut w, _rx) = worker(db);
+    w.epg_busy = Some(a);
+    w.epg_queue.push_back(b);
+    w.epg_dirty = true;
+    w.apply_epg(a, Err("x".into()));
+    assert!(w.epg_dirty, "b still running");
+    w.apply_epg(b, Err("x".into()));
+    assert!(!w.epg_dirty);
 }

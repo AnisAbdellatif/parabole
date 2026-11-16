@@ -49,6 +49,14 @@ impl Db {
         if !matches!(parsed.scheme(), "http" | "https") {
             bail!("guide URL must be http or https");
         }
+        if let Ok(id) =
+            self.conn
+                .query_row("SELECT id FROM epg_guides WHERE url = ?1", [url], |r| {
+                    r.get(0)
+                })
+        {
+            return Ok(id);
+        }
         self.conn
             .execute(
                 "INSERT INTO epg_guides(url, name, position)
@@ -77,6 +85,13 @@ impl Db {
             bail!("not a user-added guide");
         }
         Ok(())
+    }
+
+    /// Removes every user-added guide (provider guides stay).
+    pub fn delete_added_epg_guides(&self) -> Result<usize> {
+        Ok(self
+            .conn
+            .execute("DELETE FROM epg_guides WHERE source_id IS NULL", [])?)
     }
 
     /// Swaps position with the neighbour `delta` places away in list order (clamped, no-op at the ends).

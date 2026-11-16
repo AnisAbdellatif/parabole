@@ -20,13 +20,17 @@ impl Worker {
     fn next_epg(&mut self) {
         while self.epg_busy.is_none() {
             let Some(id) = self.epg_queue.pop_front() else {
-                return;
+                break;
             };
             match self.start_epg(id) {
                 Ok(true) => self.epg_busy = Some(id),
                 Ok(false) => {}
                 Err(e) => self.emit(Event::Error(format!("{e:#}"))),
             }
+        }
+        if self.epg_dirty && self.epg_busy.is_none() && self.epg_queue.is_empty() {
+            self.epg_dirty = false;
+            self.relink_epg();
         }
     }
 
@@ -53,7 +57,7 @@ impl Worker {
         let now = now();
         if urls.is_empty() {
             self.db.replace_guide(id, &[], &[], now)?;
-            relink(&mut self.db)?;
+            self.epg_dirty = true;
             self.emit(Event::EpgUpdated(id, Ok(())));
             return Ok(false);
         }
@@ -77,12 +81,14 @@ impl Worker {
         self.epg_busy = None;
         let now = now();
         let outcome = match res {
-            Ok(g) => self
-                .db
-                .replace_guide(id, &g.channels, &g.programmes, now)
-                .and_then(|_| self.db.epg_prune(now - 6 * 3600))
-                .and_then(|_| relink(&mut self.db).map(|_| ()))
-                .map_err(|e| format!("{e:#}")),
+            Ok(g) => {
+                let r = self
+                    .db
+                    .replace_guide(id, &g.channels, &g.programmes, now)
+                    .and_then(|_| self.db.epg_prune(now - 6 * 3600));
+                self.epg_dirty |= r.is_ok();
+                r.map_err(|e| format!("{e:#}"))
+            }
             Err(e) => {
                 let _ = self.db.set_epg_guide_error(id, &e, now);
                 Err(e)

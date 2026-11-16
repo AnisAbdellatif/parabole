@@ -175,6 +175,7 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
         in_flight: HashSet::new(),
         epg_queue: VecDeque::new(),
         epg_busy: None,
+        epg_dirty: false,
     };
     thread::Builder::new()
         .name("worker".into())
@@ -197,6 +198,7 @@ struct Worker {
     in_flight: HashSet<SourceId>,
     epg_queue: VecDeque<GuideId>,
     epg_busy: Option<GuideId>,
+    epg_dirty: bool,
 }
 
 impl Worker {

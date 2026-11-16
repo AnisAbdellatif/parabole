@@ -81,6 +81,10 @@ export global DialogApi {
     callback guide-removed(int);
     callback guide-added(string);
     callback guides-refresh-all();
+    in-out property <int> guide-suggest-count;
+    in-out property <bool> guides-have-added;
+    callback guides-add-suggested();
+    callback guides-remove-added();
 
     // Profiles
     in property <[ProfileRow]> profile-rows;

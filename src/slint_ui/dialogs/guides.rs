@@ -1,11 +1,13 @@
 //! Settings → TV guides tab: list, enable, order, add, remove, refresh. Changes apply immediately.
 use super::{AppWindow, DialogApi};
+use crate::epg::catalog;
 use crate::model::Guide;
 use crate::slint_ui::GuideRowItem;
 use crate::slint_ui::epg::format::now_secs;
 use crate::slint_ui::state::{SlintApp, with_app};
 use crate::worker::Command;
 use slint::{ComponentHandle, ModelRc, VecModel};
+use std::collections::HashSet;
 
 /// Host of a guide URL; the full URL may carry tokens and is never shown.
 fn host(url: &str) -> Option<String> {
@@ -64,8 +66,37 @@ impl SlintApp {
                 error: g.last_error.is_some(),
             })
             .collect();
-        w.global::<DialogApi>()
-            .set_guides(ModelRc::new(VecModel::from(rows)));
+        let api = w.global::<DialogApi>();
+        api.set_guides_have_added(rows.iter().any(|r| r.removable));
+        api.set_guides(ModelRc::new(VecModel::from(rows)));
+        let n = self.suggested_guides().map_or(0, |s| s.len());
+        api.set_guide_suggest_count(n as i32);
+    }
+
+    /// Catalog guides for the playlist's countries that are not guides yet, as (url, name).
+    fn suggested_guides(&self) -> anyhow::Result<Vec<(&'static str, &'static str)>> {
+        let have: HashSet<String> = self
+            .db
+            .epg_guides()?
+            .into_iter()
+            .filter_map(|g| g.url)
+            .collect();
+        let list = catalog::suggested(&self.db.epg_stream_keys()?);
+        Ok(list
+            .into_iter()
+            .filter(|g| !have.contains(g.url))
+            .map(|g| (g.url, g.name))
+            .collect())
+    }
+
+    fn add_suggested(&mut self) -> anyhow::Result<()> {
+        let list = self.suggested_guides()?;
+        for (url, name) in &list {
+            let id = self.db.add_epg_guide(url, name)?;
+            self.worker.send(Command::RefreshEpg(id));
+        }
+        self.toast(format!("Added {} TV guides", list.len()));
+        Ok(())
     }
 
     fn guide_action(&mut self, f: impl FnOnce(&mut SlintApp) -> anyhow::Result<()>) {
@@ -120,6 +151,18 @@ pub fn connect(win: &AppWindow) {
         with_app(|a| {
             a.guide_action(|a| {
                 a.db.delete_epg_guide(id.into())?;
+                a.worker.send(Command::RelinkEpg);
+                Ok(())
+            })
+        });
+    });
+    api.on_guides_add_suggested(|| {
+        with_app(|a| a.guide_action(|a| a.add_suggested()));
+    });
+    api.on_guides_remove_added(|| {
+        with_app(|a| {
+            a.guide_action(|a| {
+                a.db.delete_added_epg_guides()?;
                 a.worker.send(Command::RelinkEpg);
                 Ok(())
             })
