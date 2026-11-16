@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tv generator-info-name="test">
+  <channel id="One.example"><display-name>One</display-name></channel>
+  <channel id="Two.example"><display-name>Two</display-name></channel>
+  <programme start="20260101120000 +0000" stop="20260101130000 +0000" channel="one.example">
+    <title lang="en">News</title><desc>Daily news</desc><category>News</category>
+  </programme>
+  <programme start="20260101130000 +0100" stop="20260101140000 +0100" channel="TWO.example">
+    <title>Tom &amp; Jerry</title>
+  </programme>
+  <programme start="20260101140000 +0000" stop="20260101150000 +0000" channel="one.example">
+    <title>Movie</title><desc><![CDATA[A <b>big</b> film]]></desc>
+  </programme>
+  <programme start="20260101150000 +0000" stop="20260101160000 +0000" channel="other.example">
+    <title>Unknown channel</title>
+  </programme>
+  <programme start="20260301150000 +0000" stop="20260301160000 +0000" channel="one.example">
+    <title>Outside window</title>
+  </programme>
+  <programme start="20260101160000 +0000" channel="one.example">
+    <title>Missing stop</title>
+  </programme>
+</tv>

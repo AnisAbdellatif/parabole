@@ -1,4 +1,5 @@
 pub mod db;
+pub mod epg;
 pub mod episodes;
 pub mod imgcache;
 pub mod model;
