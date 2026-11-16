@@ -16,7 +16,13 @@ pub fn tokens(name: &str) -> Vec<String> {
         .collect()
 }
 
+/// Word count before filler removal.
+fn words(name: &str) -> usize {
+    norm_name(name).split_whitespace().count()
+}
+
 struct Entry {
+    words: usize,
     cand: usize,
     tokens: Vec<String>,
     grams: usize,
@@ -55,8 +61,9 @@ impl Index {
             {
                 continue;
             }
-            let all = c.names.iter().map(|n| tokens(n));
-            for toks in all.chain([id_tokens(&c.channel)]) {
+            let id = id_tokens(&c.channel);
+            let all = c.names.iter().map(|n| (tokens(n), words(n)));
+            for (toks, n_words) in all.chain([(id.clone(), id.len())]) {
                 let key = toks.concat();
                 if key.chars().count() < 3 {
                     continue;
@@ -68,6 +75,7 @@ impl Index {
                 }
                 entries.push(Entry {
                     cand: ci,
+                    words: n_words,
                     tokens: toks,
                     grams: grams.len(),
                 });
@@ -97,11 +105,15 @@ impl Index {
         let mut top: Vec<(usize, u32)> = touched.into_iter().map(|e| (e, counts[e])).collect();
         top.sort_unstable_by(|a, b| b.1.cmp(&a.1).then(a.0.cmp(&b.0)));
         top.truncate(50);
+        let n_words = words(stream_name);
         let mut best: Option<(f64, usize)> = None;
         for (ei, n) in top {
             let e = &self.entries[ei];
             let dice = 2.0 * f64::from(n) / (grams.len() + e.grams) as f64;
+            // a lone word has no context to absorb a typo or a dropped "al": exact only
+            let lone_ok = toks.len() > 1 || (e.tokens == toks && e.words == n_words);
             if dice < 0.5
+                || !lone_ok
                 || !aligned(&toks, &e.tokens)
                 || country::conflict(stream_name, &candidates[e.cand].channel)
             {
@@ -137,12 +149,11 @@ fn close(x: &str, y: &str) -> bool {
     if x.chars().any(|c| c.is_ascii_digit()) || y.chars().any(|c| c.is_ascii_digit()) {
         return false;
     }
-    let limit = match x.chars().count().min(y.chars().count()) {
-        0..=3 => 0,
-        4..=5 => 1,
-        _ => 2,
-    };
-    levenshtein(x, y) <= limit
+    // one letter changes a short name ("wpix" vs "kpix"); allow only a plural there
+    if x.chars().count().min(y.chars().count()) <= 5 {
+        return x.strip_suffix('s') == Some(y) || y.strip_suffix('s') == Some(x);
+    }
+    levenshtein(x, y) <= 2
 }
 
 fn levenshtein(a: &str, b: &str) -> usize {
@@ -173,6 +184,28 @@ mod tests {
 
     fn best(stream: &str, c: &[Candidate]) -> Option<usize> {
         Index::new(c).best(stream, c)
+    }
+
+    #[test]
+    fn lone_words_need_exact() {
+        assert_eq!(
+            best("TV: Danger TV", &[cand("dangal.in", &["Dangal"])]),
+            None
+        );
+        assert_eq!(best("AR: Al Ons TV", &[cand("ons.nl", &["Ons"])]), None);
+        assert_eq!(
+            best("MX: TLNOVELAS", &[cand("x.mx", &["TNT Novelas"])]),
+            None
+        );
+    }
+
+    #[test]
+    fn short_words_need_exact_or_plural() {
+        assert!(close("sport", "sports"));
+        assert!(!close("wpix", "kpix"));
+        assert!(!close("iman", "oman"));
+        assert!(!close("inews", "cnews"));
+        assert!(close("ejdida", "jadida"));
     }
 
     #[test]
@@ -209,6 +242,6 @@ mod tests {
             cand("a.fr", &["Canal Sport"]),
             cand("b.fr", &["Canal Sport"]),
         ];
-        assert_eq!(best("Canal Sportt", &c), Some(0));
+        assert_eq!(best("Canal Sports", &c), Some(0));
     }
 }
