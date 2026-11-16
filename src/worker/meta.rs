@@ -120,7 +120,14 @@ fn search(
     let mut failure = None;
     match imdb::suggest::search(client, &want.title) {
         Ok(cands) => {
-            found = pick(&cands, &want, media).map(|c| (from_candidate(client, c, media), None));
+            // "Blade Runner 2049": the stripped "year" may belong to the title
+            let whole = want.year.map(|y| title::Cleaned {
+                title: format!("{} {y}", want.title),
+                year: None,
+            });
+            found = pick(&cands, &want, media)
+                .or_else(|| whole.as_ref().and_then(|w| pick(&cands, w, media)))
+                .map(|c| (from_candidate(client, c, media), None));
         }
         Err(e) => failure = Some(e),
     }

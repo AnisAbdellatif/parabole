@@ -36,7 +36,7 @@ pub fn clean(name: &str) -> Cleaned {
         year = paren_year(words[i]);
         words.remove(i);
     } else if words.len() > 1 {
-        // shortcut: "Blade Runner 2049" loses its 2049, when titles ending in a year matter
+        // "Blade Runner 2049" also loses its 2049 here; worker::meta retries with it put back
         if let Some(y) = words.last().and_then(|w| plain_year(w)) {
             year = Some(y);
             words.pop();
