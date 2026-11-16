@@ -11,8 +11,8 @@ mod sw_platform;
 
 use i_slint_backend_testing::ElementHandle;
 use parabole::slint_ui::{
-    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, PlayerApi, SportsApi,
-    SportsChannel, SportsRow, StreamItem, Theme, ToastItem, build, fonts,
+    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, FieldItem, InfoView, PaletteApi, PlayerApi,
+    SportsApi, SportsChannel, SportsRow, StreamItem, Theme, ToastItem, build, fonts,
 };
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
@@ -176,6 +176,36 @@ impl Shots {
         self.shot("series-episodes");
         api.set_series_open(false);
         eps.set_vec(Vec::new());
+        self.p.pump(2);
+    }
+
+    /// Long wrapped fields must stay reachable, not cropped by the card.
+    fn details_screen(&mut self) {
+        let win = self.win.clone_strong();
+        let api = win.global::<BrowseApi>();
+        let field = |label: &str, value: &str| FieldItem {
+            label: label.into(),
+            value: value.into(),
+        };
+        let cast = "Jake Johnson, Mary Steenburgen, Ed Harris, Aaron Chen, Patton Oswalt, Cleo King, Lynne Marie Stewart, Chloe Fineman";
+        let plot = "A washed-up tennis pro and his estranged brother team up for a pickleball tournament, where old rivalries, new friends and a lot of bad shots decide whether they can finally work together.";
+        api.set_details_title("4K-A+ - The Dink (2026)".into());
+        api.set_details(InfoView {
+            state: 2,
+            fields: ModelRc::new(VecModel::from(vec![
+                field("Rating", "★ 6.5 IMDb · 12K votes"),
+                field("Genre", "Comedy"),
+                field("Released", "2026-07-23"),
+                field("Duration", "1h 42m"),
+                field("Director", "Josh Greenbaum"),
+                field("Cast", cast),
+                field("Plot", plot),
+            ])),
+            ..Default::default()
+        });
+        api.set_details_open(true);
+        self.shot("details");
+        api.set_details_open(false);
         self.p.pump(2);
     }
 
@@ -389,6 +419,7 @@ fn snapshots() {
     s.dialog_view("sources", "sources-form", |d| d.set_form_open(true));
     s.dialog_view("settings", "settings-players", |d| d.set_settings_tab(1));
     s.series_screen();
+    s.details_screen();
     s.player_screens();
     s.toast_screen();
     s.sports_screen();

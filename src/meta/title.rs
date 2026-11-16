@@ -97,7 +97,7 @@ fn strip_prefix(s: &str) -> &str {
         }
     }
     let run_end = s
-        .find(|c: char| !(c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-'))
+        .find(|c: char| !(c.is_ascii_uppercase() || c.is_ascii_digit() || c == '-' || c == '+'))
         .unwrap_or(s.len());
     let run = &s[..run_end];
     let code = run.trim_end_matches('-');
@@ -143,6 +143,7 @@ mod tests {
                 Some(2024),
             ),
             ("Inception", "Inception", None),
+            ("4K-A+ - The Dink (2026)", "The Dink", Some(2026)),
             ("FR| Amélie", "Amélie", None),
             ("|NL| Oppenheimer HDR", "Oppenheimer", None),
             ("[MULTI] Joker (2019)", "Joker", Some(2019)),

@@ -9,19 +9,24 @@ import { EmptyBox } from "browse-empty.slint";
 export component InfoBody inherits HorizontalLayout {
     in property <InfoView> info;
     spacing: 16px;
-    alignment: start;
-    if root.info.has-poster: Image {
-        width: 150px;
-        height: 225px;
-        source: root.info.poster;
-        image-fit: cover;
+    if root.info.has-poster: VerticalLayout {
+        alignment: start;
+        Image {
+            width: 150px;
+            height: 225px;
+            source: root.info.poster;
+            image-fit: cover;
+        }
     }
     VerticalLayout {
+        horizontal-stretch: 1;
         spacing: 4px;
         alignment: start;
-        for f in root.info.fields: VerticalLayout {
-            Text { text: f.label; color: Theme.text-dim; font-size: Theme.fs-xs; font-weight: Theme.semibold; }
-            Text { text: f.value; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; }
+        // Manual rows: a nested layout reports wrapped text as one line, so the card cropped it.
+        for f in root.info.fields: Rectangle {
+            height: label.preferred-height + value.preferred-height;
+            label := Text { x: 0; y: 0; width: parent.width; text: f.label; color: Theme.text-dim; font-size: Theme.fs-xs; font-weight: Theme.semibold; }
+            value := Text { x: 0; y: label.preferred-height; width: parent.width; text: f.value; color: Theme.text; font-size: Theme.fs-md; wrap: word-wrap; }
         }
         if root.info.fields.length == 0: Text { text: "No details available."; color: Theme.text-muted; font-size: Theme.fs-md; }
     }
