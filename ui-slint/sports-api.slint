@@ -1,12 +1,16 @@
-// Football tab state. Rust: win.global::<FootballApi>(), src/slint_ui/football/.
-import { FootballRow, FootballChannel } from "types.slint";
+// Sports tab state. Rust: win.global::<SportsApi>(), src/slint_ui/sports/.
+import { SportsRow, SportsChannel } from "types.slint";
 
-export global FootballApi {
-    in property <[FootballRow]> rows;
+export global SportsApi {
+    // Enabled sports (Segmented options) and the current one.
+    in property <[string]> sport-names;
+    in property <int> sport;
+    callback sport-picked(int);
+    in property <[SportsRow]> rows;
     in property <int> cursor: -1;
     in property <string> detail-title;
     in property <string> detail-sub;
-    in property <[FootballChannel]> channels;
+    in property <[SportsChannel]> channels;
     in property <string> status;
     in property <string> empty-text;
     callback row-selected(int);
@@ -24,7 +28,7 @@ export global FootballApi {
     // False while searching or showing live matches, which span every day.
     in property <bool> day-enabled: true;
     callback day-step(int);
-    // Keys while the Football tab is shown; return true when handled.
+    // Keys while the Sports tab is shown; return true when handled.
     callback key(KeyEvent) -> bool;
     key(e) => {
         if (e.text == Key.LeftArrow && root.day-enabled && root.can-prev) { root.day-step(-1); return true; }

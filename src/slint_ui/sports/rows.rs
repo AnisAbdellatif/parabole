@@ -1,4 +1,4 @@
-//! Text for the Football tab: pure formatting of matches, no Slint types.
+//! Text for the Sports tab: pure formatting of matches, no Slint types.
 use super::filter;
 use crate::model::{Broadcast, Match, MatchStatus, ProviderStatus};
 use crate::sports::lang;
@@ -34,7 +34,11 @@ fn fmt(ts: i64, tz: FixedOffset, pattern: &str) -> String {
 }
 
 fn teams(m: &Match) -> String {
-    format!("{} – {}", m.home, m.away)
+    if m.away.is_empty() {
+        m.home.clone()
+    } else {
+        format!("{} – {}", m.home, m.away)
+    }
 }
 
 /// "Today", "Tomorrow" or "Wed 18 Nov" for `day` days after today.
@@ -207,9 +211,9 @@ pub fn status(
 
 pub fn empty_text(loading: bool) -> &'static str {
     if loading {
-        "Loading matches…"
+        "Loading…"
     } else {
-        "No matches in the selected competitions on this day."
+        "No events in the selected competitions on this day."
     }
 }
 

@@ -35,23 +35,35 @@ component PlayersTab inherits VerticalLayout {
     FormRow { label: "Extra mpv args"; DField { text <=> DialogApi.set-mpv-args; } }
 }
 
-component FootballTab inherits VerticalLayout {
+component SportsTab inherits VerticalLayout {
     spacing: 12px;
-    FormRow { label: "Football tab"; DCheck { text: "Show the Football tab"; checked <=> DialogApi.set-football; } }
-    if DialogApi.set-football: FormRow {
+    FormRow { label: "Sports tab"; DCheck { text: "Show the Sports tab"; checked <=> DialogApi.set-sports; } }
+    if DialogApi.set-sports: FormRow {
+        label: "Sports";
+        VerticalLayout {
+            spacing: 8px;
+            padding-top: 5px;
+            for sport[i] in DialogApi.sports-list: DCheck {
+                text: sport.name;
+                checked: sport.checked;
+                changed checked => { DialogApi.sport-toggled(i); }
+            }
+        }
+    }
+    if DialogApi.set-sports: FormRow {
         label: "Languages";
         VerticalLayout {
             spacing: 8px;
             padding-top: 5px;
-            for lang[i] in DialogApi.football-langs: DCheck {
+            for lang[i] in DialogApi.sports-langs: DCheck {
                 text: lang.name;
                 checked: lang.checked;
-                changed checked => { DialogApi.football-lang-toggled(i); }
+                changed checked => { DialogApi.sports-lang-toggled(i); }
             }
         }
     }
     Text {
-        text: "Upcoming and live matches of popular competitions, with the TV channels showing them. Data comes from 365scores and LiveScore (free, unofficial); channels are for information and may not be in your sources.";
+        text: "Upcoming and live events of popular competitions, with the TV channels showing them. Data comes from 365scores and LiveScore (free, unofficial); channels are for information and may not be in your sources.";
         color: Theme.text-dim;
         font-size: Theme.fs-sm;
         wrap: word-wrap;
@@ -65,7 +77,7 @@ export component SettingsDialog inherits DialogFrame {
         padding: 16px;
         padding-bottom: 0px;
         tabs := Segmented {
-            options: ["Playback", "Players", "Appearance", "Football"];
+            options: ["Playback", "Players", "Appearance", "Sports"];
             current: DialogApi.settings-tab;
             changed(i) => { DialogApi.settings-tab = i; }
         }
@@ -75,7 +87,7 @@ export component SettingsDialog inherits DialogFrame {
         if DialogApi.settings-tab == 0: PlaybackTab { }
         if DialogApi.settings-tab == 1: PlayersTab { }
         if DialogApi.settings-tab == 2: AppearancePane { }
-        if DialogApi.settings-tab == 3: FootballTab { }
+        if DialogApi.settings-tab == 3: SportsTab { }
     }
     if DialogApi.settings-tab != 2: DialogFooter {
         DButton { text: "Cancel"; clicked => { DialogApi.close(); } }

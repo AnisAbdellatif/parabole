@@ -7,7 +7,7 @@ The Football tab becomes a **Sports** tab. Each sport is a small, self-contained
 - Top row: sport switcher (`Segmented`: Football · Basketball · Tennis · F1 · WWE …), only the sports enabled in Settings, in registry order.
 - Below: the current Football layout, unchanged and shared by every sport: search, All / Live / Upcoming, day picker, competition bands, two-line rows, channels panel.
 - Single-event sports (a race, a wrestling show, a fight card) show one line: the event name (no score column).
-- Filter, day, search and selection are remembered per sport for the session.
+- Switching sport keeps the filter and day, clears the search and the selection.
 
 ## 2. Data sources (all free)
 | Sport | Schedule + live | TV channels | Notes |

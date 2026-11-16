@@ -1,5 +1,5 @@
 // Dialog area state and callbacks (sources, settings, profiles, groups). Owned by the dialogs area.
-import { SourceRow, ProfileRow, FootballLang } from "types.slint";
+import { SourceRow, ProfileRow, CheckItem } from "types.slint";
 
 export global DialogApi {
     // "", "sources", "settings", "profiles" or "group" ("appearance" opens settings tab 2).
@@ -50,11 +50,13 @@ export global DialogApi {
     callback form-test();
     callback auto-hours-commit(string);
 
-    // Settings: tab 0 Playback, 1 Players, 2 Appearance, 3 Football.
+    // Settings: tab 0 Playback, 1 Players, 2 Appearance, 3 Sports.
     in-out property <int> settings-tab: 0;
-    in-out property <bool> set-football: false;
-    in property <[FootballLang]> football-langs;
-    callback football-lang-toggled(int);
+    in-out property <bool> set-sports: false;
+    in property <[CheckItem]> sports-list;
+    callback sport-toggled(int);
+    in property <[CheckItem]> sports-langs;
+    callback sports-lang-toggled(int);
     in property <[string]> player-kinds;
     in property <[string]> player-kinds-opt;
     in-out property <int> set-default: 0;

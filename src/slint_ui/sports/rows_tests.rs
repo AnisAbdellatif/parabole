@@ -190,3 +190,11 @@ fn details_merge_same_channel_across_countries() {
     );
     assert_eq!(ch[1].channel, "beIN Sport 1 HD");
 }
+
+#[test]
+fn single_event_title_is_home_alone() {
+    let mut m = game("a", 0, MatchStatus::Upcoming, vec![]);
+    m.away.clear();
+    let (title, _, _) = details(&m, &[], tz());
+    assert_eq!(title, "Germany");
+}

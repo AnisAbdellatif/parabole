@@ -11,8 +11,8 @@ mod sw_platform;
 
 use i_slint_backend_testing::ElementHandle;
 use parabole::slint_ui::{
-    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, FootballApi, FootballChannel, FootballRow,
-    PaletteApi, PlayerApi, StreamItem, Theme, ToastItem, build, fonts,
+    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, PaletteApi, PlayerApi, SportsApi,
+    SportsChannel, SportsRow, StreamItem, Theme, ToastItem, build, fonts,
 };
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
@@ -190,7 +190,7 @@ impl Shots {
         self.shot("toast");
     }
 
-    fn football_screen(&mut self) {
+    fn sports_screen(&mut self) {
         let win = self.win.clone_strong();
         let row = |section: &str,
                    time: &str,
@@ -198,7 +198,7 @@ impl Shots {
                    away: &str,
                    score: (&str, &str),
                    langs: &str| {
-            FootballRow {
+            SportsRow {
                 key: home.into(),
                 section: section.into(),
                 time: time.into(),
@@ -210,12 +210,12 @@ impl Shots {
                 langs: langs.into(),
             }
         };
-        let ch = |header: bool, text: &str, channel: &str| FootballChannel {
+        let ch = |header: bool, text: &str, channel: &str| SportsChannel {
             header,
             text: text.into(),
             channel: channel.into(),
         };
-        let api = win.global::<FootballApi>();
+        let api = win.global::<SportsApi>();
         api.set_rows(ModelRc::new(VecModel::from(vec![
             row(
                 "Champions League",
@@ -234,7 +234,18 @@ impl Shots {
                 "DE EN FR AR +4",
             ),
             row("", "21:00", "France", "Italy", ("", ""), "FR IT"),
+            row(
+                "Formula 1",
+                "05:00",
+                "Las Vegas Grand Prix",
+                "",
+                ("", ""),
+                "ES",
+            ),
         ])));
+        let names = ["Football", "Basketball", "Tennis", "F1"].map(SharedString::from);
+        api.set_sport_names(ModelRc::new(VecModel::from(names.to_vec())));
+        api.set_sport(0);
         api.set_live_count(1);
         api.set_day_label("Today".into());
         api.set_can_next(true);
@@ -254,12 +265,12 @@ impl Shots {
         api.set_empty_text("".into());
         let core = win.global::<Core>();
         core.set_toasts(ModelRc::new(VecModel::default()));
-        core.set_football_enabled(true);
+        core.set_sports_enabled(true);
         core.set_tab(3);
         self.p.pump(2);
-        self.shot("football");
+        self.shot("sports");
         core.set_tab(0);
-        core.set_football_enabled(false);
+        core.set_sports_enabled(false);
         api.set_cursor(-1);
         self.p.pump(2);
     }
@@ -379,7 +390,7 @@ fn snapshots() {
     s.series_screen();
     s.player_screens();
     s.toast_screen();
-    s.football_screen();
+    s.sports_screen();
     let failures = std::mem::take(&mut s.failures);
     drop(s);
     slint_seed::cleanup(&dir);

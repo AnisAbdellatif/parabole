@@ -146,8 +146,8 @@ export struct HeroExtra {
     action: string,
 }
 
-// One match row of the Football tab. `section` is set on the first row of a competition ("Serie A", or "Tomorrow · Serie A" while searching).
-export struct FootballRow {
+// One match row of the Sports tab. `section` is set on the first row of a competition ("Serie A", or "Tomorrow · Serie A" while searching).
+export struct SportsRow {
     key: string,
     section: string,
     time: string,
@@ -159,15 +159,15 @@ export struct FootballRow {
     langs: string,
 }
 
-// One line of the Football details panel: a language header, or a channel ("Canal+ Foot (FR)") whose name `channel` is copied on click.
-export struct FootballChannel {
+// One line of the Sports details panel: a language header, or a channel ("Canal+ Foot (FR)") whose name `channel` is copied on click.
+export struct SportsChannel {
     header: bool,
     text: string,
     channel: string,
 }
 
-// One language checkbox in Settings → Football.
-export struct FootballLang {
+// One language checkbox in Settings → Sports.
+export struct CheckItem {
     code: string,
     name: string,
     checked: bool,

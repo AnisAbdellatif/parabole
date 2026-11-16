@@ -1,21 +1,21 @@
-// Football tab: match list on the left, "where is it on TV" panel on the right.
+// Sports tab: event list on the left, "where is it on TV" panel on the right.
 import { ScrollView } from "std-widgets.slint";
 import { Theme } from "theme.slint";
-import { FootballRow, FootballChannel } from "types.slint";
-import { FootballApi } from "football-api.slint";
+import { SportsRow, SportsChannel } from "types.slint";
+import { SportsApi } from "sports-api.slint";
 import { DButton, Segmented } from "dialog-kit.slint";
 import { Icons } from "icons.slint";
 import { Icon } from "icon.slint";
 
-// Two-line match row (home over away, scores stacked), under a competition band when `item.section` is set.
+// Two-line match row (home over away, scores stacked; a single event has `away` empty and shows one centred line), under a competition band when `item.section` is set.
 component MatchRow inherits Rectangle {
-    in property <FootballRow> item;
+    in property <SportsRow> item;
     in property <bool> selected;
     callback clicked();
     callback reveal(length, length);
     changed selected => { if (root.selected) { root.reveal(root.y, root.height); } }
     accessible-role: list-item;
-    accessible-label: root.item.home + " vs " + root.item.away;
+    accessible-label: root.item.away == "" ? root.item.home : root.item.home + " vs " + root.item.away;
     accessible-item-selectable: true;
     accessible-item-selected: root.selected;
 
@@ -66,9 +66,9 @@ component MatchRow inherits Rectangle {
                     alignment: center;
                     spacing: 3px;
                     Text { text: root.item.home; font-size: Theme.fs-md; color: Theme.text; overflow: elide; }
-                    Text { text: root.item.away; font-size: Theme.fs-md; color: Theme.text; overflow: elide; }
+                    if root.item.away != "": Text { text: root.item.away; font-size: Theme.fs-md; color: Theme.text; overflow: elide; }
                 }
-                if root.item.live: VerticalLayout {
+                if root.item.live && root.item.away != "": VerticalLayout {
                     width: 24px;
                     alignment: center;
                     spacing: 3px;
@@ -91,7 +91,7 @@ component MatchRow inherits Rectangle {
 }
 
 component ChannelLine inherits Rectangle {
-    in property <FootballChannel> item;
+    in property <SportsChannel> item;
     callback clicked();
     height: root.item.header ? 26px * Theme.density : 28px * Theme.density;
     border-radius: Theme.radius;
@@ -115,7 +115,7 @@ component ChannelLine inherits Rectangle {
     ta := TouchArea { enabled: !root.item.header; clicked => { root.clicked(); } }
 }
 
-// Team search: filters the list as you type; Escape clears it.
+// Search: filters the list as you type; Escape clears it.
 component TeamSearch inherits Rectangle {
     callback done();
     width: 240px;
@@ -133,18 +133,18 @@ component TeamSearch inherits Rectangle {
             Icon { source: Icons.search; tint: Theme.text-muted; size: 14px; }
         }
         input := TextInput {
-            accessible-label: "Search teams";
-            text <=> FootballApi.search;
+            accessible-label: "Search events";
+            text <=> SportsApi.search;
             color: Theme.text;
             font-size: Theme.fs-md;
             vertical-alignment: center;
             single-line: true;
-            edited => { FootballApi.search-edited(self.text); }
+            edited => { SportsApi.search-edited(self.text); }
             accepted => { root.done(); }
             key-pressed(e) => {
                 if (e.text == Key.Escape) {
                     self.text = "";
-                    FootballApi.search-edited("");
+                    SportsApi.search-edited("");
                     root.done();
                     return accept;
                 }
@@ -152,7 +152,7 @@ component TeamSearch inherits Rectangle {
             }
             if self.text == "" && !self.has-focus: Text {
                 x: 0px;
-                text: "Search a team";
+                text: "Search";
                 color: Theme.text-faint;
                 font-size: Theme.fs-md;
                 vertical-alignment: center;
@@ -162,7 +162,7 @@ component TeamSearch inherits Rectangle {
     }
 }
 
-export component FootballView inherits Rectangle {
+export component SportsView inherits Rectangle {
     callback interacted();
     background: Theme.bg;
 
@@ -177,33 +177,39 @@ export component FootballView inherits Rectangle {
                 height: 32px;
                 spacing: 10px;
                 alignment: stretch;
-                Text { text: "Football"; font-size: Theme.fs-xl; font-weight: Theme.semibold; color: Theme.text; vertical-alignment: center; }
-                Text { text: FootballApi.status; font-size: Theme.fs-sm; color: Theme.text-muted; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+                if SportsApi.sport-names.length > 1: Segmented {
+                    width: SportsApi.sport-names.length * 88px;
+                    options: SportsApi.sport-names;
+                    current: SportsApi.sport;
+                    changed(i) => { SportsApi.sport-picked(i); root.interacted(); }
+                }
+                if SportsApi.sport-names.length <= 1: Text { text: SportsApi.sport-names.length == 1 ? SportsApi.sport-names[0] : "Sports"; font-size: Theme.fs-xl; font-weight: Theme.semibold; color: Theme.text; vertical-alignment: center; }
+                Text { text: SportsApi.status; font-size: Theme.fs-sm; color: Theme.text-muted; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
                 TeamSearch { done => { root.interacted(); } }
-                DButton { text: "Refresh"; clicked => { FootballApi.refresh(); root.interacted(); } }
+                DButton { text: "Refresh"; clicked => { SportsApi.refresh(); root.interacted(); } }
             }
             HorizontalLayout {
                 height: 32px;
                 spacing: 6px;
                 Segmented {
                     width: 280px;
-                    options: ["All", FootballApi.live-count > 0 ? "Live (" + FootballApi.live-count + ")" : "Live", "Upcoming"];
-                    current: FootballApi.filter;
-                    changed(i) => { FootballApi.filter-picked(i); root.interacted(); }
+                    options: ["All", SportsApi.live-count > 0 ? "Live (" + SportsApi.live-count + ")" : "Live", "Upcoming"];
+                    current: SportsApi.filter;
+                    changed(i) => { SportsApi.filter-picked(i); root.interacted(); }
                 }
                 Rectangle { horizontal-stretch: 1; }
                 HorizontalLayout {
                     spacing: 6px;
-                    opacity: FootballApi.day-enabled ? 1.0 : 0.4;
+                    opacity: SportsApi.day-enabled ? 1.0 : 0.4;
                     DButton {
                         text: "‹";
                         label: "Previous day";
-                        enabled: FootballApi.day-enabled && FootballApi.can-prev;
-                        clicked => { FootballApi.day-step(-1); root.interacted(); }
+                        enabled: SportsApi.day-enabled && SportsApi.can-prev;
+                        clicked => { SportsApi.day-step(-1); root.interacted(); }
                     }
                     Text {
                         width: 110px;
-                        text: FootballApi.day-label;
+                        text: SportsApi.day-label;
                         font-size: Theme.fs-md;
                         font-weight: Theme.medium;
                         color: Theme.text;
@@ -213,28 +219,28 @@ export component FootballView inherits Rectangle {
                     DButton {
                         text: "›";
                         label: "Next day";
-                        enabled: FootballApi.day-enabled && FootballApi.can-next;
-                        clicked => { FootballApi.day-step(1); root.interacted(); }
+                        enabled: SportsApi.day-enabled && SportsApi.can-next;
+                        clicked => { SportsApi.day-step(1); root.interacted(); }
                     }
                 }
             }
-            if FootballApi.rows.length == 0: Text {
-                text: FootballApi.empty-text;
+            if SportsApi.rows.length == 0: Text {
+                text: SportsApi.empty-text;
                 font-size: Theme.fs-md;
                 color: Theme.text-muted;
                 vertical-stretch: 1;
                 horizontal-alignment: center;
                 vertical-alignment: center;
             }
-            if FootballApi.rows.length > 0: sv := ScrollView {
+            if SportsApi.rows.length > 0: sv := ScrollView {
                 vertical-stretch: 1;
                 content-width: self.visible-width;
                 content-height: col.preferred-height;
                 col := VerticalLayout {
-                    for row[i] in FootballApi.rows: MatchRow {
+                    for row[i] in SportsApi.rows: MatchRow {
                         item: row;
-                        selected: i == FootballApi.cursor;
-                        clicked => { FootballApi.row-selected(i); root.interacted(); }
+                        selected: i == SportsApi.cursor;
+                        clicked => { SportsApi.row-selected(i); root.interacted(); }
                         reveal(y, h) => {
                             if (-sv.content-y > y) { sv.content-y = -y; }
                             else if (-sv.content-y + sv.visible-height < y + h) { sv.content-y = -(y + h - sv.visible-height); }
@@ -250,43 +256,43 @@ export component FootballView inherits Rectangle {
             VerticalLayout {
                 padding: 16px;
                 spacing: 8px;
-                if FootballApi.cursor < 0: Text {
-                    text: "Select a match to see where it's on TV.";
+                if SportsApi.cursor < 0: Text {
+                    text: "Select an event to see where it's on TV.";
                     color: Theme.text-muted;
                     font-size: Theme.fs-md;
                     wrap: word-wrap;
                 }
-                if FootballApi.cursor >= 0: Text {
-                    text: FootballApi.detail-title;
+                if SportsApi.cursor >= 0: Text {
+                    text: SportsApi.detail-title;
                     font-size: Theme.fs-lg;
                     font-weight: Theme.semibold;
                     color: Theme.text;
                     wrap: word-wrap;
                 }
-                if FootballApi.cursor >= 0: Text {
-                    text: FootballApi.detail-sub;
+                if SportsApi.cursor >= 0: Text {
+                    text: SportsApi.detail-sub;
                     font-size: Theme.fs-sm;
                     color: Theme.text-muted;
                     wrap: word-wrap;
                 }
-                if FootballApi.cursor >= 0 && FootballApi.channels.length == 0: Text {
-                    text: "No channel listings found for this match yet.";
+                if SportsApi.cursor >= 0 && SportsApi.channels.length == 0: Text {
+                    text: "No channel listings found yet.";
                     font-size: Theme.fs-md;
                     color: Theme.text-muted;
                     wrap: word-wrap;
                 }
-                if FootballApi.cursor >= 0 && FootballApi.channels.length > 0: ScrollView {
+                if SportsApi.cursor >= 0 && SportsApi.channels.length > 0: ScrollView {
                     vertical-stretch: 1;
                     content-width: self.visible-width;
                     content-height: lines.preferred-height;
                     lines := VerticalLayout {
-                        for ch[i] in FootballApi.channels: ChannelLine {
+                        for ch[i] in SportsApi.channels: ChannelLine {
                             item: ch;
-                            clicked => { FootballApi.channel-clicked(i); root.interacted(); }
+                            clicked => { SportsApi.channel-clicked(i); root.interacted(); }
                         }
                     }
                 }
-                if FootballApi.cursor < 0 || FootballApi.channels.length == 0: Rectangle { vertical-stretch: 1; }
+                if SportsApi.cursor < 0 || SportsApi.channels.length == 0: Rectangle { vertical-stretch: 1; }
                 Text {
                     text: "Languages are inferred from the country and channel name. Click a channel to copy its name. Listings come from free sources and may be incomplete.";
                     font-size: Theme.fs-xs;

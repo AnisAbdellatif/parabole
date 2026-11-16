@@ -1,4 +1,4 @@
-//! Which matches the Football list shows, and in what order: one day at a time, grouped by competition.
+//! Which matches the Sports list shows, and in what order: one day at a time, grouped by competition.
 use crate::model::{Match, MatchStatus};
 use crate::sports::merge;
 use chrono::{DateTime, FixedOffset, NaiveDate};

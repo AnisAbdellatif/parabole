@@ -4,8 +4,8 @@ import { StreamItem, SidebarItem, ToastItem } from "types.slint";
 
 export global Core {
     in-out property <int> tab: 0;
-    // Football tab in the rail (Settings → Football). Core.tab == 3 shows it.
-    in property <bool> football-enabled: false;
+    // Sports tab in the rail (Settings → Sports). Core.tab == 3 shows it.
+    in property <bool> sports-enabled: false;
     in property <[string]> profiles;
     in-out property <int> profile-index: 0;
     in property <string> profile-name;

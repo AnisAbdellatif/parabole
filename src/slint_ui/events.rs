@@ -20,7 +20,7 @@ pub fn drain() {
             let Some(ev) = super::browse::on_event(a, ev) else {
                 continue;
             };
-            let Some(ev) = super::football::on_event(a, ev) else {
+            let Some(ev) = super::sports::on_event(a, ev) else {
                 continue;
             };
             match ev {
