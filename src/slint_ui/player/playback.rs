@@ -7,6 +7,7 @@ use super::{carousel, sync};
 use crate::player::{Notice, PlayerKind};
 use crate::worker::{Command, EmbedPlay, Track, player_settings};
 use slint::ComponentHandle;
+use std::sync::atomic::Ordering::Relaxed;
 use std::time::{Duration, Instant};
 
 const TICK: Duration = Duration::from_millis(250);
@@ -35,6 +36,7 @@ pub fn on_embed_play(a: &mut SlintApp, play: EmbedPlay) {
             a.playing_id = play.stream_id;
             a.streams.set_playing(a.playing_id);
             a.player.session = Some(Session::new(play));
+            a.worker.scan.embedded_playing.store(true, Relaxed);
             carousel::fill_pane(a);
             super::keys::push_help(a);
             a.player.timer.start(slint::TimerMode::Repeated, TICK, || {
@@ -60,6 +62,7 @@ pub fn stop_embedded(a: &mut SlintApp) {
         core.stop();
     }
     a.player.session = None;
+    a.worker.scan.embedded_playing.store(false, Relaxed);
     carousel::fill_pane(a);
     a.player.timer.stop();
     a.player.zap.cancel();

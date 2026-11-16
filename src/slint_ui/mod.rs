@@ -95,6 +95,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
             categories: Vec::new(),
             groups: Vec::new(),
             smart: Vec::new(),
+            scan_status: None,
             streams,
             play_req: None,
             playing_id: None,

@@ -29,6 +29,7 @@ impl SlintApp {
                 v.push(row(Sel::Quality(b.index()).to_id(), 1, b.label(), n as i32));
             }
         }
+        v.extend(self.scan_rows());
         let sel_id = self.state.sel.as_ref().map(Sel::to_id).unwrap_or_default();
         let at = v
             .iter()

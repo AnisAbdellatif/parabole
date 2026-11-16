@@ -2,7 +2,7 @@
 import { SourceRow, ProfileRow, CheckItem } from "types.slint";
 
 export global DialogApi {
-    // "", "sources", "settings", "profiles" or "group" ("appearance" opens settings tab 2).
+    // "", "sources", "settings", "profiles", "group" or "scan" ("appearance" opens settings tab 2).
     in-out property <string> open: "";
     callback open-dialog(string);
     public function close() { root.open = ""; }

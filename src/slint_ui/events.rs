@@ -47,6 +47,7 @@ pub fn drain() {
                     set_playing(a, "", "");
                 }
                 Event::PlayFailed(msg) | Event::Error(msg) => a.toast(msg),
+                Event::ScanStatus(s) => super::browse::scan::on_status(a, s),
                 // consumed by the player and browse areas before they get here
                 Event::PlayEmbedded(_)
                 | Event::UrlReady(_)

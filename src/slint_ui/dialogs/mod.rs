@@ -2,6 +2,7 @@
 pub(crate) mod appearance;
 mod group;
 mod profiles;
+mod scan;
 mod settings;
 mod source_callbacks;
 mod source_form;
@@ -24,6 +25,7 @@ pub struct DialogArea {
     confirm_source: Option<SourceId>,
     renaming: Option<ProfileId>,
     confirm_profile: Option<ProfileId>,
+    scan: Vec<scan::Entry>,
 }
 
 /// Registers this area's `DialogApi` callbacks. Called once from `run()`.
@@ -36,6 +38,7 @@ pub fn connect(win: &AppWindow) {
     profiles::connect(win);
     group::connect(win);
     appearance::connect(win);
+    scan::connect(win);
 }
 
 impl SlintApp {

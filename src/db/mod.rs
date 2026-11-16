@@ -17,6 +17,7 @@ mod profiles;
 pub mod progress;
 mod quality;
 mod resume;
+mod scan;
 mod search;
 mod settings;
 mod sources;
@@ -28,6 +29,7 @@ pub mod track_prefs;
 use anyhow::{Context, Result};
 use rusqlite::Connection;
 use std::path::Path;
+use std::time::Duration;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub struct Db {
@@ -60,6 +62,8 @@ impl Db {
 
     fn init(mut conn: Connection) -> Result<Db> {
         conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+        // The quality scanner writes from its own connection.
+        conn.busy_timeout(Duration::from_secs(5))?;
         migrate::run(&mut conn)?;
         Ok(Db { conn })
     }

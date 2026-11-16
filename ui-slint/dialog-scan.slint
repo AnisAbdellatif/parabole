@@ -1,0 +1,65 @@
+// Quality scan category picker (Smart tab). Rust fills `rows` filtered by `filter`.
+import { Theme } from "theme.slint";
+import { DialogApi } from "dialog-api.slint";
+import { DButton, DCheck, DField } from "dialog-kit.slint";
+import { DialogBody, DialogFooter, DialogFrame } from "dialog-frame.slint";
+
+export struct ScanCat {
+    // index into the full list held by Rust
+    idx: int,
+    label: string,
+    count: int,
+    checked: bool,
+}
+
+export global ScanApi {
+    in-out property <string> filter;
+    in property <[ScanCat]> rows;
+    in property <string> summary;
+    callback filter-edited(string);
+    callback toggled(int);
+    // 0 visible categories, 1 all, 2 none
+    callback preset(int);
+    callback save();
+}
+
+export component ScanDialog inherits DialogFrame {
+    title: "Quality scan categories";
+    card-width: 520px;
+    init => { field.focus-input(); }
+    VerticalLayout {
+        padding: 16px;
+        padding-bottom: 0px;
+        spacing: 8px;
+        field := DField {
+            text <=> ScanApi.filter;
+            placeholder: "Filter categories";
+            edited(t) => { ScanApi.filter-edited(t); }
+        }
+        HorizontalLayout {
+            spacing: 8px;
+            DButton { text: "Visible categories"; clicked => { ScanApi.preset(0); } }
+            DButton { text: "All"; clicked => { ScanApi.preset(1); } }
+            DButton { text: "None"; clicked => { ScanApi.preset(2); } }
+            Rectangle { horizontal-stretch: 1; }
+        }
+    }
+    DialogBody {
+        max-body: root.max-body - 90px;
+        for c in ScanApi.rows: HorizontalLayout {
+            spacing: 8px;
+            DCheck {
+                horizontal-stretch: 1;
+                text: c.label;
+                checked: c.checked;
+                changed checked => { ScanApi.toggled(c.idx); }
+            }
+            Text { text: c.count; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; }
+        }
+    }
+    DialogFooter {
+        Text { text: ScanApi.summary; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; horizontal-stretch: 1; }
+        DButton { text: "Cancel"; clicked => { DialogApi.close(); } }
+        DButton { text: "Save"; kind: 1; clicked => { ScanApi.save(); } }
+    }
+}

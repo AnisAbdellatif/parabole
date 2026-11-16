@@ -8,6 +8,7 @@ mod overlay;
 mod profiles;
 mod progress;
 mod quality;
+mod scan;
 mod search;
 mod settings;
 mod track_prefs;

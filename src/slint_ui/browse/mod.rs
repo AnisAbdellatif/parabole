@@ -8,6 +8,7 @@ mod groups;
 mod hero;
 mod menu;
 mod rows;
+pub mod scan;
 mod search_filter;
 mod series;
 mod sidebar;

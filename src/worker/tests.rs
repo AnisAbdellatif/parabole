@@ -145,6 +145,7 @@ fn second_refresh_of_same_source_is_skipped_until_done() {
     let (cmd_tx, _cmd_rx) = channel();
     let (ev_tx, ev_rx) = channel();
     let mut w = Worker {
+        scan: Arc::default(),
         db,
         db_path: PathBuf::new(),
         sports_busy: Arc::new(AtomicBool::new(false)),

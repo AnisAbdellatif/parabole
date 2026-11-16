@@ -6,6 +6,7 @@ pub mod embed;
 pub mod live;
 mod locate;
 mod mpv_ipc;
+pub mod probe;
 mod process;
 pub mod retry;
 mod settings;

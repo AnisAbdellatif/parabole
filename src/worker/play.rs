@@ -1,8 +1,25 @@
 use super::{EmbedPlay, Event, SeriesCtx, Track, Worker, episode_key, player_settings};
-use crate::model::{Episode, Headers, MediaKind, PlayRequest, ProfileId, SourceId};
+use crate::db::Db;
+use crate::model::{Episode, Headers, MediaKind, PlayInfo, PlayRequest, ProfileId, SourceId};
 use crate::player::PlayerKind;
 use crate::sources;
 use anyhow::Result;
+
+/// Resolved request for a stored stream, with the source's user agent as fallback.
+pub(super) fn stream_request(db: &Db, stream_id: i64) -> Result<(PlayInfo, PlayRequest)> {
+    let info = db.play_info(stream_id)?;
+    let src = db.source(info.source_id)?;
+    let mut headers = info.headers.clone();
+    headers.user_agent = headers.user_agent.or_else(|| src.user_agent.clone());
+    let req = PlayRequest {
+        url: sources::resolve_url(&src, &info)?,
+        title: info.name.clone(),
+        headers,
+        media: info.media,
+        start_s: None,
+    };
+    Ok((info, req))
+}
 
 impl Worker {
     pub(super) fn play(
@@ -11,22 +28,12 @@ impl Worker {
         stream_id: i64,
         kind: Option<&PlayerKind>,
     ) -> Result<()> {
-        let info = self.db.play_info(stream_id)?;
-        let src = self.db.source(info.source_id)?;
-        let mut headers = info.headers.clone();
-        headers.user_agent = headers.user_agent.or_else(|| src.user_agent.clone());
+        let (info, req) = stream_request(&self.db, stream_id)?;
         let track = Track {
             profile,
             source: info.source_id,
             media: info.media,
             key: info.key.clone(),
-        };
-        let req = PlayRequest {
-            url: sources::resolve_url(&src, &info)?,
-            title: info.name.clone(),
-            headers,
-            media: info.media,
-            start_s: None,
         };
         if self.launch(kind, &req, Some(track), Some(stream_id), None) {
             self.db

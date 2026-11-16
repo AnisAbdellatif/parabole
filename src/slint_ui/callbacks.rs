@@ -106,6 +106,9 @@ pub fn connect(win: &AppWindow) {
     });
     core.on_sidebar_selected(|id| {
         with_app(|a| {
+            if super::browse::scan::action(a, &id) {
+                return;
+            }
             if let Some(sel) = Sel::from_id(&id) {
                 select(a, sel);
             }

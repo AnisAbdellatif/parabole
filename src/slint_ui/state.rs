@@ -116,6 +116,7 @@ pub struct SlintApp {
     pub groups: Vec<StreamGroup>,
     /// Smart tab channels; empty outside it.
     pub smart: Vec<crate::smart::Channel>,
+    pub scan_status: Option<crate::worker::ScanStatus>,
     pub streams: Rc<StreamModel>,
     pub play_req: Option<i64>,
     pub playing_id: Option<i64>,

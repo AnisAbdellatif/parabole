@@ -22,7 +22,7 @@ pub fn find_binary(kind: &PlayerKind, settings: &PlayerSettings) -> Option<PathB
     }
 }
 
-fn locate(over: Option<&Path>, name: &str, defaults: Vec<PathBuf>) -> Option<PathBuf> {
+pub(super) fn locate(over: Option<&Path>, name: &str, defaults: Vec<PathBuf>) -> Option<PathBuf> {
     if let Some(p) = over.filter(|p| p.is_file()) {
         return Some(p.to_path_buf());
     }
@@ -42,7 +42,7 @@ fn search_path(name: &str, path_var: &OsStr) -> Option<PathBuf> {
         .find(|p| p.is_file())
 }
 
-fn env_dir(var: &str, rel: &str) -> Option<PathBuf> {
+pub(super) fn env_dir(var: &str, rel: &str) -> Option<PathBuf> {
     env::var_os(var).map(|v| PathBuf::from(v).join(rel))
 }
 

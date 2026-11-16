@@ -4,6 +4,7 @@ import { SourcesDialog } from "dialog-sources.slint";
 import { SettingsDialog } from "dialog-settings.slint";
 import { ProfilesDialog } from "dialog-profiles.slint";
 import { GroupDialog } from "dialog-group.slint";
+import { ScanDialog } from "dialog-scan.slint";
 
 export component DialogHost inherits Rectangle {
     callback closed();
@@ -25,5 +26,6 @@ export component DialogHost inherits Rectangle {
         if DialogApi.open == "settings": SettingsDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
         if DialogApi.open == "profiles": ProfilesDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
         if DialogApi.open == "group": GroupDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
+        if DialogApi.open == "scan": ScanDialog { max-body: root.max-body; x: (root.width - self.width) / 2; y: (root.height - self.height) / 2; }
     }
 }

@@ -81,6 +81,13 @@ impl SlintApp {
     }
 
     pub fn reload_sources(&mut self) {
+        // Every profile switch and startup lands here.
+        *self
+            .worker
+            .scan
+            .profile
+            .lock()
+            .unwrap_or_else(|e| e.into_inner()) = Some(self.profile());
         match self.db.profile_sources(self.profile()) {
             Ok(s) => self.sources = s,
             Err(e) => self.toast(format!("{e:#}")),

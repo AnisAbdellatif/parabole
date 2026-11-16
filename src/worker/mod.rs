@@ -6,12 +6,14 @@ mod embed;
 mod jobs;
 mod play;
 pub mod player_settings;
+pub mod scan;
 mod sports;
 pub mod sports_settings;
 #[cfg(test)]
 mod tests;
 
 pub use embed::{EmbedPlay, SeriesCtx, Track, episode_key};
+pub use scan::{ScanControl, ScanStatus};
 pub use sports::SportsUpdate;
 
 use crate::db::Db;
@@ -25,7 +27,7 @@ use anyhow::{Context, Result};
 use std::collections::{HashSet, VecDeque};
 use std::path::PathBuf;
 use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{Receiver, RecvTimeoutError, Sender, channel};
 use std::thread;
 use std::time::Duration;
@@ -102,6 +104,7 @@ pub enum Command {
 #[derive(Debug)]
 pub enum Event {
     Sports(SportsUpdate),
+    ScanStatus(ScanStatus),
     SourceChanged,
     RefreshStarted(SourceId),
     RefreshDone(SourceId, Result<(), String>),
@@ -137,6 +140,7 @@ pub enum Event {
 pub struct Handle {
     pub tx: Sender<Command>,
     pub rx: Receiver<Event>,
+    pub scan: Arc<ScanControl>,
 }
 
 impl Handle {
@@ -149,7 +153,9 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
     let db = Db::open(&db_path).context("open worker database")?;
     let (tx, cmd_rx) = channel();
     let (ev_tx, rx) = channel();
+    let scan = scan::spawn(&db_path, ev_tx.clone(), repaint.clone())?;
     let mut worker = Worker {
+        scan: scan.clone(),
         db,
         db_path: db_path.clone(),
         sports_busy: Arc::new(AtomicBool::new(false)),
@@ -165,10 +171,11 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
         .name("worker".into())
         .spawn(move || worker.run(cmd_rx))
         .context("spawn worker thread")?;
-    Ok(Handle { tx, rx })
+    Ok(Handle { tx, rx, scan })
 }
 
 struct Worker {
+    scan: Arc<ScanControl>,
     db: Db,
     db_path: PathBuf,
     sports_busy: Arc<AtomicBool>,
@@ -199,6 +206,7 @@ impl Worker {
                 self.emit(Event::PlayerStopped);
             }
             self.was_playing = playing;
+            self.scan.external_playing.store(playing, Ordering::Relaxed);
         }
         self.player.stop();
     }
