@@ -36,7 +36,7 @@ export component GuidesTab inherits VerticalLayout {
     }
     FormRow {
         label: "";
-        DButton { text: "Arabic (iptv-org)"; clicked => { DialogApi.guide-added("https://raw.githubusercontent.com/iimnm/arabic-epg/output/guide.xml.gz"); } }
+        DButton { text: "Arabic (iimnm)"; clicked => { DialogApi.guide-added("https://raw.githubusercontent.com/iimnm/arabic-epg/output/guide.xml.gz"); } }
         DButton { text: "Middle East (epgshare01)"; clicked => { DialogApi.guide-added("https://epgshare01.online/epgshare01/epg_ripper_AE1.xml.gz"); } }
     }
     HorizontalLayout {
