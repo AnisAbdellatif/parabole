@@ -34,6 +34,11 @@ fi
 fetch "${s365}game/?${common}&userCountryId=$country_id&gameId=$game_id" "$out/s365_tv.json"
 fetch "https://prod-public-api.livescore.com/v1/api/app/date/soccer/$y$m$d/0?MD=1" "$out/livescore_day.json"
 
-for f in s365_day s365_tv livescore_day; do
+sdb="https://www.thesportsdb.com/api/v1/json/123/"
+fetch "${sdb}eventsday.php?d=2026-11-22&s=Motorsport" "$out/sportsdb_day.json"
+sleep 3
+fetch "${sdb}lookuptv.php?id=2408216" "$out/sportsdb_tv.json"
+
+for f in s365_day s365_tv livescore_day sportsdb_day sportsdb_tv; do
   printf '%s.json %s bytes\n' "$f" "$(wc -c < "$out/$f.json" | tr -d ' ')"
 done

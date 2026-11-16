@@ -1,6 +1,6 @@
 //! Live endpoint checks. Run: cargo test sports_live -- --ignored
 //! A failure here means a provider changed or blocked us; see docs/football-tab.md §8.
-use super::{catalog, client, livescore, s365};
+use super::{catalog, client, livescore, s365, sportsdb};
 
 fn today() -> chrono::NaiveDate {
     chrono::Utc::now().date_naive()
@@ -40,4 +40,14 @@ fn sports_live_basketball_day() {
 #[ignore]
 fn sports_live_tennis_day() {
     (catalog::tennis::SPORT.days[0].fetch)(&client().unwrap(), today()).unwrap();
+}
+
+#[test]
+#[ignore]
+fn sports_live_f1_day_and_tv() {
+    let client = client().unwrap();
+    let date = chrono::NaiveDate::from_ymd_opt(2026, 11, 22).unwrap();
+    let matches = (catalog::f1::SPORT.days[0].fetch)(&client, date).unwrap();
+    let m = matches.first().expect("an F1 race on 2026-11-22");
+    sportsdb::fetch_tv(&client, m).unwrap();
 }
