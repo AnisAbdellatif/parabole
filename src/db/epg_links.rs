@@ -1,7 +1,7 @@
 use super::Db;
 use crate::model::*;
 use anyhow::{Context, Result};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 impl Db {
     /// Every live stream, as matching input.
@@ -94,6 +94,15 @@ impl Db {
         )?;
         let mut rows = stmt.query_map((source, stream_key), |r| Ok((r.get(0)?, r.get(1)?)))?;
         Ok(rows.next().transpose()?)
+    }
+
+    /// Channels of `guide` that streams are linked to by hand (kept even when matching would drop them).
+    pub fn manual_channels(&self, guide: GuideId) -> Result<HashSet<String>> {
+        let mut stmt = self
+            .conn
+            .prepare("SELECT channel FROM epg_links WHERE guide_id = ?1 AND manual = 1")?;
+        let rows = stmt.query_map([guide], |r| r.get(0))?;
+        Ok(rows.collect::<rusqlite::Result<_>>()?)
     }
 
     /// (guide id, guide name, channel, first display name) of enabled guides matching `query`.

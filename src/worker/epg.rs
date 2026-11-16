@@ -58,10 +58,13 @@ impl Worker {
             return Ok(false);
         }
         let streams = self.db.epg_stream_keys()?;
+        let manual = self.db.manual_channels(id)?;
         let (tx, repaint) = (self.cmd_tx.clone(), self.repaint.clone());
         thread::spawn(move || {
             let res = epg::fetch_all(&urls, ua.as_deref(), Window::around(now), &mut |chans| {
-                matching::wanted(&streams, chans)
+                let mut keep = matching::wanted(&streams, chans);
+                keep.extend(manual.iter().cloned());
+                keep
             })
             .map_err(|e| format!("{e:#}"));
             let _ = tx.send(Command::EpgFetched(id, res));

@@ -28,10 +28,18 @@ pub fn norm_name(name: &str) -> String {
         .join(" ")
 }
 
-/// A channel id without its last `.xx` segment, as a name (`nessma.tn` -> `nessma`).
+/// A channel id without its last `.xx` segment, as a name key (`HannibalTV.tn` -> `hannibal`).
 fn id_as_name(id: &str) -> String {
     let base = id.rsplit_once('.').map_or(id, |(b, _)| b);
-    norm_name(&base.replace('.', " "))
+    let k = name_key(&base.replace('.', " "));
+    k.strip_suffix("tv")
+        .filter(|r| r.len() >= 3)
+        .map_or(k.clone(), str::to_string)
+}
+
+/// Space-free normalised name, so "Carthage Plus" meets id `CarthagePlus.tn`.
+fn name_key(name: &str) -> String {
+    norm_name(name).replace(' ', "")
 }
 
 /// The stream's guide id, unless missing or junk (under 3 chars).
@@ -66,7 +74,7 @@ pub fn link(streams: &[StreamGuideKey], candidates: &[Candidate]) -> Vec<EpgLink
             .map(|(i, c)| (norm_id(&c.channel), i)),
     );
     let by_name = first_index(candidates.iter().enumerate().flat_map(|(i, c)| {
-        let own = c.names.iter().map(|n| norm_name(n));
+        let own = c.names.iter().map(|n| name_key(n));
         own.chain([id_as_name(&c.channel.to_lowercase())])
             .filter(|n| !n.is_empty())
             .map(move |n| (n, i))
@@ -79,7 +87,7 @@ pub fn link(streams: &[StreamGuideKey], candidates: &[Candidate]) -> Vec<EpgLink
                 .as_ref()
                 .and_then(|id| exact.get(id).or_else(|| by_id.get(&norm_id(id))))
                 .or_else(|| {
-                    let n = norm_name(&s.name);
+                    let n = name_key(&s.name);
                     (!n.is_empty()).then(|| by_name.get(&n)).flatten()
                 })?;
             let c = &candidates[*hit];
@@ -173,6 +181,23 @@ mod tests {
         // "al hiwar tunisia" != "al hiwar"
         let c = [cand(1, "alhiwar.tn", &["Al Hiwar TV"])];
         assert!(one(st("a", None, "AR: Al Hiwar Tunisia"), &c).is_none());
+    }
+
+    #[test]
+    fn space_free_names_meet_ids() {
+        let c = [
+            cand(1, "carthageplus.tn@sd", &["Carthage+"]),
+            cand(1, "hannibaltv.tn@sd", &["حنبعل"]),
+        ];
+        assert_eq!(
+            one(st("a", Some("ts"), "AR: Carthage Plus ◉"), &c).map(|h| h.1),
+            Some("carthageplus.tn@sd".into())
+        );
+        assert_eq!(
+            one(st("b", None, "AR: Hannibal ◉"), &c).map(|h| h.1),
+            Some("hannibaltv.tn@sd".into())
+        );
+        assert_eq!(one(st("c", None, "AR: Al Hiwar Tunisia"), &c), None);
     }
 
     #[test]
