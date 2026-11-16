@@ -77,6 +77,7 @@ impl SlintApp {
         let api = w.global::<DialogApi>();
         api.set_settings_tab(tab);
         api.set_set_sports(f.enabled);
+        api.set_set_imdb(crate::worker::meta::enabled(&self.db));
         let langs: Vec<CheckItem> = LANGUAGES
             .iter()
             .map(|l| CheckItem {
@@ -156,6 +157,12 @@ impl SlintApp {
         player_settings::save(&self.db, &s).map_err(|e| format!("{e:#}"))?;
         sports_settings::save(&self.db, &sports).map_err(|e| format!("{e:#}"))?;
         crate::slint_ui::sports::apply_settings(self, sports);
+        let imdb = api.get_set_imdb();
+        if imdb != crate::worker::meta::enabled(&self.db) {
+            crate::worker::meta::set_enabled(&self.db, imdb).map_err(|e| format!("{e:#}"))?;
+            // forget lookups made under the old setting so the next open asks again
+            self.browse.info.meta.clear();
+        }
         Ok(())
     }
 }

@@ -287,6 +287,27 @@ pub struct MediaInfo {
     pub backdrop: Option<String>,
 }
 
+/// Online details of a movie or series (IMDb, or Trakt when IMDb fails).
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub struct Meta {
+    /// Display name of where it came from: "IMDb" or "Trakt".
+    pub origin: String,
+    pub imdb_id: Option<String>,
+    pub title: String,
+    pub year: Option<i64>,
+    /// 0..10
+    pub rating: Option<f32>,
+    pub votes: Option<i64>,
+    pub plot: Option<String>,
+    pub poster: Option<String>,
+    pub genres: Vec<String>,
+    pub runtime_min: Option<i64>,
+    pub certificate: Option<String>,
+    /// Directors for movies, creators for series.
+    pub directors: Vec<String>,
+    pub cast: Vec<String>,
+}
+
 /// A football match for the Football tab, independent of the provider it came from.
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Match {

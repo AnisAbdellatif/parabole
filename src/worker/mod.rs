@@ -5,6 +5,7 @@ pub mod auto_refresh;
 mod embed;
 pub mod epg;
 mod jobs;
+pub mod meta;
 mod play;
 pub mod player_settings;
 pub mod scan;
@@ -19,8 +20,8 @@ pub use sports::SportsUpdate;
 
 use crate::db::Db;
 use crate::model::{
-    Episode, GuideId, MediaInfo, MediaKind, ParsedPlaylist, PlayRequest, ProfileId, Season, Source,
-    SourceId, StreamRow,
+    Episode, GuideId, MediaInfo, MediaKind, Meta, ParsedPlaylist, PlayRequest, ProfileId, Season,
+    Source, SourceId, StreamRow,
 };
 use crate::player::{ExternalPlayer, PlayerKind};
 use crate::sources;
@@ -59,6 +60,12 @@ pub enum Command {
     },
     LoadSeries {
         source: SourceId,
+        key: String,
+    },
+    /// Resolves online (IMDb/Trakt) details; answered by `Event::MetaLoaded`.
+    LoadMeta {
+        source: SourceId,
+        media: MediaKind,
         key: String,
     },
     Play {
@@ -127,6 +134,12 @@ pub enum Event {
         source: SourceId,
         key: String,
         result: Result<Vec<Season>, String>,
+    },
+    MetaLoaded {
+        source: SourceId,
+        media: MediaKind,
+        key: String,
+        meta: Option<Meta>,
     },
     SearchResults {
         seq: u64,
@@ -240,6 +253,7 @@ impl Worker {
             }
             Command::LoadInfo { source, media, key } => self.load_info(source, media, key),
             Command::LoadSeries { source, key } => self.load_series(source, key),
+            Command::LoadMeta { source, media, key } => self.load_meta(source, media, key),
             Command::Fetched(id, res) => self.apply_fetched(id, res),
             Command::RefreshEpg(id) => {
                 self.queue_epg(id);

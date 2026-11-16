@@ -1,5 +1,6 @@
 //! Movie/series details window and provider-info cache (ports `ui/details_view.rs`).
-use crate::model::{MediaInfo, MediaKind, SourceId, SourceKind, StreamRow};
+use super::meta_fields;
+use crate::model::{MediaInfo, MediaKind, Meta, SourceId, SourceKind, StreamRow};
 use crate::slint_ui::images::Size;
 use crate::slint_ui::state::{SlintApp, with_app};
 use crate::slint_ui::{AppWindow, BrowseApi, FieldItem, InfoView};
@@ -21,6 +22,9 @@ pub struct InfoStore {
     cache: HashMap<Key, MediaInfo>,
     loading: HashSet<Key>,
     failed: HashSet<Key>,
+    /// Online details per key; `None` once looked up without a match.
+    pub meta: HashMap<Key, Option<Meta>>,
+    meta_loading: HashSet<Key>,
     pub open: Option<Open>,
 }
 
@@ -44,6 +48,33 @@ pub fn request(a: &mut SlintApp, key: &Key) {
     }
 }
 
+/// Sends `LoadMeta` once per movie/series key, for every source kind.
+pub fn request_meta(a: &mut SlintApp, key: &Key) {
+    let wanted = matches!(key.1, MediaKind::Movie | MediaKind::Series);
+    let st = &mut a.browse.info;
+    if wanted && !st.meta.contains_key(key) && st.meta_loading.insert(key.clone()) {
+        a.worker.send(Command::LoadMeta {
+            source: key.0,
+            media: key.1,
+            key: key.2.clone(),
+        });
+    }
+}
+
+pub fn meta_loaded(
+    a: &mut SlintApp,
+    source: SourceId,
+    media: MediaKind,
+    key: String,
+    meta: Option<Meta>,
+) {
+    let key = (source, media, key);
+    a.browse.info.meta_loading.remove(&key);
+    a.browse.info.meta.insert(key, meta);
+    push(a);
+    super::series::push(a);
+}
+
 pub fn open(a: &mut SlintApp, row: &StreamRow) {
     let key = (row.source_id, row.media, row.key.clone());
     a.browse.info.open = Some(Open {
@@ -52,6 +83,7 @@ pub fn open(a: &mut SlintApp, row: &StreamRow) {
         logo: row.logo.clone(),
     });
     request(a, &key);
+    request_meta(a, &key);
     push(a);
 }
 
@@ -94,6 +126,12 @@ pub fn poster_ready(a: &mut SlintApp, url: &str) {
         .cache
         .values()
         .any(|i| i.cover.as_deref() == Some(url))
+        || a.browse
+            .info
+            .meta
+            .values()
+            .flatten()
+            .any(|m| m.poster.as_deref() == Some(url))
         || a.browse.info.open.as_ref().and_then(|o| o.logo.as_deref()) == Some(url);
     if shown {
         push(a);
@@ -101,55 +139,39 @@ pub fn poster_ready(a: &mut SlintApp, url: &str) {
     }
 }
 
-fn fields(info: &MediaInfo) -> Vec<FieldItem> {
-    [
-        ("Genre", &info.genre),
-        ("Released", &info.release_date),
-        ("Duration", &info.duration),
-        ("Rating", &info.rating),
-        ("Director", &info.director),
-        ("Cast", &info.cast),
-        ("Plot", &info.plot),
-    ]
-    .into_iter()
-    .filter_map(|(l, v)| {
-        v.as_ref().map(|v| FieldItem {
-            label: l.into(),
-            value: v.as_str().into(),
-        })
-    })
-    .collect()
-}
-
-/// `fallback_poster` is used when the provider sent no cover.
+/// `fallback_poster` is used when neither the online details nor the provider have a cover.
 pub fn view(a: &SlintApp, key: &Key, fallback_poster: Option<&str>) -> InfoView {
     let st = &a.browse.info;
-    let mut v = InfoView {
-        state: 0,
-        poster: Default::default(),
-        has_poster: false,
-        fields: ModelRc::default(),
+    let provider = st.cache.get(key).filter(|_| !st.failed.contains(key));
+    let meta = st.meta.get(key).and_then(Option::as_ref);
+    let in_flight = st.loading.contains(key) || st.meta_loading.contains(key);
+    let state = if provider.is_some() || meta.is_some() {
+        2
+    } else if in_flight {
+        1
+    } else if st.failed.contains(key) {
+        3
+    } else {
+        0
     };
-    match st.cache.get(key) {
-        Some(_) if st.failed.contains(key) => v.state = 3,
-        Some(info) => {
-            v.state = 2;
-            v.fields = ModelRc::new(VecModel::from(fields(info)));
-            let url = info.cover.as_deref().or(fallback_poster);
-            if let Some(img) = url.and_then(|u| a.images.get(u, Size::Poster)) {
-                v.poster = img;
-                v.has_poster = true;
-            }
-        }
-        None if st.loading.contains(key) => v.state = 1,
-        None => {
-            if let Some(img) = fallback_poster.and_then(|u| a.images.get(u, Size::Poster)) {
-                v.poster = img;
-                v.has_poster = true;
-            }
-        }
+    let fields: Vec<FieldItem> = meta_fields::fields(provider, meta, key.1)
+        .into_iter()
+        .map(|(l, v)| FieldItem {
+            label: l.into(),
+            value: v.into(),
+        })
+        .collect();
+    let url = meta
+        .and_then(|m| m.poster.as_deref())
+        .or(provider.and_then(|i| i.cover.as_deref()))
+        .or(fallback_poster);
+    let poster = url.and_then(|u| a.images.get(u, Size::Poster));
+    InfoView {
+        state,
+        has_poster: poster.is_some(),
+        poster: poster.unwrap_or_default(),
+        fields: ModelRc::new(VecModel::from(fields)),
     }
-    v
 }
 
 pub fn push(a: &SlintApp) {

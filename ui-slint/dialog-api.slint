@@ -53,6 +53,7 @@ export global DialogApi {
     // Settings: tab 0 Playback, 1 Players, 2 Appearance, 3 Sports, 4 TV guides.
     in-out property <int> settings-tab: 0;
     in-out property <bool> set-sports: false;
+    in-out property <bool> set-imdb: true;
     in property <[CheckItem]> sports-list;
     callback sport-toggled(int);
     in property <[CheckItem]> sports-langs;

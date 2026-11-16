@@ -7,6 +7,7 @@ mod grid;
 mod groups;
 mod hero;
 mod menu;
+mod meta_fields;
 mod rows;
 pub mod scan;
 mod search_filter;
@@ -116,6 +117,15 @@ pub fn on_event(a: &mut SlintApp, ev: Event) -> Option<Event> {
             result,
         } => {
             details::loaded(a, source, media, key, result);
+            None
+        }
+        Event::MetaLoaded {
+            source,
+            media,
+            key,
+            meta,
+        } => {
+            details::meta_loaded(a, source, media, key, meta);
             None
         }
         Event::SeriesLoaded {

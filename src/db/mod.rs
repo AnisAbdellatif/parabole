@@ -13,6 +13,7 @@ mod epg_links;
 mod epg_query;
 mod groups;
 mod import;
+mod media_meta;
 mod migrate;
 mod new_categories;
 mod overlay;

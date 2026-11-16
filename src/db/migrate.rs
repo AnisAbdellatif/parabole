@@ -14,6 +14,7 @@ pub(super) const MIGRATIONS: &[&str] = &[
     include_str!("migration_9.sql"),
     include_str!("migration_10.sql"),
     include_str!("migration_11.sql"),
+    include_str!("migration_12.sql"),
 ];
 
 pub fn run(conn: &mut Connection) -> Result<()> {

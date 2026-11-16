@@ -2,6 +2,7 @@ pub mod db;
 pub mod epg;
 pub mod episodes;
 pub mod imgcache;
+pub mod meta;
 pub mod model;
 pub mod player;
 #[cfg(feature = "slint-ui")]
@@ -9,4 +10,5 @@ pub mod slint_ui;
 pub mod smart;
 pub mod sources;
 pub mod sports;
+pub mod trakt;
 pub mod worker;

@@ -71,6 +71,17 @@ component SportsTab inherits VerticalLayout {
     }
 }
 
+component ServicesTab inherits VerticalLayout {
+    spacing: 12px;
+    FormRow { label: "Details"; DCheck { text: "Fetch movie and series details from IMDb"; checked <=> DialogApi.set-imdb; } }
+    Text {
+        text: "Poster, rating and plot come from IMDb (free, unofficial), with Trakt as a fallback. Titles of what you open are sent to these services.";
+        color: Theme.text-dim;
+        font-size: Theme.fs-sm;
+        wrap: word-wrap;
+    }
+}
+
 export component SettingsDialog inherits DialogFrame {
     title: "Settings";
     card-width: 560px;
@@ -78,7 +89,7 @@ export component SettingsDialog inherits DialogFrame {
         padding: 16px;
         padding-bottom: 0px;
         tabs := Segmented {
-            options: ["Playback", "Players", "Appearance", "Sports", "TV guides"];
+            options: ["Playback", "Players", "Appearance", "Sports", "TV guides", "Services"];
             current: DialogApi.settings-tab;
             changed(i) => { DialogApi.settings-tab = i; }
         }
@@ -90,6 +101,7 @@ export component SettingsDialog inherits DialogFrame {
         if DialogApi.settings-tab == 2: AppearancePane { }
         if DialogApi.settings-tab == 3: SportsTab { }
         if DialogApi.settings-tab == 4: GuidesTab { }
+    if DialogApi.settings-tab == 5: ServicesTab { }
     }
     if DialogApi.settings-tab != 2 && DialogApi.settings-tab != 4: DialogFooter {
         DButton { text: "Cancel"; clicked => { DialogApi.close(); } }

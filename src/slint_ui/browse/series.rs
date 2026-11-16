@@ -57,7 +57,9 @@ pub fn open(a: &mut SlintApp, row: &StreamRow) {
         source: row.source_id,
         key: row.key.clone(),
     });
-    details::request(a, &(row.source_id, MediaKind::Series, row.key.clone()));
+    let key = (row.source_id, MediaKind::Series, row.key.clone());
+    details::request(a, &key);
+    details::request_meta(a, &key);
     a.browse
         .series_timer
         .start(slint::TimerMode::Repeated, PROGRESS_EVERY, || {

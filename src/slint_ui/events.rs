@@ -57,6 +57,7 @@ pub fn drain() {
                 | Event::UrlReady(_)
                 | Event::InfoLoaded { .. }
                 | Event::SeriesLoaded { .. }
+                | Event::MetaLoaded { .. }
                 | Event::SearchResults { .. }
                 | Event::TestResult(_)
                 | Event::AccountChecked(..)
