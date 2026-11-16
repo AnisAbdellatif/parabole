@@ -17,7 +17,7 @@ use super::state::{SlintApp, with_app};
 use super::{AppWindow, StreamItem, TrackItem};
 use crate::player::embed::MpvCore;
 use crate::player::{PlayerSettings, TrackInfo};
-use crate::worker::{Event, player_settings};
+use crate::worker::{Command, Event, player_settings};
 use session::Session;
 use std::rc::Rc;
 use std::sync::Arc;
@@ -102,6 +102,14 @@ fn ready_later() {
 /// For use inside the rendering notifier: defers so it never runs inside a render pass.
 fn fail_later(reason: String) {
     let _ = slint::invoke_from_event_loop(move || fail(reason));
+}
+
+/// Stops whatever is playing: the embedded session and any external player.
+pub fn stop_all(a: &mut SlintApp) {
+    if a.player.session.is_some() {
+        playback::stop_embedded(a);
+    }
+    a.worker.send(Command::StopPlayer);
 }
 
 /// Sees every worker event first; return it to let the next area and core handle it too.

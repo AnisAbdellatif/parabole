@@ -2,7 +2,6 @@
 use super::state::{Sel, SlintApp, with_app};
 use super::{AppWindow, Core};
 use crate::model::MediaKind;
-use crate::worker::Command;
 use slint::ComponentHandle;
 use std::time::Duration;
 
@@ -128,6 +127,6 @@ pub fn connect(win: &AppWindow) {
         with_app(|a| a.remove_toast(id));
     });
     core.on_stop_playback(|| {
-        with_app(|a| a.worker.send(Command::StopPlayer));
+        with_app(super::player::stop_all);
     });
 }
