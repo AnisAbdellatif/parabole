@@ -1,8 +1,10 @@
-//! Football fixtures and TV channels from free, unofficial public endpoints. No DB, no UI.
+//! Sports fixtures and TV channels from free, unofficial public endpoints. No DB, no UI.
 //! Each provider lives in its own directory; nothing provider-specific leaks out of it.
+pub mod catalog;
 pub mod lang;
 pub mod livescore;
 pub mod merge;
+pub mod registry;
 pub mod s365;
 #[cfg(test)]
 mod tests_live;

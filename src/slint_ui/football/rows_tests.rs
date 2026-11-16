@@ -44,8 +44,8 @@ fn strs(v: &[&str]) -> Vec<String> {
 fn sections_only_on_group_change() {
     let live = MatchStatus::Live {
         clock: "67'".into(),
-        home: 1,
-        away: 2,
+        home: "1".into(),
+        away: "2".into(),
     };
     let mut other = game("c", ts(16, 20, 0), MatchStatus::Upcoming, vec![]);
     other.competition = "Serie A".into();
@@ -135,8 +135,8 @@ fn details_group_order_and_dedupe() {
 fn details_sub_for_live_and_finished() {
     let live = MatchStatus::Live {
         clock: "HT".into(),
-        home: 0,
-        away: 0,
+        home: "0".into(),
+        away: "0".into(),
     };
     let (_, sub, _) = details(&game("a", 0, live, vec![]), &[], tz());
     assert_eq!(sub, "Nations League · Live HT · 0–0");

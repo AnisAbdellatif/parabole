@@ -3,16 +3,16 @@
 
 pub mod auto_refresh;
 mod embed;
-mod football;
-pub mod football_settings;
 mod jobs;
 mod play;
 pub mod player_settings;
+mod sports;
+pub mod sports_settings;
 #[cfg(test)]
 mod tests;
 
 pub use embed::{EmbedPlay, SeriesCtx, Track, episode_key};
-pub use football::FootballUpdate;
+pub use sports::SportsUpdate;
 
 use crate::db::Db;
 use crate::model::{
@@ -34,8 +34,9 @@ pub type Repaint = Arc<dyn Fn() + Send + Sync>;
 
 #[derive(Debug)]
 pub enum Command {
-    /// Loads the Football tab: cached data at once, then refreshes stale parts in the background.
-    Football {
+    /// Loads one sport of the Sports tab: cached data at once, then refreshes stale parts in the background.
+    Sports {
+        sport: String,
         langs: Vec<String>,
     },
     AddSource(ProfileId, Source),
@@ -100,7 +101,7 @@ pub enum Command {
 
 #[derive(Debug)]
 pub enum Event {
-    Football(FootballUpdate),
+    Sports(SportsUpdate),
     SourceChanged,
     RefreshStarted(SourceId),
     RefreshDone(SourceId, Result<(), String>),
@@ -151,7 +152,7 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
     let mut worker = Worker {
         db,
         db_path: db_path.clone(),
-        football_busy: Arc::new(AtomicBool::new(false)),
+        sports_busy: Arc::new(AtomicBool::new(false)),
         player: ExternalPlayer::default(),
         cmd_tx: tx.clone(),
         ev_tx,
@@ -170,7 +171,7 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
 struct Worker {
     db: Db,
     db_path: PathBuf,
-    football_busy: Arc<AtomicBool>,
+    sports_busy: Arc<AtomicBool>,
     player: ExternalPlayer,
     cmd_tx: Sender<Command>,
     ev_tx: Sender<Event>,
@@ -256,7 +257,7 @@ impl Worker {
                 self.player.stop();
                 Ok(())
             }
-            Command::Football { langs } => self.football(langs),
+            Command::Sports { sport, langs } => self.sports(sport, langs),
             Command::Quit => Ok(()),
         };
         if let Err(e) = result {

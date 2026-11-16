@@ -5,19 +5,20 @@ mod rows;
 use super::state::{SlintApp, with_app};
 use super::{AppWindow, BrowseApi, Core, FootballApi, FootballChannel, FootballRow};
 use crate::model::{Match, MatchStatus, ProviderStatus};
-use crate::worker::football_settings::FootballSettings;
+use crate::worker::sports_settings::SportsSettings;
 use crate::worker::{Command, Event};
 use chrono::FixedOffset;
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::time::Duration;
 
+const SPORT: &str = "football";
 const TICK: Duration = Duration::from_secs(60);
 const SOON_S: i64 = 60;
 const LATE_S: i64 = 3 * 3600;
 
 pub struct FootballArea {
     pub open: bool,
-    pub settings: FootballSettings,
+    pub settings: SportsSettings,
     matches: Vec<Match>,
     providers: Vec<ProviderStatus>,
     loading: bool,
@@ -44,7 +45,7 @@ impl FootballArea {
 }
 
 impl FootballArea {
-    pub fn new(settings: FootballSettings) -> Self {
+    pub fn new(settings: SportsSettings) -> Self {
         Self {
             open: false,
             settings,
@@ -152,7 +153,7 @@ pub fn leave(a: &mut SlintApp) {
     a.football.timer.stop();
 }
 
-pub fn apply_settings(a: &mut SlintApp, s: FootballSettings) {
+pub fn apply_settings(a: &mut SlintApp, s: SportsSettings) {
     let enabled = s.enabled;
     a.football.settings = s;
     if let Some(w) = a.win.upgrade() {
@@ -169,9 +170,12 @@ pub fn apply_settings(a: &mut SlintApp, s: FootballSettings) {
 }
 
 pub fn on_event(a: &mut SlintApp, ev: Event) -> Option<Event> {
-    let Event::Football(u) = ev else {
+    let Event::Sports(u) = ev else {
         return Some(ev);
     };
+    if u.sport != SPORT {
+        return None;
+    }
     let f = &mut a.football;
     f.matches = u.matches;
     if !u.providers.is_empty() {
@@ -192,7 +196,8 @@ pub fn on_event(a: &mut SlintApp, ev: Event) -> Option<Event> {
 
 fn request(a: &mut SlintApp) {
     a.football.loading = true;
-    a.worker.send(Command::Football {
+    a.worker.send(Command::Sports {
+        sport: SPORT.into(),
         langs: a.football.settings.langs.clone(),
     });
     push(a);
@@ -288,8 +293,8 @@ mod tests {
         assert!(!wants_tick(&[m(MatchStatus::Finished, now - 60)], now));
         let live = MatchStatus::Live {
             clock: "1'".into(),
-            home: 0,
-            away: 0,
+            home: "0".into(),
+            away: "0".into(),
         };
         assert!(wants_tick(&[m(live, now - 9999)], now));
     }

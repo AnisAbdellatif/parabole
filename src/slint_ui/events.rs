@@ -55,7 +55,7 @@ pub fn drain() {
                 | Event::SearchResults { .. }
                 | Event::TestResult(_)
                 | Event::AccountChecked(..)
-                | Event::Football(_) => {}
+                | Event::Sports(_) => {}
             }
         }
     });

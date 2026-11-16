@@ -4,8 +4,8 @@ use crate::player::{PlayerKind, PlayerSettings, find_binary};
 use crate::slint_ui::FootballLang;
 use crate::slint_ui::state::{SlintApp, with_app};
 use crate::sports::lang::LANGUAGES;
-use crate::worker::football_settings::{self, FootballSettings};
 use crate::worker::player_settings;
+use crate::worker::sports_settings::{self, SportsSettings};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::PathBuf;
 
@@ -72,7 +72,7 @@ impl SlintApp {
         self.load_appearance_dialog();
         let Some(w) = self.win.upgrade() else { return };
         let s = player_settings::load(&self.db);
-        let f = football_settings::load(&self.db);
+        let f = sports_settings::load(&self.db);
         let api = w.global::<DialogApi>();
         api.set_settings_tab(tab);
         api.set_set_football(f.enabled);
@@ -121,7 +121,7 @@ impl SlintApp {
             custom_template: api.get_set_template().trim().to_string(),
             mpv_args,
         };
-        let football = FootballSettings {
+        let football = SportsSettings {
             enabled: api.get_set_football(),
             langs: api
                 .get_football_langs()
@@ -129,12 +129,13 @@ impl SlintApp {
                 .filter(|l| l.checked)
                 .map(|l| l.code.to_string())
                 .collect(),
+            ..sports_settings::load(&self.db)
         };
         if football.enabled && football.langs.is_empty() {
             return Err("Pick at least one language for the Football tab".into());
         }
         player_settings::save(&self.db, &s).map_err(|e| format!("{e:#}"))?;
-        football_settings::save(&self.db, &football).map_err(|e| format!("{e:#}"))?;
+        sports_settings::save(&self.db, &football).map_err(|e| format!("{e:#}"))?;
         crate::slint_ui::football::apply_settings(self, football);
         Ok(())
     }

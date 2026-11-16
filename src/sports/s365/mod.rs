@@ -1,7 +1,7 @@
 //! 365scores (webws.365scores.com): fixtures, live state and per-country TV channels.
 mod ids;
 mod parse;
-pub use parse::{parse_day, parse_tv};
+pub use parse::{Pick, parse_day, parse_tv};
 
 use super::get_text;
 use crate::model::{Broadcast, Match};
@@ -11,13 +11,13 @@ use reqwest::blocking::Client;
 
 pub const NAME: &str = "365scores";
 /// Bump when parsing changes so cached results from older code are ignored.
-pub const SCHEMA: i64 = 1;
+pub const SCHEMA: i64 = 2;
 const BASE: &str = "https://webws.365scores.com/web/";
 
-pub fn day_url(date: NaiveDate) -> String {
+pub fn day_url(sport_id: i64, date: NaiveDate) -> String {
     let d = date.format("%d/%m/%Y");
     format!(
-        "{BASE}games/allscores/?appTypeId=5&langId=1&timezoneName=UTC&userCountryId=1&sports=1&startDate={d}&endDate={d}"
+        "{BASE}games/allscores/?appTypeId=5&langId=1&timezoneName=UTC&userCountryId=1&sports={sport_id}&startDate={d}&endDate={d}"
     )
 }
 
@@ -27,17 +27,22 @@ pub fn tv_url(game_id: i64, country_id: i64) -> String {
     )
 }
 
-/// Allowlisted matches of one UTC day, without broadcasts.
-pub fn fetch_day(client: &Client, date: NaiveDate) -> Result<Vec<Match>> {
-    (|| parse_day(&get_text(client, &day_url(date))?))().context("365scores day")
+/// Picked matches of one UTC day, without broadcasts.
+pub fn fetch_day(
+    client: &Client,
+    sport_id: i64,
+    pick: &Pick,
+    date: NaiveDate,
+) -> Result<Vec<Match>> {
+    (|| parse_day(&get_text(client, &day_url(sport_id, date))?, pick))().context("365scores day")
 }
 
-/// Channels for one match in one country; empty when the country has no 365scores id.
-pub fn fetch_tv(client: &Client, game_id: i64, country: &str) -> Result<Vec<Broadcast>> {
-    let Some(cid) = ids::country_id(country) else {
+/// Channels for one match in one country; empty when the key isn't a 365scores one or the country has no id.
+pub fn fetch_tv(client: &Client, m: &Match, country: &str) -> Result<Vec<Broadcast>> {
+    let (Some(game), Some(cid)) = (game_id(&m.key), ids::country_id(country)) else {
         return Ok(vec![]);
     };
-    (|| parse_tv(&get_text(client, &tv_url(game_id, cid))?, country))().context("365scores tv")
+    (|| parse_tv(&get_text(client, &tv_url(game, cid))?, country))().context("365scores tv")
 }
 
 /// The 365scores game id inside a "s365:<id>" match key.

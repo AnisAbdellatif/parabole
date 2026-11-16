@@ -61,10 +61,11 @@ struct Media {
     countries: Vec<String>,
 }
 
-fn goals(s: &Option<String>) -> u16 {
+fn goals(s: &Option<String>) -> String {
     s.as_deref()
-        .and_then(|s| s.trim().parse().ok())
+        .and_then(|s| s.trim().parse::<u16>().ok())
         .unwrap_or(0)
+        .to_string()
 }
 
 fn broadcasts(media: HashMap<String, Vec<serde_json::Value>>) -> Vec<Broadcast> {
@@ -162,8 +163,8 @@ mod tests {
             live[0].status,
             MatchStatus::Live {
                 clock: "79'".into(),
-                home: 2,
-                away: 0
+                home: "2".into(),
+                away: "0".into()
             }
         );
         for epr in [2, 3] {

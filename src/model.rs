@@ -238,6 +238,7 @@ pub struct Match {
     pub key: String,
     pub competition: String,
     pub home: String,
+    /// Empty for single events (a race, a show); `home` then holds the event name.
     pub away: String,
     /// Unix seconds, UTC.
     pub kickoff_utc: i64,
@@ -248,11 +249,12 @@ pub struct Match {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub enum MatchStatus {
     Upcoming,
-    /// `clock` is the provider's display text, e.g. "67'" or "HT".
+    /// `clock` is the provider's display text, e.g. "67'" or "HT"; scores are display text
+    /// too ("2", tennis sets "1").
     Live {
         clock: String,
-        home: u16,
-        away: u16,
+        home: String,
+        away: String,
     },
     Finished,
 }

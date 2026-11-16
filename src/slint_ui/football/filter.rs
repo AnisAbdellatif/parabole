@@ -127,8 +127,8 @@ mod tests {
             status: if live {
                 MatchStatus::Live {
                     clock: "1'".into(),
-                    home: 0,
-                    away: 0,
+                    home: "0".into(),
+                    away: "0".into(),
                 }
             } else {
                 MatchStatus::Upcoming

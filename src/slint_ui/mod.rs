@@ -66,7 +66,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     let state_path = path.with_file_name("slint-ui.json");
     let mut state = Persisted::load(&state_path);
     state.profile.get_or_insert(default_profile);
-    let football_settings = crate::worker::football_settings::load(&db);
+    let football_settings = crate::worker::sports_settings::load(&db);
     let streams = Rc::new(StreamModel::new(images.clone()));
     let toasts = Rc::new(slint::VecModel::default());
     let core = win.global::<Core>();

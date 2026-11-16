@@ -147,7 +147,7 @@ fn second_refresh_of_same_source_is_skipped_until_done() {
     let mut w = Worker {
         db,
         db_path: PathBuf::new(),
-        football_busy: Arc::new(AtomicBool::new(false)),
+        sports_busy: Arc::new(AtomicBool::new(false)),
         player: ExternalPlayer::default(),
         cmd_tx,
         ev_tx,

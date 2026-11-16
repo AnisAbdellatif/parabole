@@ -69,7 +69,7 @@ pub fn rows(
             prev = Some(g);
             let (time, live, home_score, away_score) = match &m.status {
                 MatchStatus::Live { clock, home, away } => {
-                    (clock.clone(), true, home.to_string(), away.to_string())
+                    (clock.clone(), true, home.clone(), away.clone())
                 }
                 _ => (
                     fmt(m.kickoff_utc, tz, "%H:%M"),
