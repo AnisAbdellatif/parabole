@@ -243,7 +243,8 @@ impl Shots {
                 "ES",
             ),
         ])));
-        let names = ["Football", "Basketball", "Tennis", "F1"].map(SharedString::from);
+        let names =
+            ["Football", "Basketball", "Tennis", "F1", "WWE", "UFC"].map(SharedString::from);
         api.set_sport_names(ModelRc::new(VecModel::from(names.to_vec())));
         api.set_sport(0);
         api.set_live_count(1);

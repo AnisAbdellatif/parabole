@@ -118,7 +118,10 @@ component ChannelLine inherits Rectangle {
 // Search: filters the list as you type; Escape clears it.
 component TeamSearch inherits Rectangle {
     callback done();
-    width: 240px;
+    min-width: 140px;
+    preferred-width: 240px;
+    max-width: 240px;
+    horizontal-stretch: 1;
     height: 32px;
     background: Theme.input-bg;
     border-radius: Theme.radius-l;
@@ -178,13 +181,13 @@ export component SportsView inherits Rectangle {
                 spacing: 10px;
                 alignment: stretch;
                 if SportsApi.sport-names.length > 1: Segmented {
-                    width: SportsApi.sport-names.length * 88px;
+                    width: SportsApi.sport-names.length * 80px;
                     options: SportsApi.sport-names;
                     current: SportsApi.sport;
                     changed(i) => { SportsApi.sport-picked(i); root.interacted(); }
                 }
                 if SportsApi.sport-names.length <= 1: Text { text: SportsApi.sport-names.length == 1 ? SportsApi.sport-names[0] : "Sports"; font-size: Theme.fs-xl; font-weight: Theme.semibold; color: Theme.text; vertical-alignment: center; }
-                Text { text: SportsApi.status; font-size: Theme.fs-sm; color: Theme.text-muted; overflow: elide; horizontal-stretch: 1; vertical-alignment: center; }
+                Rectangle { horizontal-stretch: 1; }
                 TeamSearch { done => { root.interacted(); } }
                 DButton { text: "Refresh"; clicked => { SportsApi.refresh(); root.interacted(); } }
             }
@@ -197,7 +200,7 @@ export component SportsView inherits Rectangle {
                     current: SportsApi.filter;
                     changed(i) => { SportsApi.filter-picked(i); root.interacted(); }
                 }
-                Rectangle { horizontal-stretch: 1; }
+                Text { text: SportsApi.status; font-size: Theme.fs-sm; color: Theme.text-muted; overflow: elide; horizontal-alignment: center; horizontal-stretch: 1; vertical-alignment: center; }
                 HorizontalLayout {
                     spacing: 6px;
                     opacity: SportsApi.day-enabled ? 1.0 : 0.4;
