@@ -6,6 +6,7 @@ pub mod livescore;
 pub mod merge;
 pub mod registry;
 pub mod s365;
+pub mod sportsdb;
 #[cfg(test)]
 mod tests_live;
 

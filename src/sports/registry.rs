@@ -36,6 +36,9 @@ pub const SPORTS: &[&Sport] = &[
     &catalog::football::SPORT,
     &catalog::basketball::SPORT,
     &catalog::tennis::SPORT,
+    &catalog::f1::SPORT,
+    &catalog::wwe::SPORT,
+    &catalog::ufc::SPORT,
 ];
 
 pub fn find(id: &str) -> Option<&'static Sport> {
