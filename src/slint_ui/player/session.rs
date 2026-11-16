@@ -1,4 +1,5 @@
 use super::autonext::AutoNext;
+use super::scrobble::Scrobble;
 use super::track_memory::TrackMemory;
 use crate::model::{MediaKind, PlayRequest};
 use crate::player::retry;
@@ -44,6 +45,7 @@ pub struct Session {
     /// Time to the first decoded position; measured once per session.
     pub startup_ms: Option<i64>,
     pub quality_saved: bool,
+    pub scrobble: Scrobble,
 }
 
 impl Session {
@@ -63,6 +65,7 @@ impl Session {
             opened_at: Instant::now(),
             startup_ms: None,
             quality_saved: false,
+            scrobble: Scrobble::default(),
         }
     }
 

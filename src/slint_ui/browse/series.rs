@@ -141,7 +141,21 @@ fn toggle_watched(a: &mut SlintApp, episode_id: &str, watched: bool) {
     } else {
         a.db.set_watched(profile, source, MediaKind::Series, &key, false)
     };
+    let saved = res.is_ok();
     a.report(res);
+    if saved
+        && let Some((season, ep)) = crate::episodes::find(&ctx.seasons, episode_id)
+        && let Some(number) = ep.episode_num
+    {
+        a.worker.send(Command::TraktHistory {
+            profile,
+            source,
+            series_key: ctx.key.clone(),
+            season: season.number,
+            number,
+            watched,
+        });
+    }
     refresh_progress(a);
 }
 

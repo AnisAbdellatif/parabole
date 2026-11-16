@@ -7,6 +7,7 @@ mod keys;
 mod pip;
 mod playback;
 mod quality;
+mod scrobble;
 mod session;
 mod sync;
 mod track_memory;

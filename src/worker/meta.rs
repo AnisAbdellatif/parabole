@@ -64,7 +64,7 @@ fn from_candidate(client: &Client, c: &Candidate, media: MediaKind) -> Meta {
     })
 }
 
-fn resolve(
+pub(super) fn resolve(
     db: &Db,
     client: &Client,
     source: SourceId,

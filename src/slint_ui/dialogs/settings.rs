@@ -7,6 +7,7 @@ use crate::sports::lang::LANGUAGES;
 use crate::sports::registry::SPORTS;
 use crate::worker::player_settings;
 use crate::worker::sports_settings::{self, SportsSettings};
+use crate::worker::trakt::store;
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use std::path::PathBuf;
 
@@ -114,6 +115,7 @@ impl SlintApp {
         api.set_set_mpv_args(args.into());
         api.set_set_detected("".into());
         self.push_guides();
+        super::trakt::load(self);
     }
 
     fn save_settings_dialog(&mut self) -> Result<(), String> {
@@ -163,6 +165,9 @@ impl SlintApp {
             // forget lookups made under the old setting so the next open asks again
             self.browse.info.meta.clear();
         }
+        let profile = self.profile();
+        store::set_scrobble_enabled(&self.db, profile, api.get_set_trakt_scrobble())
+            .map_err(|e| format!("{e:#}"))?;
         Ok(())
     }
 }

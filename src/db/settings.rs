@@ -15,6 +15,14 @@ impl Db {
             .optional()?)
     }
 
+    pub fn delete_setting(&self, profile: Option<ProfileId>, key: &str) -> Result<()> {
+        self.conn.execute(
+            "DELETE FROM settings WHERE profile_id = ?1 AND key = ?2",
+            (profile.unwrap_or(0), key),
+        )?;
+        Ok(())
+    }
+
     pub fn set_setting(&self, profile: Option<ProfileId>, key: &str, value: &str) -> Result<()> {
         self.conn.execute(
             "INSERT INTO settings(profile_id, key, value) VALUES (?1, ?2, ?3)

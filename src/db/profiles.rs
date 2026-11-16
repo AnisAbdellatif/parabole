@@ -63,7 +63,7 @@ impl Db {
         )?;
         tx.execute(
             "INSERT INTO settings(profile_id, key, value)
-             SELECT ?2, key, value FROM settings WHERE profile_id = ?1",
+             SELECT ?2, key, value FROM settings WHERE profile_id = ?1 AND key != 'trakt_auth'",
             (id, new),
         )?;
         tx.commit()?;

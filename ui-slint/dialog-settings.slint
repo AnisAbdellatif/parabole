@@ -80,6 +80,42 @@ component ServicesTab inherits VerticalLayout {
         font-size: Theme.fs-sm;
         wrap: word-wrap;
     }
+    FormRow {
+        label: "Trakt";
+        VerticalLayout {
+            spacing: 8px;
+            horizontal-stretch: 1;
+            if DialogApi.trakt-state == 0: VerticalLayout {
+                spacing: 6px;
+                HorizontalLayout { alignment: start; DButton { text: "Connect"; clicked => { DialogApi.trakt-connect(); } } }
+                Text { text: "Link your Trakt account to record what you watch."; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; }
+                if DialogApi.trakt-error != "": Text { text: DialogApi.trakt-error; color: Theme.error; font-size: Theme.fs-sm; wrap: word-wrap; }
+            }
+            if DialogApi.trakt-state == 1: VerticalLayout {
+                spacing: 8px;
+                Text { text: DialogApi.trakt-code; color: Theme.text; font-size: Theme.fs-lg * 1.5; font-weight: Theme.semibold; letter-spacing: 3px; }
+                Text { text: "Enter this code at " + DialogApi.trakt-url; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; }
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+                    DButton { text: "Open trakt.tv/activate"; clicked => { DialogApi.trakt-open(); } }
+                    DButton { text: "Copy code"; clicked => { DialogApi.trakt-copy(); } }
+                    DButton { text: "Cancel"; clicked => { DialogApi.trakt-cancel(); } }
+                }
+            }
+            if DialogApi.trakt-state == 2: VerticalLayout {
+                spacing: 8px;
+                HorizontalLayout {
+                    spacing: 12px;
+                    alignment: start;
+                    Text { text: DialogApi.trakt-user != "" ? "Connected as @" + DialogApi.trakt-user : "Connected"; color: Theme.text; font-size: Theme.fs-md; vertical-alignment: center; }
+                    DButton { text: "Disconnect"; clicked => { DialogApi.trakt-disconnect(); } }
+                }
+                DCheck { text: "Report what I watch"; checked <=> DialogApi.set-trakt-scrobble; }
+                Text { text: "Playback progress and episodes you mark watched are sent to Trakt."; color: Theme.text-dim; font-size: Theme.fs-sm; wrap: word-wrap; }
+            }
+        }
+    }
 }
 
 export component SettingsDialog inherits DialogFrame {

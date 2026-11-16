@@ -8,6 +8,7 @@ mod settings;
 mod source_callbacks;
 mod source_form;
 mod sources;
+mod trakt;
 mod ua_preset;
 
 use super::state::{SlintApp, with_app};
@@ -41,6 +42,7 @@ pub fn connect(win: &AppWindow) {
     group::connect(win);
     appearance::connect(win);
     scan::connect(win);
+    trakt::connect(win);
 }
 
 impl SlintApp {
@@ -83,6 +85,10 @@ pub fn on_event(a: &mut SlintApp, ev: Event) -> Option<Event> {
                 a.toast(format!("Account check failed: {e}"));
             }
             a.push_sources();
+            None
+        }
+        Event::Trakt(update) => {
+            trakt::on_event(a, &update);
             None
         }
         Event::TestResult(res) => {

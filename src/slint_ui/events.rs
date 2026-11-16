@@ -61,6 +61,7 @@ pub fn drain() {
                 | Event::SearchResults { .. }
                 | Event::TestResult(_)
                 | Event::AccountChecked(..)
+                | Event::Trakt(_)
                 | Event::Sports(_) => {}
             }
         }

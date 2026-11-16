@@ -29,6 +29,7 @@ mod sports_cache;
 #[cfg(test)]
 mod tests;
 pub mod track_prefs;
+mod trakt_queue;
 
 use anyhow::{Context, Result};
 use rusqlite::Connection;

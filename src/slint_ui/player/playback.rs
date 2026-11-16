@@ -2,7 +2,7 @@
 use super::super::Core;
 use super::super::state::{SlintApp, with_app};
 use super::session::{EndAction, SAVE_EVERY, STABLE_AFTER_S, Session, end_action};
-use super::{autonext, quality, track_memory};
+use super::{autonext, quality, scrobble, track_memory};
 use super::{carousel, sync};
 use crate::player::{Notice, PlayerKind};
 use crate::worker::{Command, EmbedPlay, Track, player_settings};
@@ -14,6 +14,7 @@ const TICK: Duration = Duration::from_millis(250);
 
 pub fn on_embed_play(a: &mut SlintApp, play: EmbedPlay) {
     save_position(a);
+    stop_scrobble(a);
     a.player.settings = player_settings::load(&a.db);
     let ar = &mut a.player;
     let result = match ar.core.as_mut().filter(|_| ar.video_ready) {
@@ -59,6 +60,7 @@ pub fn on_embed_play(a: &mut SlintApp, play: EmbedPlay) {
 
 pub fn stop_embedded(a: &mut SlintApp) {
     save_position(a);
+    stop_scrobble(a);
     if let Some(core) = a.player.core.as_mut() {
         core.stop();
     }
@@ -73,6 +75,12 @@ pub fn stop_embedded(a: &mut SlintApp) {
     super::controls::leave_special_modes(a);
     set_playing(a, "", "");
     sync::push(a);
+}
+
+fn stop_scrobble(a: &mut SlintApp) {
+    if let Some(s) = a.player.session.as_mut() {
+        scrobble::stop(&a.worker, s, false);
+    }
 }
 
 fn set_playing(a: &SlintApp, title: &str, kind: &str) {
@@ -156,6 +164,7 @@ pub fn tick(a: &mut SlintApp) {
             });
             s.known = Some((dur, dur));
         }
+        scrobble::stop(worker, s, true);
         s.autonext = autonext::find_next(s);
         if s.autonext.is_none() {
             stop_embedded(a);
@@ -164,6 +173,7 @@ pub fn tick(a: &mut SlintApp) {
         }
         return;
     }
+    scrobble::tick(worker, s, core.state().paused);
     track_memory::tick(db, core, s);
     let due_save = !s.is_live() && s.last_save.elapsed() >= SAVE_EVERY;
     if due_save {

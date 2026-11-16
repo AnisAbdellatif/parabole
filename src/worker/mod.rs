@@ -13,10 +13,12 @@ mod sports;
 pub mod sports_settings;
 #[cfg(test)]
 mod tests;
+pub mod trakt;
 
 pub use embed::{EmbedPlay, SeriesCtx, Track, episode_key};
 pub use scan::{ScanControl, ScanStatus};
 pub use sports::SportsUpdate;
+pub use trakt::TraktUpdate;
 
 use crate::db::Db;
 use crate::model::{
@@ -110,12 +112,33 @@ pub enum Command {
     RefreshEpg(GuideId),
     EpgFetched(GuideId, Result<crate::epg::ParsedGuide, String>),
     RelinkEpg,
+    TraktConnect(ProfileId),
+    TraktCancel,
+    TraktDisconnect(ProfileId),
+    /// Reports playback to Trakt (episodes need `series_key` and `episode` = season, number).
+    Scrobble {
+        track: Track,
+        series_key: Option<String>,
+        episode: Option<(i64, i64)>,
+        action: crate::trakt::scrobble::Action,
+        progress: f32,
+    },
+    /// Mirrors a manual watched mark of an episode to Trakt.
+    TraktHistory {
+        profile: ProfileId,
+        source: SourceId,
+        series_key: String,
+        season: i64,
+        number: i64,
+        watched: bool,
+    },
     Quit,
 }
 
 #[derive(Debug)]
 pub enum Event {
     Sports(SportsUpdate),
+    Trakt(TraktUpdate),
     ScanStatus(ScanStatus),
     SourceChanged,
     RefreshStarted(SourceId),
@@ -174,8 +197,10 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
     let (tx, cmd_rx) = channel();
     let (ev_tx, rx) = channel();
     let scan = scan::spawn(&db_path, ev_tx.clone(), repaint.clone())?;
+    let trakt = trakt::spawn(&db_path, ev_tx.clone(), repaint.clone())?;
     let mut worker = Worker {
         scan: scan.clone(),
+        trakt,
         db,
         db_path: db_path.clone(),
         sports_busy: Arc::new(AtomicBool::new(false)),
@@ -199,6 +224,7 @@ pub fn spawn(db_path: PathBuf, repaint: Repaint) -> Result<Handle> {
 
 struct Worker {
     scan: Arc<ScanControl>,
+    trakt: Sender<trakt::Job>,
     db: Db,
     db_path: PathBuf,
     sports_busy: Arc<AtomicBool>,
@@ -305,11 +331,46 @@ impl Worker {
                 Ok(())
             }
             Command::Sports { sport, langs } => self.sports(sport, langs),
+            Command::TraktConnect(p) => self.trakt_job(trakt::Job::Connect(p)),
+            Command::TraktCancel => self.trakt_job(trakt::Job::CancelConnect),
+            Command::TraktDisconnect(p) => self.trakt_job(trakt::Job::Disconnect(p)),
+            Command::Scrobble {
+                track,
+                series_key,
+                episode,
+                action,
+                progress,
+            } => self.trakt_job(trakt::Job::Scrobble {
+                track,
+                series_key,
+                episode,
+                action,
+                progress,
+            }),
+            Command::TraktHistory {
+                profile,
+                source,
+                series_key,
+                season,
+                number,
+                watched,
+            } => self.trakt_job(trakt::Job::History {
+                profile,
+                source,
+                series_key,
+                season,
+                number,
+                watched,
+            }),
             Command::Quit => Ok(()),
         };
         if let Err(e) = result {
             self.emit(Event::Error(format!("{e:#}")));
         }
+    }
+
+    fn trakt_job(&self, job: trakt::Job) -> Result<()> {
+        self.trakt.send(job).context("Trakt thread is gone")
     }
 
     fn changed(&self) {

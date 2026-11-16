@@ -136,8 +136,10 @@ fn play_failure_is_reported_not_fatal() {
 fn worker(db: Db) -> (Worker, Receiver<Event>) {
     let (cmd_tx, _cmd_rx) = channel();
     let (ev_tx, ev_rx) = channel();
+    let (trakt, _trakt_rx) = channel();
     let w = Worker {
         scan: Arc::default(),
+        trakt,
         db,
         db_path: PathBuf::new(),
         sports_busy: Arc::new(AtomicBool::new(false)),

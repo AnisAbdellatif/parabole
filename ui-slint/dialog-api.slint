@@ -54,6 +54,18 @@ export global DialogApi {
     in-out property <int> settings-tab: 0;
     in-out property <bool> set-sports: false;
     in-out property <bool> set-imdb: true;
+    // Trakt: 0 not connected, 1 waiting for the code to be entered, 2 connected.
+    in-out property <int> trakt-state: 0;
+    in-out property <string> trakt-code;
+    in-out property <string> trakt-url;
+    in-out property <string> trakt-user;
+    in-out property <string> trakt-error;
+    in-out property <bool> set-trakt-scrobble: true;
+    callback trakt-connect();
+    callback trakt-cancel();
+    callback trakt-disconnect();
+    callback trakt-open();
+    callback trakt-copy();
     in property <[CheckItem]> sports-list;
     callback sport-toggled(int);
     in property <[CheckItem]> sports-langs;

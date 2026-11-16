@@ -418,6 +418,17 @@ fn snapshots() {
     }
     s.dialog_view("sources", "sources-form", |d| d.set_form_open(true));
     s.dialog_view("settings", "settings-players", |d| d.set_settings_tab(1));
+    s.dialog_view("settings", "settings-trakt-code", |d| {
+        d.set_settings_tab(5);
+        d.set_trakt_code("A1B2C3D4".into());
+        d.set_trakt_url("https://trakt.tv/activate".into());
+        d.set_trakt_state(1);
+    });
+    s.dialog_view("settings", "settings-trakt-connected", |d| {
+        d.set_settings_tab(5);
+        d.set_trakt_user("anis".into());
+        d.set_trakt_state(2);
+    });
     s.series_screen();
     s.details_screen();
     s.player_screens();
