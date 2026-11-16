@@ -10,7 +10,7 @@ use chrono::NaiveDate;
 use reqwest::blocking::Client;
 
 pub const NAME: &str = "LiveScore";
-pub const SCHEMA: i64 = 2;
+pub const SCHEMA: i64 = 3;
 
 pub fn day_url(date: NaiveDate) -> String {
     format!(

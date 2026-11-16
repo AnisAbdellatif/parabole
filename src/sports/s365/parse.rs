@@ -1,13 +1,15 @@
 use super::NAME;
 use crate::model::{Broadcast, Match, MatchStatus};
-use crate::sports::lang;
+use crate::sports::{is_placeholder, lang};
 use anyhow::{Context, Result};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
 struct Day {
-    games: Vec<serde_json::Value>,
+    // Absent on days with no games.
     #[serde(default)]
+    games: Vec<serde_json::Value>,
+    // Required: present even on empty days, so a missing key means the format changed.
     competitions: Vec<Comp>,
 }
 
@@ -142,7 +144,8 @@ pub fn parse_tv(body: &str, country: &str) -> Result<Vec<Broadcast>> {
             continue;
         };
         let channel = n.name.trim();
-        if channel.is_empty() || out.iter().any(|b| b.channel == channel) {
+        if channel.is_empty() || is_placeholder(channel) || out.iter().any(|b| b.channel == channel)
+        {
             continue;
         }
         out.push(Broadcast {
@@ -177,7 +180,17 @@ mod tests {
     }
 
     fn day(games: &[String]) -> String {
-        format!(r#"{{"games":[{}]}}"#, games.join(","))
+        format!(r#"{{"games":[{}],"competitions":[]}}"#, games.join(","))
+    }
+
+    #[test]
+    fn day_without_games_is_empty() {
+        let body = r#"{"lastUpdateId":1,"countries":[],"competitions":[]}"#;
+        assert!(
+            parse_day(body, &Pick::Categories(&[88]))
+                .unwrap()
+                .is_empty()
+        );
     }
 
     #[test]
@@ -230,7 +243,7 @@ mod tests {
     }
 
     #[test]
-    fn missing_games_key_is_error() {
+    fn unknown_shape_is_error() {
         assert!(football("{}").is_err());
         assert!(parse_tv("{}", "DE").is_err());
     }

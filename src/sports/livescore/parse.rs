@@ -75,7 +75,7 @@ fn broadcasts(media: HashMap<String, Vec<serde_json::Value>>) -> Vec<Broadcast> 
             continue;
         };
         let channel = m.name.trim();
-        if m.kind != "TV_CHANNEL" || channel.is_empty() {
+        if m.kind != "TV_CHANNEL" || channel.is_empty() || crate::sports::is_placeholder(channel) {
             continue;
         }
         for c in &m.countries {

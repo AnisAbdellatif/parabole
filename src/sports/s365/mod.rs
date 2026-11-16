@@ -11,7 +11,7 @@ use reqwest::blocking::Client;
 
 pub const NAME: &str = "365scores";
 /// Bump when parsing changes so cached results from older code are ignored.
-pub const SCHEMA: i64 = 2;
+pub const SCHEMA: i64 = 3;
 const BASE: &str = "https://webws.365scores.com/web/";
 
 pub fn day_url(sport_id: i64, date: NaiveDate) -> String {

@@ -22,6 +22,25 @@ pub fn client() -> Result<Client> {
     crate::sources::http::client(Some(USER_AGENT))
 }
 
+/// "Channel to be confirmed" entries some providers list before the real channel is known.
+pub(crate) fn is_placeholder(channel: &str) -> bool {
+    const WORDS: &[&str] = &[
+        "da confermare",
+        "to be confirmed",
+        "tbc",
+        "tba",
+        "por confirmar",
+        "a confirmar",
+        "à confirmer",
+        "a confirmer",
+        "noch offen",
+    ];
+    let c = channel.trim().to_lowercase();
+    WORDS
+        .iter()
+        .any(|w| c == *w || c.contains(&format!("{w} ")) || c.ends_with(&format!(" {w}")))
+}
+
 pub(crate) fn get_text(client: &Client, url: &str) -> Result<String> {
     let resp = crate::sources::http::get(client, url, Some(USER_AGENT))?;
     let mut body = String::new();
@@ -30,4 +49,15 @@ pub(crate) fn get_text(client: &Client, url: &str) -> Result<String> {
         .read_to_string(&mut body)
         .context("read response")?;
     Ok(body)
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn placeholders() {
+        assert!(super::is_placeholder("Canale da confermare"));
+        assert!(super::is_placeholder("TBA"));
+        assert!(!super::is_placeholder("beIN Sport 1 HD"));
+        assert!(!super::is_placeholder("Tbilisi TV"));
+    }
 }

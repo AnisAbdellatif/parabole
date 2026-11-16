@@ -19,6 +19,6 @@ pub const SPORT: Sport = Sport {
         fetch: day,
     }],
     tv: Some(TvSource::AllCountries(sportsdb::fetch_tv)),
-    // The free tier allows ~30 requests/min.
-    tv_pause: Duration::from_millis(2500),
+    // sportsdb spaces its own requests.
+    tv_pause: Duration::ZERO,
 };

@@ -108,7 +108,10 @@ pub fn parse_tv(body: &str) -> Result<Vec<Broadcast>> {
         let Some(iso) = countries::iso(clean(&t.country)) else {
             continue;
         };
-        if channel.is_empty() || out.iter().any(|b| b.channel == channel && b.country == iso) {
+        if channel.is_empty()
+            || crate::sports::is_placeholder(channel)
+            || out.iter().any(|b| b.channel == channel && b.country == iso)
+        {
             continue;
         }
         out.push(Broadcast {
