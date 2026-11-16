@@ -124,9 +124,10 @@ fn open_programme(
 ) -> Result<Option<Pending>> {
     let (mut channel, mut start, mut stop) = (None, None, None);
     for a in e.attributes().flatten() {
-        let v = a
-            .normalized_value(XmlVersion::Implicit1_0)
-            .context("invalid guide XML")?;
+        // one bad attribute skips its programme, not the whole guide
+        let Ok(v) = a.normalized_value(XmlVersion::Implicit1_0) else {
+            return Ok(None);
+        };
         match a.key.as_ref() {
             b"channel" => channel = Some(v.trim().to_lowercase()),
             b"start" => start = parse_time(&v),
