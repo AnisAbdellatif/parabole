@@ -22,8 +22,10 @@ impl Db {
             let marks = vec!["?"; chunk.len()].join(",");
             let mut stmt = self.conn.prepare(&format!(
                 "SELECT e.stream_id, p.channel, p.start, p.stop, p.title, p.descr
-                 FROM stream_epg e JOIN epg_programmes p
-                   ON p.source_id = e.source_id AND p.channel = e.channel AND p.stop > ?
+                 FROM stream_epg e
+                 JOIN epg_guides g ON g.id = e.guide_id AND g.enabled = 1
+                 JOIN epg_programmes p
+                   ON p.guide_id = e.guide_id AND p.channel = e.channel AND p.stop > ?
                  WHERE e.stream_id IN ({marks}) ORDER BY e.stream_id, p.start"
             ))?;
             let params = std::iter::once(now).chain(chunk.iter().copied());
@@ -55,8 +57,9 @@ impl Db {
     pub fn epg_schedule(&self, stream_id: i64, from: i64, to: i64) -> Result<Vec<Programme>> {
         let mut stmt = self.conn.prepare(
             "SELECT p.channel, p.start, p.stop, p.title, p.descr
-             FROM stream_epg e JOIN epg_programmes p
-               ON p.source_id = e.source_id AND p.channel = e.channel
+             FROM stream_epg e
+             JOIN epg_guides g ON g.id = e.guide_id AND g.enabled = 1
+             JOIN epg_programmes p ON p.guide_id = e.guide_id AND p.channel = e.channel
              WHERE e.stream_id = ?1 AND p.stop > ?2 AND p.start < ?3 ORDER BY p.start",
         )?;
         let rows = stmt.query_map((stream_id, from, to), |r| programme(r, 0))?;

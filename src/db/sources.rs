@@ -53,6 +53,11 @@ impl Db {
         )
         .context("insert source")?;
         let id = tx.last_insert_rowid();
+        tx.execute(
+            "INSERT INTO epg_guides(source_id, name) VALUES (?1, ?2)",
+            (id, &src.name),
+        )
+        .context("insert provider guide")?;
         link(&tx, profile, id)?;
         tx.commit()?;
         Ok(id)
