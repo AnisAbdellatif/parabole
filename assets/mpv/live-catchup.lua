@@ -70,8 +70,9 @@ end
 mp.register_script_message("live-catchup-go-live", function()
     if not live then return end
     local cache = mp.get_property_number("demuxer-cache-duration")
-    if cache and not mp.get_property_bool("pause") and cache > opts.seek_margin + 0.5 and seek_to_edge(cache) then
-        return
+    if cache and cache > opts.seek_margin + 0.5 then
+        mp.set_property_bool("pause", false) -- a paused backlog is the common case: resume at the edge, don't reconnect
+        if seek_to_edge(cache) then return end
     end
     mp.commandv("playlist-play-index", "current")
 end)
