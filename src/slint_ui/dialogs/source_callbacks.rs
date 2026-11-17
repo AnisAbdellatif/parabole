@@ -95,8 +95,7 @@ pub fn connect(win: &AppWindow) {
     api.on_auto_hours_commit(|text| {
         with_app(|a| {
             let hours = text.trim().parse::<u32>().unwrap_or(0).min(720);
-            let res = auto_refresh::set_hours(&a.db, hours);
-            a.report(res);
+            a.write(move |db| auto_refresh::set_hours(db, hours), |_| {});
             // committed on every edit: leave an empty field alone while the user retypes it
             let shown = hours.to_string();
             if let Some(w) = a.win.upgrade()

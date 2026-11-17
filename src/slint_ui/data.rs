@@ -1,6 +1,7 @@
 //! DB reloads, mirroring `ui/data.rs`.
 use super::ToastItem;
-use super::state::{Sel, SlintApp};
+use super::state::{Sel, SlintApp, with_app};
+use crate::db::Db;
 use crate::model::{MediaKind, SourceId};
 use crate::smart::{self, Bucket, Variant};
 use slint::Model;
@@ -62,6 +63,33 @@ impl SlintApp {
         if let Err(e) = res {
             self.toast(format!("{e:#}"));
         }
+    }
+
+    /// Runs `job` on the writer thread; then reports its error and runs `then` on the UI thread.
+    pub fn write(
+        &self,
+        job: impl FnOnce(&Db) -> anyhow::Result<()> + Send + 'static,
+        then: impl FnOnce(&mut SlintApp) + Send + 'static,
+    ) {
+        self.write_with(job, move |a, _| then(a));
+    }
+
+    /// Like `write`, but `then` also learns whether the write succeeded.
+    pub fn write_with(
+        &self,
+        job: impl FnOnce(&Db) -> anyhow::Result<()> + Send + 'static,
+        then: impl FnOnce(&mut SlintApp, bool) + Send + 'static,
+    ) {
+        self.writer.run(move |db| {
+            let res = job(db);
+            let _ = slint::invoke_from_event_loop(move || {
+                with_app(|a| {
+                    let ok = res.is_ok();
+                    a.report(res);
+                    then(a, ok);
+                });
+            });
+        });
     }
 
     pub fn reload_all(&mut self) {

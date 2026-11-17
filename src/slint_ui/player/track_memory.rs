@@ -4,6 +4,8 @@ use crate::db::Db;
 use crate::db::track_prefs::{LangKind, TrackLangs};
 use crate::player::embed::MpvCore;
 use crate::player::{TrackInfo, TrackKind};
+use crate::slint_ui::writer::Writer;
+use crate::worker::Track;
 use std::time::{Duration, Instant};
 
 /// mpv needs a moment to reflect our own track selection; changes seen before then are not the user's.
@@ -39,7 +41,7 @@ fn selected(tracks: &[TrackInfo], kind: TrackKind) -> Option<&TrackInfo> {
 }
 
 /// Returns when to call again (a settle timer is pending), if at all.
-pub fn tick(db: &Db, player: &MpvCore, s: &mut Session) -> Option<Duration> {
+pub fn tick(db: &Db, writer: &Writer, player: &MpvCore, s: &mut Session) -> Option<Duration> {
     let tracks = player.state().tracks.clone();
     if tracks.is_empty() {
         s.memory = TrackMemory::default();
@@ -69,14 +71,7 @@ pub fn tick(db: &Db, player: &MpvCore, s: &mut Session) -> Option<Duration> {
     if audio.map(|t| t.id) != m.audio {
         m.audio = audio.map(|t| t.id);
         if let Some(lang) = audio.and_then(|t| t.lang.as_deref()) {
-            let _ = db.set_track_lang(
-                track.profile,
-                track.source,
-                track.media,
-                &track.key,
-                LangKind::Audio,
-                lang,
-            );
+            save_lang(writer, &track, LangKind::Audio, lang);
         }
     }
     let sub = selected(&tracks, TrackKind::Sub);
@@ -87,17 +82,24 @@ pub fn tick(db: &Db, player: &MpvCore, s: &mut Session) -> Option<Duration> {
             Some(t) => t.lang.as_deref(),
         };
         if let Some(lang) = lang {
-            let _ = db.set_track_lang(
-                track.profile,
-                track.source,
-                track.media,
-                &track.key,
-                LangKind::Sub,
-                lang,
-            );
+            save_lang(writer, &track, LangKind::Sub, lang);
         }
     }
     None
+}
+
+fn save_lang(writer: &Writer, track: &Track, kind: LangKind, lang: &str) {
+    let (track, lang) = (track.clone(), lang.to_owned());
+    writer.run(move |db| {
+        let _ = db.set_track_lang(
+            track.profile,
+            track.source,
+            track.media,
+            &track.key,
+            kind,
+            &lang,
+        );
+    });
 }
 
 fn apply(player: &MpvCore, tracks: &[TrackInfo], langs: &TrackLangs) {

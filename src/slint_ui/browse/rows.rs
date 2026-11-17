@@ -39,16 +39,20 @@ pub fn run(a: &mut SlintApp, idx: usize, action: RowAction) {
         RowAction::Info => details::open(a, &row),
         RowAction::CopyUrl => a.worker.send(Command::CopyUrl { stream_id: row.id }),
         RowAction::ToggleFavorite => {
-            let res =
-                a.db.set_favorite(profile, row.source_id, row.media, &row.key, !row.favorite);
-            a.report(res);
-            a.reload_streams();
+            a.write(
+                move |db| {
+                    db.set_favorite(profile, row.source_id, row.media, &row.key, !row.favorite)
+                },
+                |a| a.reload_streams(),
+            );
         }
         RowAction::ToggleHidden => {
-            let res =
-                a.db.set_stream_hidden(profile, row.source_id, row.media, &row.key, !row.hidden);
-            a.report(res);
-            a.reload_streams();
+            a.write(
+                move |db| {
+                    db.set_stream_hidden(profile, row.source_id, row.media, &row.key, !row.hidden)
+                },
+                |a| a.reload_streams(),
+            );
         }
         RowAction::AddToGroup(g) => groups::add_to_group(a, g, &row),
         RowAction::NewGroup => {

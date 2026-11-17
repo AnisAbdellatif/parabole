@@ -19,24 +19,28 @@ pub fn refresh_groups(a: &mut SlintApp) {
 }
 
 pub fn add_to_group(a: &mut SlintApp, group: i64, row: &StreamRow) {
-    let res = a.db.add_to_group(group, row.source_id, &row.key);
-    a.report(res);
-    refresh_groups(a);
+    let (source, key) = (row.source_id, row.key.clone());
+    a.write(
+        move |db| db.add_to_group(group, source, &key),
+        refresh_groups,
+    );
 }
 
 pub fn remove_from_group(a: &mut SlintApp, row: &StreamRow) {
     if let Some(Sel::Group(g)) = a.state.sel {
-        let res = a.db.remove_from_group(g, row.source_id, &row.key);
-        a.report(res);
-        refresh_groups(a);
-        a.reload_streams();
+        let (source, key) = (row.source_id, row.key.clone());
+        a.write(
+            move |db| db.remove_from_group(g, source, &key),
+            |a| {
+                refresh_groups(a);
+                a.reload_streams();
+            },
+        );
     }
 }
 
 pub fn delete_group(a: &mut SlintApp, id: i64) {
-    let res = a.db.delete_group(id);
-    a.report(res);
-    a.reload_categories();
+    a.write(move |db| db.delete_group(id), |a| a.reload_categories());
 }
 
 /// Stores the dialog context and asks the dialog layer (wired at merge) to open "group".

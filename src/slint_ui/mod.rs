@@ -17,6 +17,7 @@ mod sports;
 mod state;
 mod stream_model;
 mod wiring;
+mod writer;
 
 use crate::db::Db;
 use crate::worker::{self, Command};
@@ -45,6 +46,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     let path = path.to_path_buf();
     install_mpv_script(&path);
     let db = Db::open(&path).context("open database")?;
+    let writer = writer::Writer::spawn(&path)?;
     let default_profile = db.ensure_default_profile()?;
     let win = AppWindow::new().context("create window")?;
     let worker = worker::spawn(
@@ -87,6 +89,7 @@ pub fn build(path: &std::path::Path) -> Result<AppWindow> {
     APP.with(|a| {
         *a.borrow_mut() = Some(SlintApp {
             db,
+            writer,
             worker,
             win: win.as_weak(),
             state,

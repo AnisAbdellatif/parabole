@@ -68,19 +68,19 @@ impl SlintApp {
                 (want != c.hidden).then(|| (c.source_id, c.key.clone(), want))
             })
             .collect();
-        let res = self
-            .db
-            .set_categories_hidden(self.profile(), self.state.tab, &changes);
-        self.report(res);
-        self.reload_categories();
+        let (profile, tab) = (self.profile(), self.state.tab);
+        self.write(
+            move |db| db.set_categories_hidden(profile, tab, &changes),
+            |a| a.reload_categories(),
+        );
     }
 
     fn save_category_order(&mut self, source: SourceId, keys: Vec<String>) {
-        let res = self
-            .db
-            .reorder_categories(self.profile(), source, self.state.tab, &keys);
-        self.report(res);
-        self.reload_categories();
+        let (profile, tab) = (self.profile(), self.state.tab);
+        self.write(
+            move |db| db.reorder_categories(profile, source, tab, &keys),
+            |a| a.reload_categories(),
+        );
     }
 }
 
@@ -112,9 +112,11 @@ fn bulk(a: &mut SlintApp, what: &str) {
             a.bulk_hidden(|n| !n.to_lowercase().contains(&needle));
         }
         ("reset", Some(s)) => {
-            let res = a.db.reset_category_order(a.profile(), s, a.state.tab);
-            a.report(res);
-            a.reload_categories();
+            let (profile, tab) = (a.profile(), a.state.tab);
+            a.write(
+                move |db| db.reset_category_order(profile, s, tab),
+                |a| a.reload_categories(),
+            );
         }
         ("sort-az", Some(s)) => {
             let mut sorted: Vec<_> = a.categories.iter().collect();
@@ -149,9 +151,11 @@ pub fn connect(win: &AppWindow) {
                 return;
             };
             let (s, k, h) = (c.source_id, c.key.clone(), !c.hidden);
-            let res = a.db.set_category_hidden(a.profile(), s, a.state.tab, &k, h);
-            a.report(res);
-            a.reload_categories();
+            let (profile, tab) = (a.profile(), a.state.tab);
+            a.write(
+                move |db| db.set_category_hidden(profile, s, tab, &k, h),
+                |a| a.reload_categories(),
+            );
         });
     });
     api.on_edit_pin(|i| {
@@ -160,9 +164,11 @@ pub fn connect(win: &AppWindow) {
                 return;
             };
             let (s, k, p) = (c.source_id, c.key.clone(), !c.pinned);
-            let res = a.db.set_category_pinned(a.profile(), s, a.state.tab, &k, p);
-            a.report(res);
-            a.reload_categories();
+            let (profile, tab) = (a.profile(), a.state.tab);
+            a.write(
+                move |db| db.set_category_pinned(profile, s, tab, &k, p),
+                |a| a.reload_categories(),
+            );
         });
     });
     api.on_edit_move(|i, d| {
@@ -184,9 +190,11 @@ pub fn connect(win: &AppWindow) {
     api.on_hide_new_toggled(|on| {
         with_app(|a| {
             if let Some(s) = a.single_source() {
-                let res = a.db.set_hide_new_categories(a.profile(), s, on);
-                a.report(res);
-                a.push_edit();
+                let profile = a.profile();
+                a.write(
+                    move |db| db.set_hide_new_categories(profile, s, on),
+                    |a| a.push_edit(),
+                );
             }
         });
     });
@@ -194,9 +202,7 @@ pub fn connect(win: &AppWindow) {
         with_app(|a| {
             if move_item(&mut a.groups, i as usize, d) {
                 let ids: Vec<i64> = a.groups.iter().map(|g| g.id).collect();
-                let res = a.db.reorder_groups(&ids);
-                a.report(res);
-                a.push_sidebar();
+                a.write(move |db| db.reorder_groups(&ids), |a| a.push_sidebar());
             }
         });
     });

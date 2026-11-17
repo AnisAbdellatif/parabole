@@ -66,20 +66,30 @@ fn pick(a: &mut SlintApp, i: usize) {
     let Some((guide_id, channel)) = hits.get(i).cloned() else {
         return;
     };
-    match a.db.set_manual_link(*source, key, guide_id, &channel) {
-        Ok(()) => a.worker.send(Command::RefreshEpg(guide_id)),
-        Err(e) => a.toast(format!("{e:#}")),
-    }
+    let (source, key) = (*source, key.clone());
+    a.write_with(
+        move |db| db.set_manual_link(source, &key, guide_id, &channel),
+        move |a, ok| {
+            if ok {
+                a.worker.send(Command::RefreshEpg(guide_id));
+            }
+        },
+    );
     cancel(a);
 }
 
 fn automatic(a: &mut SlintApp) {
     let Some(g) = &a.epg.guide else { return };
-    match a.db.clear_manual_link(g.source, &g.key) {
-        Ok(()) => a.worker.send(Command::RelinkEpg),
-        Err(e) => a.toast(format!("{e:#}")),
-    }
-    guide::push(a);
+    let (source, key) = (g.source, g.key.clone());
+    a.write_with(
+        move |db| db.clear_manual_link(source, &key),
+        |a, ok| {
+            if ok {
+                a.worker.send(Command::RelinkEpg);
+            }
+            guide::push(a);
+        },
+    );
 }
 
 pub fn connect(win: &AppWindow) {

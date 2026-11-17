@@ -106,6 +106,8 @@ impl Persisted {
 
 pub struct SlintApp {
     pub db: Db,
+    /// All UI writes go through this, never `db` (see `writer.rs`).
+    pub writer: super::writer::Writer,
     pub worker: worker::Handle,
     pub win: slint::Weak<AppWindow>,
     pub state: Persisted,

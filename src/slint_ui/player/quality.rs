@@ -1,8 +1,8 @@
 //! Records the measured quality of live streams played in the embedded player.
 use super::session::{STABLE_AFTER_S, Session};
-use crate::db::Db;
 use crate::model::{MediaKind, Quality};
 use crate::player::embed::MpvCore;
+use crate::slint_ui::writer::Writer;
 use crate::worker::Track;
 
 fn live_track(s: &Session) -> Option<&Track> {
@@ -10,7 +10,7 @@ fn live_track(s: &Session) -> Option<&Track> {
 }
 
 /// Notes startup time, then saves one measurement once playback is stable.
-pub fn on_tick(db: &Db, core: &MpvCore, s: &mut Session) {
+pub fn on_tick(writer: &Writer, core: &MpvCore, s: &mut Session) {
     if core.state().time_pos.is_none() {
         return;
     }
@@ -39,11 +39,17 @@ pub fn on_tick(db: &Db, core: &MpvCore, s: &mut Session) {
         fails: 0,
     };
     // Like track_memory: a failed write only loses a hint, never worth a toast.
-    let _ = db.save_quality(track.source, &track.key, &q);
+    let (source, key) = (track.source, track.key.clone());
+    writer.run(move |db| {
+        let _ = db.save_quality(source, &key, &q);
+    });
 }
 
-pub fn on_give_up(db: &Db, s: &Session) {
+pub fn on_give_up(writer: &Writer, s: &Session) {
     if let Some(track) = live_track(s) {
-        let _ = db.record_failure(track.source, &track.key);
+        let (source, key) = (track.source, track.key.clone());
+        writer.run(move |db| {
+            let _ = db.record_failure(source, &key);
+        });
     }
 }
