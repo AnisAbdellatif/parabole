@@ -156,3 +156,6 @@ enum Probed {
     /// Never carries a URL (they hold credentials), so it is safe to print.
     DbError(anyhow::Error),
 }
+
+#[cfg(all(test, unix))]
+mod tests;

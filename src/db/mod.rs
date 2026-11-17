@@ -65,6 +65,12 @@ impl Db {
         Self::init(Connection::open_in_memory()?)
     }
 
+    /// Makes every later write on this connection fail.
+    #[cfg(test)]
+    pub(crate) fn make_read_only(&self) {
+        self.conn.execute_batch("PRAGMA query_only = ON;").unwrap();
+    }
+
     fn init(mut conn: Connection) -> Result<Db> {
         conn.execute_batch("PRAGMA foreign_keys = ON;")?;
         // The quality scanner writes from its own connection.
