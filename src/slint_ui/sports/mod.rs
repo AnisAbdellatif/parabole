@@ -9,7 +9,6 @@ use crate::model::{Match, MatchStatus, ProviderStatus};
 use crate::sports::registry::{SPORTS, Sport};
 use crate::worker::sports_settings::SportsSettings;
 use crate::worker::{Command, Event};
-use chrono::FixedOffset;
 use push::push;
 use slint::{ComponentHandle, Model};
 use std::time::Duration;
@@ -62,7 +61,7 @@ impl SportsArea {
     }
 
     fn shown(&self) -> Vec<&Match> {
-        filter::visible(&self.matches, &self.query(), now(), local_tz())
+        filter::visible(&self.matches, &self.query(), now(), &local_tz())
     }
 }
 
@@ -94,9 +93,8 @@ fn enabled(settings: &SportsSettings) -> Vec<&'static Sport> {
         .collect()
 }
 
-// shortcut: one UTC offset for the whole week, wrong by 1 h across a DST change; use Local per timestamp if that matters
-fn local_tz() -> FixedOffset {
-    *chrono::Local::now().offset()
+fn local_tz() -> chrono::Local {
+    chrono::Local
 }
 
 fn now() -> i64 {

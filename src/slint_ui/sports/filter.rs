@@ -1,7 +1,7 @@
 //! Which matches the Sports list shows, and in what order: one day at a time, grouped by competition.
 use crate::model::{Match, MatchStatus};
 use crate::sports::merge;
-use chrono::{DateTime, FixedOffset, NaiveDate};
+use chrono::{DateTime, NaiveDate, TimeZone};
 
 pub const LAST_DAY: i64 = 7;
 
@@ -43,10 +43,10 @@ impl Query<'_> {
     }
 }
 
-fn date(ts: i64, tz: FixedOffset) -> NaiveDate {
+fn date<Tz: TimeZone>(ts: i64, tz: &Tz) -> NaiveDate {
     DateTime::from_timestamp(ts, 0)
         .unwrap_or_default()
-        .with_timezone(&tz)
+        .with_timezone(tz)
         .date_naive()
 }
 
@@ -55,7 +55,7 @@ pub fn is_live(m: &Match) -> bool {
 }
 
 /// Days from today to the match's local kickoff date; live matches always count as today.
-pub fn day_of(m: &Match, now: i64, tz: FixedOffset) -> i64 {
+pub fn day_of<Tz: TimeZone>(m: &Match, now: i64, tz: &Tz) -> i64 {
     if is_live(m) {
         return 0;
     }
@@ -63,13 +63,18 @@ pub fn day_of(m: &Match, now: i64, tz: FixedOffset) -> i64 {
 }
 
 /// Section a match is listed under: its competition, prefixed by its day while searching across days.
-pub fn group(m: &Match, searching: bool, now: i64, tz: FixedOffset) -> (i64, String) {
+pub fn group<Tz: TimeZone>(m: &Match, searching: bool, now: i64, tz: &Tz) -> (i64, String) {
     let day = if searching { day_of(m, now, tz) } else { 0 };
     (day, m.competition.clone())
 }
 
 /// Matches to show, competitions kept together in order of their first match (input is sorted live first, then kickoff).
-pub fn visible<'a>(matches: &'a [Match], q: &Query, now: i64, tz: FixedOffset) -> Vec<&'a Match> {
+pub fn visible<'a, Tz: TimeZone>(
+    matches: &'a [Match],
+    q: &Query,
+    now: i64,
+    tz: &Tz,
+) -> Vec<&'a Match> {
     let words: Vec<String> = merge::simplify(q.search)
         .split_whitespace()
         .map(str::to_string)
@@ -105,7 +110,7 @@ pub fn visible<'a>(matches: &'a [Match], q: &Query, now: i64, tz: FixedOffset) -
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{TimeZone, Utc};
+    use chrono::{FixedOffset, Utc};
 
     fn tz() -> FixedOffset {
         FixedOffset::east_opt(3600).unwrap()
@@ -159,16 +164,19 @@ mod tests {
             m("d", "Liga", "Girona", ts(17, 20), false),
         ];
         assert_eq!(
-            keys(visible(&ms, &q("", 0, Status::All), now, tz())),
+            keys(visible(&ms, &q("", 0, Status::All), now, &tz())),
             ["a", "c", "b"]
         );
-        assert_eq!(keys(visible(&ms, &q("", 1, Status::All), now, tz())), ["d"]);
         assert_eq!(
-            keys(visible(&ms, &q("", 3, Status::Live), now, tz())),
+            keys(visible(&ms, &q("", 1, Status::All), now, &tz())),
+            ["d"]
+        );
+        assert_eq!(
+            keys(visible(&ms, &q("", 3, Status::Live), now, &tz())),
             ["a"]
         );
         assert_eq!(
-            keys(visible(&ms, &q("", 0, Status::Upcoming), now, tz())),
+            keys(visible(&ms, &q("", 0, Status::Upcoming), now, &tz())),
             ["b", "c"]
         );
     }
@@ -185,10 +193,10 @@ mod tests {
                 &ms,
                 &q("ATLETICO betis", 0, Status::All),
                 now,
-                tz()
+                &tz()
             )),
             ["a", "d"]
         );
-        assert!(visible(&ms, &q("atletico barcelona", 0, Status::All), now, tz()).is_empty());
+        assert!(visible(&ms, &q("atletico barcelona", 0, Status::All), now, &tz()).is_empty());
     }
 }

@@ -2,7 +2,7 @@
 use super::filter;
 use crate::model::{Broadcast, Match, MatchStatus, ProviderStatus};
 use crate::sports::lang;
-use chrono::{DateTime, FixedOffset};
+use chrono::{DateTime, TimeZone};
 use std::collections::BTreeSet;
 
 pub struct RowText {
@@ -25,11 +25,14 @@ pub struct ChannelText {
 
 const CHIPS_SHOWN: usize = 4;
 
-fn local(ts: i64, tz: FixedOffset) -> Option<DateTime<FixedOffset>> {
-    DateTime::from_timestamp(ts, 0).map(|t| t.with_timezone(&tz))
+fn local<Tz: TimeZone>(ts: i64, tz: &Tz) -> Option<DateTime<Tz>> {
+    DateTime::from_timestamp(ts, 0).map(|t| t.with_timezone(tz))
 }
 
-fn fmt(ts: i64, tz: FixedOffset, pattern: &str) -> String {
+fn fmt<Tz: TimeZone>(ts: i64, tz: &Tz, pattern: &str) -> String
+where
+    Tz::Offset: std::fmt::Display,
+{
     local(ts, tz).map_or_else(String::new, |t| t.format(pattern).to_string())
 }
 
@@ -42,7 +45,10 @@ fn teams(m: &Match) -> String {
 }
 
 /// "Today", "Tomorrow" or "Wed 18 Nov" for `day` days after today.
-pub fn day_label(day: i64, now: i64, tz: FixedOffset) -> String {
+pub fn day_label<Tz: TimeZone>(day: i64, now: i64, tz: &Tz) -> String
+where
+    Tz::Offset: std::fmt::Display,
+{
     match day {
         0 => "Today".into(),
         1 => "Tomorrow".into(),
@@ -51,13 +57,16 @@ pub fn day_label(day: i64, now: i64, tz: FixedOffset) -> String {
 }
 
 /// `matches` in display order; a section header starts each competition (and day, while searching).
-pub fn rows(
+pub fn rows<Tz: TimeZone>(
     matches: &[&Match],
     langs: &[String],
     searching: bool,
     now: i64,
-    tz: FixedOffset,
-) -> Vec<RowText> {
+    tz: &Tz,
+) -> Vec<RowText>
+where
+    Tz::Offset: std::fmt::Display,
+{
     let mut prev = None;
     matches
         .iter()
@@ -122,7 +131,14 @@ fn chips(b: &[Broadcast], user: &[String]) -> String {
     out
 }
 
-pub fn details(m: &Match, langs: &[String], tz: FixedOffset) -> (String, String, Vec<ChannelText>) {
+pub fn details<Tz: TimeZone>(
+    m: &Match,
+    langs: &[String],
+    tz: &Tz,
+) -> (String, String, Vec<ChannelText>)
+where
+    Tz::Offset: std::fmt::Display,
+{
     let sub = match &m.status {
         MatchStatus::Live { clock, home, away } => {
             format!("{} · Live {clock} · {home}–{away}", m.competition)
@@ -188,12 +204,15 @@ fn channels(b: &[Broadcast], user: &[String]) -> Vec<ChannelText> {
     out
 }
 
-pub fn status(
+pub fn status<Tz: TimeZone>(
     providers: &[ProviderStatus],
     loading: bool,
     updated_at: Option<i64>,
-    tz: FixedOffset,
-) -> String {
+    tz: &Tz,
+) -> String
+where
+    Tz::Offset: std::fmt::Display,
+{
     let mut parts = Vec::new();
     if loading {
         parts.push("Updating…".to_string());

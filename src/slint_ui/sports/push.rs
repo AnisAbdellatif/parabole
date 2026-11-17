@@ -7,7 +7,7 @@ use slint::{ComponentHandle, ModelRc, SharedString, VecModel};
 pub(super) fn push(a: &SlintApp) {
     let Some(w) = a.win.upgrade() else { return };
     let f = &a.sports;
-    let (tz, now) = (local_tz(), now());
+    let (tz, now) = (&local_tz(), now());
     let langs = &f.settings.langs;
     let shown = f.shown();
     let q = f.query();

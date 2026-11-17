@@ -113,8 +113,13 @@ impl Scanner {
             if self.ctl.blocked() || self.ctl.profile() != Some(profile) {
                 break;
             }
-            if !self.probe_one(bin, id) {
-                break;
+            match self.probe_one(bin, id) {
+                Probed::Next => {}
+                Probed::Cancelled => break,
+                Probed::DbError(e) => {
+                    eprintln!("quality scan: database write failed: {e:#}");
+                    return Duration::from_secs(30);
+                }
             }
             if let Ok((done, total)) = self.db.scan_counts(profile) {
                 self.emit(ScanStatus::Running { done, total });
@@ -124,22 +129,30 @@ impl Scanner {
         Duration::ZERO
     }
 
-    /// False when cancelled, so the batch is abandoned.
-    fn probe_one(&self, bin: &Path, id: i64) -> bool {
+    fn probe_one(&self, bin: &Path, id: i64) -> Probed {
         let Ok((info, req)) = stream_request(&self.db, id) else {
             // Unresolvable URL: mark it so the queue moves on.
-            if let Ok(info) = self.db.play_info(id) {
-                let _ = self.db.record_failure(info.source_id, &info.key);
+            if let Ok(info) = self.db.play_info(id)
+                && let Err(e) = self.db.record_failure(info.source_id, &info.key)
+            {
+                return Probed::DbError(e);
             }
-            return true;
+            return Probed::Next;
         };
         let ctl = self.ctl.clone();
-        // shortcut: a DB write error is dropped and the stream comes back next batch, fine while rare.
-        let _ = match probe(bin, &req, &move || ctl.blocked()) {
+        let saved = match probe(bin, &req, &move || ctl.blocked()) {
             Ok(q) => self.db.save_quality(info.source_id, &info.key, &q),
-            Err(ProbeError::Cancelled) => return false,
+            Err(ProbeError::Cancelled) => return Probed::Cancelled,
             Err(ProbeError::Failed(_)) => self.db.record_failure(info.source_id, &info.key),
         };
-        true
+        saved.map_or_else(Probed::DbError, |_| Probed::Next)
     }
+}
+
+enum Probed {
+    Next,
+    /// Playback started mid-probe: abandon the batch.
+    Cancelled,
+    /// Never carries a URL (they hold credentials), so it is safe to print.
+    DbError(anyhow::Error),
 }

@@ -7,8 +7,7 @@ use slint::{Image, Rgba8Pixel, SharedPixelBuffer};
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
-use std::sync::mpsc::{Sender, channel};
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Condvar, Mutex};
 
 const WORKERS: usize = 4;
 
@@ -82,11 +81,52 @@ pub struct Decoded {
 
 type Key = (Size, String);
 
+/// Newest job first: after a fast scroll the posters on screen go before the ones scrolled past.
+#[derive(Default)]
+struct Queue {
+    jobs: Vec<Key>,
+    closed: bool,
+}
+
+type Shared = Arc<(Mutex<Queue>, Condvar)>;
+
+fn push(q: &Shared, key: Key) {
+    if let Ok(mut g) = q.0.lock() {
+        g.jobs.push(key);
+        q.1.notify_one();
+    }
+}
+
+/// Next job, waiting while the queue is empty; None once closed (or the lock is poisoned).
+fn pop_blocking(q: &Shared) -> Option<Key> {
+    let mut g = q.0.lock().ok()?;
+    loop {
+        if let Some(k) = g.jobs.pop() {
+            return Some(k);
+        }
+        if g.closed {
+            return None;
+        }
+        g = q.1.wait(g).ok()?;
+    }
+}
+
 pub struct Images {
     lru: RefCell<[Lru<Image>; 3]>,
     pending: RefCell<HashSet<Key>>,
     failed: RefCell<HashSet<Key>>,
-    tx: Option<Sender<Key>>,
+    queue: Option<Shared>,
+}
+
+impl Drop for Images {
+    fn drop(&mut self) {
+        if let Some(q) = &self.queue {
+            if let Ok(mut g) = q.0.lock() {
+                g.closed = true;
+            }
+            q.1.notify_all();
+        }
+    }
 }
 
 fn is_http(url: &str) -> bool {
@@ -115,23 +155,20 @@ impl Images {
     pub fn new(
         on_ready: impl Fn(String, Size, Option<Decoded>) + Send + Sync + 'static,
     ) -> Rc<Self> {
-        let tx = imgcache::default_dir()
+        let queue = imgcache::default_dir()
             .inspect(|dir| imgcache::spawn_prune(dir.clone()))
             .zip(imgcache::http_client().ok())
             .map(|(dir, client)| {
-                let (tx, rx) = channel::<Key>();
-                let rx = Arc::new(Mutex::new(rx));
+                let queue = Shared::default();
                 let on_ready = Arc::new(on_ready);
                 for _ in 0..WORKERS {
-                    let (rx, client, dir, on_ready) =
-                        (rx.clone(), client.clone(), dir.clone(), on_ready.clone());
+                    let (queue, client, dir, on_ready) =
+                        (queue.clone(), client.clone(), dir.clone(), on_ready.clone());
                     std::thread::spawn(move || {
                         loop {
-                            let job = match rx.lock() {
-                                Ok(rx) => rx.recv(),
-                                Err(_) => return,
+                            let Some((size, url)) = pop_blocking(&queue) else {
+                                return;
                             };
-                            let Ok((size, url)) = job else { return };
                             let dec = imgcache::get_or_fetch(&dir, &client, &url)
                                 .ok()
                                 .and_then(|b| decode(&b, size));
@@ -139,13 +176,13 @@ impl Images {
                         }
                     });
                 }
-                tx
+                queue
             });
         Rc::new(Self {
             lru: RefCell::new(SIZES.map(|s| Lru::new(s.cap()))),
             pending: Default::default(),
             failed: Default::default(),
-            tx,
+            queue,
         })
     }
 
@@ -155,7 +192,7 @@ impl Images {
 
     /// Cached image or None; on a miss, queues a fetch (once per URL and size).
     pub fn get(&self, url: &str, size: Size) -> Option<Image> {
-        let tx = self.tx.as_ref()?;
+        let queue = self.queue.as_ref()?;
         if !is_http(url) {
             return None;
         }
@@ -164,7 +201,7 @@ impl Images {
         }
         let key = (size, url.to_owned());
         if !self.failed.borrow().contains(&key) && self.pending.borrow_mut().insert(key.clone()) {
-            let _ = tx.send(key);
+            push(queue, key);
         }
         None
     }
@@ -193,6 +230,26 @@ mod tests {
         l.insert("c".into(), 3);
         assert!(l.get("b").is_none());
         assert!(l.get("a").is_some() && l.get("c").is_some());
+    }
+
+    #[test]
+    fn queue_pops_newest_first() {
+        let q = Shared::default();
+        for u in ["a", "b", "c"] {
+            push(&q, (Size::Logo, u.into()));
+        }
+        let order: Vec<String> = (0..3)
+            .filter_map(|_| pop_blocking(&q))
+            .map(|k| k.1)
+            .collect();
+        assert_eq!(order, ["c", "b", "a"]);
+    }
+
+    #[test]
+    fn closed_empty_queue_returns_none() {
+        let q = Shared::default();
+        q.0.lock().unwrap().closed = true;
+        assert!(pop_blocking(&q).is_none());
     }
 
     #[test]
