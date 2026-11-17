@@ -62,15 +62,21 @@ Live channels can show what is on now and next, with a progress bar on each row 
 
 Guides refresh in the background. Guide coverage and accuracy depend on the guide's publisher.
 
+![Live channels with what is on now, and a channel's guide open](tests/fixtures/slint-snapshots/live-guide.png)
+
 ## Smart tab
 The **Smart** tab groups the same channel from all your sources into one entry, best version first. Filter by quality: 4K, Full HD, HD, SD, 50/60 fps or unknown.
 
 Quality comes from playback (recorded a few seconds after the first frame) and from an optional background scanner. The scanner needs `ffprobe` (part of FFmpeg) installed, probes the categories you pick, pauses while you watch, and can be paused or restarted. If a live stream fails, the player can switch to the same channel from another source.
 
+![Smart tab grouping channels across sources, with quality filters and badges](tests/fixtures/slint-snapshots/smart.png)
+
 ## Sports
 The optional **Sports** tab (enable it in **Settings → Sports**) lists football, basketball, tennis, F1, WWE and UFC events by day, with All, Live and Upcoming filters and a search. Select an event to see which TV channels show it, per country, filtered by the languages you choose. Click a channel to copy its name, then find it in your library.
 
 Listings come from free sources (365scores, LiveScore, TheSportsDB) and may be incomplete or change without notice.
+
+![Sports tab with the day's matches and where they are on TV](tests/fixtures/slint-snapshots/sports.png)
 
 ## Online details and Trakt
 - **Details:** when enabled in settings, film and series pages are completed with poster, rating, plot and cast from IMDb (free, unofficial), with Trakt as a fallback. The titles you open are sent to these services.
@@ -93,6 +99,9 @@ For live television:
 - With catch-up enabled, playback skips the backlog a provider sends on connect and speeds up slightly (1.1× or 1.25×) when it falls behind. Set how many seconds behind still count as live in **Settings → Playback**.
 - Low-latency buffering can be turned off in settings if a provider's streams stutter.
 - Dropped streams retry with backoff, up to a limited retry budget.
+
+
+![Embedded player on a live channel, 8 seconds behind, with the Go live button](tests/fixtures/slint-snapshots/player-live.png)
 
 Latency, available tracks and playback quality still depend on the stream and provider.
 
@@ -121,7 +130,7 @@ Choose a dark, light or system-following theme, with six accent palettes. Adjust
 
 ![Embedded player interface and playback controls](tests/fixtures/slint-snapshots/player-chrome.png)
 
-*UI test snapshots with fixture content; these do not demonstrate a connected live stream.*
+*Screenshots throughout are UI test snapshots with sample content, not a connected stream.*
 
 </details>
 
