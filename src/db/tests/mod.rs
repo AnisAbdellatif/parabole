@@ -2,6 +2,7 @@ mod account;
 mod alternates;
 mod copy_favorites;
 mod epg;
+mod fts_refresh;
 mod groups;
 mod import_scale;
 mod new_categories;

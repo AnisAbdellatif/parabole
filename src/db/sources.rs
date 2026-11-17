@@ -87,8 +87,8 @@ impl Db {
     /// Cascades to provider rows and overlay rows of every profile.
     pub fn delete_source(&self, id: SourceId) -> Result<()> {
         let tx = self.conn.unchecked_transaction()?;
+        super::import::fts_remove_source(&tx, id)?;
         tx.execute("DELETE FROM sources WHERE id = ?1", [id])?;
-        super::import::rebuild_fts(&tx)?;
         tx.commit()?;
         Ok(())
     }
