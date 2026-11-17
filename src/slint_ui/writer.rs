@@ -4,6 +4,7 @@ use crate::db::Db;
 use anyhow::{Context, Result};
 use std::path::Path;
 use std::sync::mpsc::{Sender, channel};
+use std::time::Duration;
 
 pub type Job = Box<dyn FnOnce(&Db) + Send>;
 
@@ -31,6 +32,15 @@ impl Writer {
         // send only fails once the thread is gone (app shutting down)
         let _ = self.tx.send(Box::new(job));
     }
+
+    /// Waits (at most `timeout`) until every job sent so far has run; used at exit so clicks aren't lost.
+    pub fn flush(&self, timeout: Duration) {
+        let (ack, done) = channel();
+        self.run(move |_| {
+            let _ = ack.send(());
+        });
+        let _ = done.recv_timeout(timeout);
+    }
 }
 
 #[cfg(test)]
@@ -44,9 +54,12 @@ mod tests {
         for v in ["first", "second"] {
             w.run(move |db| db.set_setting(None, "k", v).unwrap());
         }
-        let (ack, done) = channel();
-        w.run(move |db| ack.send(db.get_setting(None, "k").unwrap()).unwrap());
-        assert_eq!(done.recv().unwrap().as_deref(), Some("second"));
+        w.flush(Duration::from_secs(5));
+        let db = Db::open(&path).unwrap();
+        assert_eq!(
+            db.get_setting(None, "k").unwrap().as_deref(),
+            Some("second")
+        );
         drop(w);
         for ext in ["", "-wal", "-shm"] {
             let _ = std::fs::remove_file(format!("{}{ext}", path.display()));

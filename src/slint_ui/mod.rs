@@ -38,6 +38,7 @@ pub fn run() -> Result<()> {
     slint::Timer::single_shot(std::time::Duration::ZERO, dock_icon::set);
     let win = build(&db_path()?)?;
     win.run().context("run event loop")?;
+    with_app(|a| a.writer.flush(std::time::Duration::from_secs(5)));
     Ok(())
 }
 
