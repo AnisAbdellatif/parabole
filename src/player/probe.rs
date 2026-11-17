@@ -91,7 +91,12 @@ pub fn probe(
         match child.try_wait() {
             Ok(Some(status)) => break status,
             Ok(None) => {}
-            Err(e) => return Err(failed(format!("wait for ffprobe: {e}"))),
+            Err(e) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = reader.join();
+                return Err(failed(format!("wait for ffprobe: {e}")));
+            }
         }
         let timed_out = start.elapsed() > TIMEOUT;
         if timed_out || cancel() {
