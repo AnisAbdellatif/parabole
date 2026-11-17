@@ -3,7 +3,42 @@ use crate::model::Match;
 
 const KICKOFF_SLACK_S: i64 = 15 * 60;
 const STOP_WORDS: &[&str] = &[
-    "fc", "cf", "ac", "sc", "afc", "cd", "sd", "ud", "club", "the",
+    "fc",
+    "cf",
+    "ac",
+    "sc",
+    "afc",
+    "cd",
+    "sd",
+    "ud",
+    "club",
+    "the",
+    "real",
+    "united",
+    "city",
+    "sporting",
+    "athletic",
+    "saint",
+    "calcio",
+    "olympique",
+];
+/// (alias, canonical): spellings of the same team word across providers.
+const ALIASES: &[(&str, &str)] = &[
+    ("man", "manchester"),
+    ("utd", "manchester"),
+    ("spurs", "tottenham"),
+    ("wolves", "wolverhampton"),
+    ("psg", "paris"),
+    ("munchen", "munich"),
+    ("bayern", "munich"),
+    ("inter", "internazionale"),
+    ("milano", "milan"),
+    ("naples", "napoli"),
+    ("rome", "roma"),
+    ("praha", "prague"),
+    ("lisboa", "lisbon"),
+    ("seville", "sevilla"),
+    ("cologne", "koln"),
 ];
 
 /// Appends the broadcasts of each `extra` match to the `base` match it pairs with; unpaired extras are dropped.
@@ -27,7 +62,6 @@ pub fn attach(base: &mut [Match], extra: &[Match]) {
     }
 }
 
-// shortcut: word-overlap team matching; upgrade to a per-team alias table if real mismatches show up
 pub fn same_team(a: &str, b: &str) -> bool {
     let wb = words(b);
     words(a).iter().any(|w| wb.contains(w))
@@ -49,6 +83,7 @@ pub fn simplify(text: &str) -> String {
 fn words(name: &str) -> Vec<String> {
     simplify(name)
         .split_whitespace()
+        .map(|w| ALIASES.iter().find(|(a, _)| *a == w).map_or(w, |(_, c)| c))
         .filter(|w| w.len() >= 3 && !STOP_WORDS.contains(w))
         .map(str::to_string)
         .collect()
@@ -102,8 +137,13 @@ mod tests {
     fn team_names() {
         assert!(same_team("Slavia Praha", "Slavia Prague"));
         assert!(same_team("Atlético Madrid", "Atletico Madrid"));
-        assert!(same_team("Real Madrid", "Real Sociedad"));
+        assert!(!same_team("Real Madrid", "Real Sociedad"));
         assert!(!same_team("Getafe", "Girona"));
+        assert!(same_team("Man Utd", "Manchester United"));
+        assert!(same_team("Man City", "Manchester City"));
+        assert!(same_team("PSG", "Paris Saint-Germain"));
+        assert!(same_team("Bayern München", "FC Bayern Munich"));
+        assert!(same_team("Inter", "Internazionale"));
     }
 
     #[test]
