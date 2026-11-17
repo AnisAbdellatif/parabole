@@ -1,5 +1,5 @@
 use super::*;
-use chrono::{TimeZone, Utc};
+use chrono::{FixedOffset, TimeZone, Utc};
 
 fn tz() -> FixedOffset {
     FixedOffset::east_opt(3600).unwrap()
@@ -55,7 +55,7 @@ fn sections_only_on_group_change() {
         other,
     ];
     let refs: Vec<&Match> = ms.iter().collect();
-    let r = rows(&refs, &[], false, now(), tz());
+    let r = rows(&refs, &[], false, now(), &tz());
     let sections: Vec<&str> = r.iter().map(|x| x.section.as_str()).collect();
     assert_eq!(sections, ["Nations League", "", "Serie A"]);
     assert_eq!(
@@ -81,10 +81,10 @@ fn sections_only_on_group_change() {
 fn searching_puts_day_in_sections_across_local_midnight() {
     let ms = [game("a", ts(16, 23, 30), MatchStatus::Upcoming, vec![])];
     let refs: Vec<&Match> = ms.iter().collect();
-    let r = rows(&refs, &[], true, now(), tz());
+    let r = rows(&refs, &[], true, now(), &tz());
     assert_eq!(r[0].section, "Tomorrow · Nations League");
     assert_eq!(r[0].time, "00:30");
-    assert_eq!(day_label(2, now(), tz()), "Wed 18 Nov");
+    assert_eq!(day_label(2, now(), &tz()), "Wed 18 Nov");
 }
 
 #[test]
@@ -109,7 +109,7 @@ fn details_group_order_and_dedupe() {
         bc("Amazon Prime PPV", "GB", Some("en")),
     ];
     let m = game("a", ts(16, 19, 45), MatchStatus::Upcoming, b);
-    let (title, sub, ch) = details(&m, &strs(&["en"]), tz());
+    let (title, sub, ch) = details(&m, &strs(&["en"]), &tz());
     assert_eq!(title, "Germany – Netherlands");
     assert_eq!(sub, "Nations League · Mon 16 Nov, 20:45");
     let texts: Vec<&str> = ch.iter().map(|c| c.text.as_str()).collect();
@@ -138,9 +138,9 @@ fn details_sub_for_live_and_finished() {
         home: "0".into(),
         away: "0".into(),
     };
-    let (_, sub, _) = details(&game("a", 0, live, vec![]), &[], tz());
+    let (_, sub, _) = details(&game("a", 0, live, vec![]), &[], &tz());
     assert_eq!(sub, "Nations League · Live HT · 0–0");
-    let (_, sub, _) = details(&game("a", 0, MatchStatus::Finished, vec![]), &[], tz());
+    let (_, sub, _) = details(&game("a", 0, MatchStatus::Finished, vec![]), &[], &tz());
     assert_eq!(sub, "Nations League · Finished");
 }
 
@@ -160,14 +160,14 @@ fn status_text() {
     ];
     let t = ts(16, 13, 32);
     assert_eq!(
-        status(&p, false, Some(t), tz()),
+        status(&p, false, Some(t), &tz()),
         "Updated 14:32 · LiveScore unavailable"
     );
     assert_eq!(
-        status(&p, true, Some(t), tz()),
+        status(&p, true, Some(t), &tz()),
         "Updating… · LiveScore unavailable"
     );
-    assert_eq!(status(&[], false, None, tz()), "");
+    assert_eq!(status(&[], false, None, &tz()), "");
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn details_merge_same_channel_across_countries() {
             bc("ON Time Sports", "EG", Some("ar")),
         ],
     );
-    let (_, _, ch) = details(&m, &strs(&["ar"]), tz());
+    let (_, _, ch) = details(&m, &strs(&["ar"]), &tz());
     let text: Vec<&str> = ch.iter().map(|c| c.text.as_str()).collect();
     assert_eq!(
         text,
@@ -195,6 +195,6 @@ fn details_merge_same_channel_across_countries() {
 fn single_event_title_is_home_alone() {
     let mut m = game("a", 0, MatchStatus::Upcoming, vec![]);
     m.away.clear();
-    let (title, _, _) = details(&m, &[], tz());
+    let (title, _, _) = details(&m, &[], &tz());
     assert_eq!(title, "Germany");
 }
