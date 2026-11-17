@@ -10,10 +10,12 @@ mod snapshot;
 mod sw_platform;
 
 use i_slint_backend_testing::ElementHandle;
+use parabole::db::Db;
 use parabole::slint_ui::{
-    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, FieldItem, InfoView, PaletteApi, PlayerApi,
-    SportsApi, SportsChannel, SportsRow, StreamItem, Theme, ToastItem, build, fonts,
+    AppWindow, BrowseApi, Core, DialogApi, EpisodeItem, FieldItem, GuideItem, InfoView, PaletteApi,
+    PlayerApi, SportsApi, SportsChannel, SportsRow, StreamItem, Theme, ToastItem, build, fonts,
 };
+use parabole::worker::sports_settings::{self, SportsSettings};
 use slint::platform::{Key, WindowEvent};
 use slint::{ComponentHandle, Model, ModelRc, SharedString, VecModel};
 use sw_platform::{SCALE, SwPlatform};
@@ -149,6 +151,13 @@ impl Shots {
         self.shot("zap-mini");
         api.set_mini(false);
         api.set_zap_open(false);
+        api.set_behind(8.0);
+        api.set_live_ok_s(3.0);
+        api.set_pane_w(640.0);
+        self.shot("player-live");
+        self.check_control_alignment();
+        api.set_pane_w(420.0);
+        api.set_behind(0.0);
         api.set_active(false);
         self.p.pump(2);
     }
@@ -296,14 +305,90 @@ impl Shots {
         api.set_empty_text("".into());
         let core = win.global::<Core>();
         core.set_toasts(ModelRc::new(VecModel::default()));
-        core.set_sports_enabled(true);
         core.set_tab(3);
         self.p.pump(2);
         self.shot("sports");
         core.set_tab(0);
-        core.set_sports_enabled(false);
         api.set_cursor(-1);
         self.p.pump(2);
+    }
+
+    /// Now-line and progress on live rows plus the open channel guide, with fixed text and fractions.
+    fn live_guide_screen(&mut self) {
+        let win = self.win.clone_strong();
+        let core = win.global::<Core>();
+        let original = core.get_streams();
+        let airing = [
+            ("World News", "Morning Briefing · 08:00–09:00", 0.62),
+            ("Channel One", "Headline Hour · 08:00–09:00", 0.62),
+            ("Channel Two", "Global Business Report · 07:30–08:30", 0.86),
+            ("Daily Brief", "Breakfast Edition · 06:00–09:30", 0.41),
+            ("Market Watch", "Opening Bell · 08:15–09:15", 0.25),
+            ("Night Report", "", 0.0),
+        ];
+        let rows: Vec<_> = airing
+            .iter()
+            .enumerate()
+            .map(|(i, (name, meta, progress))| StreamItem {
+                name: (*name).into(),
+                meta: (*meta).into(),
+                initials: name[..1].to_uppercase().into(),
+                progress: *progress,
+                playing: i == 1,
+                ..Default::default()
+            })
+            .collect();
+        core.set_streams(ModelRc::new(VecModel::from(rows)));
+        let api = win.global::<BrowseApi>();
+        let item = |time: &str, title: &str, descr: &str, now: bool, progress: f32| GuideItem {
+            time: time.into(),
+            title: title.into(),
+            descr: descr.into(),
+            now,
+            progress,
+        };
+        api.set_guide_title("World News".into());
+        api.set_guide(ModelRc::new(VecModel::from(vec![
+            item(
+                "07:00–08:00",
+                "Overnight Review",
+                "Stories from around the world.",
+                false,
+                0.0,
+            ),
+            item(
+                "08:00–09:00",
+                "Morning Briefing",
+                "The day's top stories, weather and markets.",
+                true,
+                0.62,
+            ),
+            item(
+                "09:00–09:30",
+                "Business Today",
+                "Early trading and company news.",
+                false,
+                0.0,
+            ),
+            item("09:30–10:30", "Policy Matters", "", false, 0.0),
+        ])));
+        api.set_guide_scroll_to(1);
+        api.set_guide_open(true);
+        self.shot("live-guide");
+        api.set_guide_open(false);
+        core.set_streams(original);
+        self.p.pump(2);
+    }
+
+    fn smart_screen(&mut self, db: &std::path::Path) {
+        slint_seed::seed_smart(db);
+        let win = self.win.clone_strong();
+        let core = win.global::<Core>();
+        core.invoke_tab_selected(4);
+        self.p.pump_until("smart loaded", || self.streams() == 18);
+        self.shot("smart");
+        core.invoke_tab_selected(0);
+        self.p.pump_until("live reloaded", || self.streams() == 6);
     }
 
     fn rect(&self, id: &str, nth: usize) -> ink::Rect {
@@ -393,6 +478,12 @@ fn snapshots() {
     let db = slint_seed::seed(&dir);
     slint_seed::add_profile(&db, "Kids Zone");
     slint_seed::write_state(&db, r#"{"appearance":{"reduce_motion":true}}"#);
+    let settings = SportsSettings {
+        enabled: true,
+        ..Default::default()
+    };
+    sports_settings::save(&Db::open(&db).expect("open scratch db"), &settings)
+        .expect("enable sports");
     let p = SwPlatform::install();
     fonts::install_fallback();
     let win = build(&db).expect("build window");
@@ -434,6 +525,8 @@ fn snapshots() {
     s.player_screens();
     s.toast_screen();
     s.sports_screen();
+    s.live_guide_screen();
+    s.smart_screen(&db);
     let failures = std::mem::take(&mut s.failures);
     drop(s);
     slint_seed::cleanup(&dir);
