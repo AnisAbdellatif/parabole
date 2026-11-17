@@ -4,9 +4,11 @@ use super::super::{AppWindow, PlayerApi};
 use super::{pip, playback, sync};
 use crate::player::TrackKind;
 use slint::ComponentHandle;
+use std::rc::Rc;
 use std::time::Duration;
 
-const FULLSCREEN_EXIT: Duration = Duration::from_millis(900);
+const POLL: Duration = Duration::from_millis(50);
+const FULLSCREEN_EXIT_CAP: Duration = Duration::from_millis(1500);
 /// Volume slider range.
 const VOL_MAX: f64 = 130.0;
 
@@ -130,25 +132,50 @@ pub fn set_mini(a: &mut SlintApp, on: bool) {
             a.player.windowed = Some(pip::save(&w));
         }
         let restore = if on { None } else { a.player.windowed.take() };
-        // shortcut: fixed wait for macOS' fullscreen-exit animation; poll the window size to do it right
-        let delay = if from_fullscreen {
-            FULLSCREEN_EXIT
+        a.player.mini_timer = None;
+        if from_fullscreen {
+            a.player.mini_timer = Some(apply_when_windowed(&w, on, restore));
         } else {
-            Duration::ZERO
-        };
-        let weak = w.as_weak();
-        slint::Timer::single_shot(delay, move || {
-            let Some(w) = weak.upgrade() else {
-                return;
-            };
-            match (on, restore) {
-                (true, _) => pip::enter(&w),
-                (false, Some(geometry)) => pip::restore(&w, &geometry),
-                (false, None) => {}
-            }
-        });
+            apply_mini(&w, on, restore);
+        }
     }
     sync::push(a);
+}
+
+fn apply_mini(w: &AppWindow, on: bool, restore: Option<pip::Geometry>) {
+    match (on, restore) {
+        (true, _) => pip::enter(w),
+        (false, Some(geometry)) => pip::restore(w, &geometry),
+        (false, None) => {}
+    }
+}
+
+/// Waits for the fullscreen-exit animation: runs `apply_mini` once the window is out of
+/// fullscreen and its size stopped changing between ticks, or after `FULLSCREEN_EXIT_CAP`.
+fn apply_when_windowed(
+    w: &AppWindow,
+    on: bool,
+    restore: Option<pip::Geometry>,
+) -> Rc<slint::Timer> {
+    let timer = Rc::new(slint::Timer::default());
+    let (weak, handle) = (w.as_weak(), Rc::downgrade(&timer));
+    let (mut restore, mut last, mut waited) = (restore, None, Duration::ZERO);
+    timer.start(slint::TimerMode::Repeated, POLL, move || {
+        let Some(w) = weak.upgrade() else {
+            return;
+        };
+        let size = w.window().size();
+        waited += POLL;
+        let settled = !w.window().is_fullscreen() && last == Some(size);
+        last = Some(size);
+        if settled || waited >= FULLSCREEN_EXIT_CAP {
+            if let Some(t) = handle.upgrade() {
+                t.stop();
+            }
+            apply_mini(&w, on, restore.take());
+        }
+    });
+    timer
 }
 
 /// Called when the session ends: back to the normal window.
