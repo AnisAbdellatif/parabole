@@ -2,6 +2,7 @@
 use super::{Trakt, ids::ids_for, now_rfc3339, store};
 use crate::model::{MediaKind, ProfileId, SourceId};
 use crate::trakt::scrobble::{Action, Item, history_body, scrobble_body};
+use anyhow::Result;
 use serde_json::Value;
 
 /// Stopping at or past this share of the runtime counts as watched.
@@ -15,6 +16,11 @@ fn settled(status: u16) -> bool {
 /// Worth sending again later.
 fn transient(status: u16) -> bool {
     status == 429 || status >= 500
+}
+
+/// Dequeue after this response: anything but a retryable failure or a 401 (kept for after re-sign-in).
+fn done(res: &Result<Option<u16>>) -> bool {
+    matches!(res, Ok(Some(s)) if !transient(*s) && *s != 401)
 }
 
 impl Trakt {
@@ -131,7 +137,7 @@ impl Trakt {
         for (id, path, body) in queued {
             // unreadable bodies can never succeed
             let ok = match serde_json::from_str::<Value>(&body) {
-                Ok(v) => matches!(self.post(profile, &path, &v), Ok(Some(s)) if settled(s)),
+                Ok(v) => done(&self.post(profile, &path, &v)),
                 Err(_) => true,
             };
             if !ok || self.db.trakt_dequeue(id).is_err() {
@@ -149,5 +155,22 @@ impl Trakt {
                 self.flush(p.id);
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn done_dequeues_only_permanent_outcomes() {
+        for s in [201, 409, 404, 400] {
+            assert!(done(&Ok(Some(s))), "{s}");
+        }
+        for s in [401, 429, 503] {
+            assert!(!done(&Ok(Some(s))), "{s}");
+        }
+        assert!(!done(&Ok(None)));
+        assert!(!done(&Err(anyhow::anyhow!("net"))));
     }
 }
