@@ -151,7 +151,7 @@ fn apply_mini(w: &AppWindow, on: bool, restore: Option<pip::Geometry>) {
 }
 
 /// Waits for the fullscreen-exit animation: runs `apply_mini` once the window is out of
-/// fullscreen and its size stopped changing between ticks, or after `FULLSCREEN_EXIT_CAP`.
+/// fullscreen and its size left the fullscreen size and stopped changing, or after `FULLSCREEN_EXIT_CAP`.
 fn apply_when_windowed(
     w: &AppWindow,
     on: bool,
@@ -160,13 +160,15 @@ fn apply_when_windowed(
     let timer = Rc::new(slint::Timer::default());
     let (weak, handle) = (w.as_weak(), Rc::downgrade(&timer));
     let (mut restore, mut last, mut waited) = (restore, None, Duration::ZERO);
+    // macOS may drop the fullscreen flag before the shrink animation starts
+    let full = w.window().size();
     timer.start(slint::TimerMode::Repeated, POLL, move || {
         let Some(w) = weak.upgrade() else {
             return;
         };
         let size = w.window().size();
         waited += POLL;
-        let settled = !w.window().is_fullscreen() && last == Some(size);
+        let settled = !w.window().is_fullscreen() && size != full && last == Some(size);
         last = Some(size);
         if settled || waited >= FULLSCREEN_EXIT_CAP {
             if let Some(t) = handle.upgrade() {
