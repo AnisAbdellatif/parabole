@@ -48,6 +48,22 @@ impl MpvCore {
         self.play(settings, &req)
     }
 
+    /// Seeks to the live edge inside the demuxer cache when enough is buffered, else reconnects.
+    pub fn go_live(&mut self, settings: &PlayerSettings) -> Result<()> {
+        let cache = self.mpv.get_property::<f64>("demuxer-cache-duration").ok();
+        let edge = self.mpv.get_property::<f64>("demuxer-cache-time").ok();
+        match live::go_live_action(cache, edge) {
+            live::GoLive::Seek(to) => {
+                self.mpv
+                    .command("seek", &[&to.to_string(), "absolute+exact"])
+                    .map_err(|e| anyhow!("seek failed: {e}"))?;
+                self.set_paused(false);
+                Ok(())
+            }
+            live::GoLive::Reload => self.reload(settings),
+        }
+    }
+
     pub fn stop(&mut self) {
         let _ = self.mpv.command("stop", &[]);
         self.state = PlayerState {

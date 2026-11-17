@@ -11,6 +11,13 @@ use std::sync::OnceLock;
 const SCRIPT_NAME: &str = "live-catchup.lua";
 const SCRIPT: &str = include_str!("../../assets/mpv/live-catchup.lua");
 
+/// Go live seeks inside the demuxer cache above this many buffered seconds; below it a seek gains nothing, so reconnect.
+/// Keep equal to `seek_margin + 0.5` in `assets/mpv/live-catchup.lua`.
+pub const GO_LIVE_MIN_S: f64 = 1.2;
+/// Stay this far behind the end of the cache so the seek target is already buffered.
+/// Keep equal to `seek_margin` in `assets/mpv/live-catchup.lua`.
+pub const LIVE_EDGE_MARGIN_S: f64 = 0.7;
+
 static SCRIPT_PATH: OnceLock<PathBuf> = OnceLock::new();
 
 /// Writes the catch-up script into `dir` (the app data dir) and remembers its path.
@@ -27,6 +34,23 @@ pub fn script_path(settings: &PlayerSettings) -> Option<&'static Path> {
         .get()
         .map(PathBuf::as_path)
         .filter(|_| settings.live_catchup)
+}
+
+/// What "go live" does for a live stream.
+#[derive(Debug, PartialEq)]
+pub enum GoLive {
+    /// Seek to this absolute position inside the demuxer cache (instant, no reconnect).
+    Seek(f64),
+    /// Reconnect the stream.
+    Reload,
+}
+
+/// Picks a cache seek when enough is buffered, else a reconnect; `edge_s` is `demuxer-cache-time`.
+pub fn go_live_action(cache_s: Option<f64>, edge_s: Option<f64>) -> GoLive {
+    match (cache_s, edge_s) {
+        (Some(c), Some(e)) if c > GO_LIVE_MIN_S => GoLive::Seek(e - LIVE_EDGE_MARGIN_S),
+        _ => GoLive::Reload,
+    }
 }
 
 /// `vd-lavc-threads=1` from mpv's low-latency profile is left out: one thread cannot decode 4K HEVC in real time.
@@ -103,6 +127,14 @@ mod tests {
                 .iter()
                 .all(|k| k == "script-opts")
         );
+    }
+
+    #[test]
+    fn go_live_seeks_only_with_enough_buffer() {
+        assert_eq!(go_live_action(Some(5.0), Some(100.0)), GoLive::Seek(99.3));
+        assert_eq!(go_live_action(Some(1.0), Some(100.0)), GoLive::Reload);
+        assert_eq!(go_live_action(Some(5.0), None), GoLive::Reload);
+        assert_eq!(go_live_action(None, None), GoLive::Reload);
     }
 
     #[test]

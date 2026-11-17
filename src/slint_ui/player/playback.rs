@@ -272,12 +272,12 @@ fn switch_to_alternate(a: &mut SlintApp, failed: i64) {
     });
 }
 
-/// Go live: reload a live stream so it lands on the live edge.
+/// Go live: jump to the live edge (cache seek, or reload when little is buffered).
 pub fn go_live(a: &mut SlintApp) {
     let ar = &mut a.player;
     if let (Some(core), Some(s)) = (ar.core.as_mut(), ar.session.as_mut())
         && s.is_live()
-        && core.reload(&ar.settings).is_ok()
+        && core.go_live(&ar.settings).is_ok()
     {
         s.attempt = 0;
         s.error = None;

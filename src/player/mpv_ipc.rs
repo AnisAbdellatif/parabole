@@ -48,6 +48,11 @@ pub fn loadfile_payload(settings: &PlayerSettings, req: &PlayRequest) -> String 
     json!({ "command": ["loadfile", req.url, "replace", -1, opts] }).to_string()
 }
 
+/// Asks the catch-up script to jump to the live edge (or reconnect).
+pub fn go_live_payload() -> String {
+    json!({ "command": ["script-message", "live-catchup-go-live"] }).to_string()
+}
+
 /// Reads mpv's reply to one command, skipping interleaved async events.
 fn read_reply(reader: impl BufRead) -> Result<()> {
     let mut lines = reader.lines();
@@ -166,6 +171,15 @@ mod tests {
     #[test]
     fn reply_empty_input_is_error() {
         assert!(reply("").is_err());
+    }
+
+    #[test]
+    fn go_live_payload_format() {
+        let v: Value = serde_json::from_str(&go_live_payload()).unwrap();
+        assert_eq!(
+            v,
+            json!({"command": ["script-message", "live-catchup-go-live"]})
+        );
     }
 
     #[test]

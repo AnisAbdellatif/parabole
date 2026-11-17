@@ -52,6 +52,8 @@ struct Running {
     ipc: Option<PathBuf>,
     /// Last `loadfile` payload, re-sent by `go_live`.
     last_payload: String,
+    /// The catch-up script is loaded, so `go_live` can ask it to seek.
+    script_loaded: bool,
 }
 
 /// Owns the currently running external player process (one stream at a time).
@@ -89,11 +91,12 @@ impl ExternalPlayer {
         self.start(kind, &binary, &args, ipc)?;
         if let Some(r) = self.running.as_mut() {
             r.last_payload = mpv_ipc::loadfile_payload(settings, &req);
+            r.script_loaded = live::script_path(settings).is_some();
         }
         Ok(())
     }
 
-    /// Reloads the current stream through mpv IPC, which lands on the live edge.
+    /// Jumps to the live edge through the catch-up script, or reloads the stream when it is not loaded.
     pub fn go_live(&mut self) -> Result<()> {
         let Some(r) = self.running.as_ref().filter(|r| r.kind == PlayerKind::Mpv) else {
             bail!("go live needs a running mpv");
@@ -101,7 +104,11 @@ impl ExternalPlayer {
         let Some(ipc) = r.ipc.clone() else {
             bail!("mpv has no IPC socket");
         };
-        mpv_ipc::send(&ipc, &r.last_payload)
+        if r.script_loaded {
+            mpv_ipc::send(&ipc, &mpv_ipc::go_live_payload())
+        } else {
+            mpv_ipc::send(&ipc, &r.last_payload)
+        }
     }
 
     pub fn stop(&mut self) {
@@ -134,6 +141,7 @@ impl ExternalPlayer {
         let sent = self.is_running() && mpv_ipc::send(&ipc, &payload).is_ok();
         if sent && let Some(r) = self.running.as_mut() {
             r.last_payload = payload;
+            r.script_loaded = live::script_path(settings).is_some();
         }
         sent
     }
@@ -155,6 +163,7 @@ impl ExternalPlayer {
             kind: kind.clone(),
             ipc,
             last_payload: String::new(),
+            script_loaded: false,
         });
         Ok(())
     }

@@ -1,43 +1,82 @@
 -- Keeps live streams near the live edge. Options: --script-opts=live-catchup-<key>=<value>; the app sets live-catchup-live=yes per live file
-local opts = { enabled = true, start_above = 4, stop_below = 2, speed = 1.07, seek_above = 20, seek_margin = 1, seek_cooldown = 10 }
+-- seek_margin must equal LIVE_EDGE_MARGIN_S and seek_margin + 0.5 must equal GO_LIVE_MIN_S in src/player/live.rs
+local opts = {
+    enabled = true,
+    start_above = 1.5, stop_below = 1.0, speed = 1.1, -- catch up at `speed` from start_above until cache < stop_below
+    fast_above = 3, fast_speed = 1.25,                -- faster tier while the backlog is above fast_above
+    seek_above = 8, seek_margin = 0.7, seek_cooldown = 10,
+    burst_after = 2, burst_window = 6, burst_above = 3, -- skip the provider's connect burst once, 2-6 s after load
+}
 require("mp.options").read_options(opts, "live-catchup")
 
-local live, catching, last_seek = false, false, -math.huge
+local live, catching, last_seek, loaded_at = false, nil, -math.huge, nil
 
-local function set_catching(on)
-    if on == catching then return end
-    catching = on
-    mp.set_property_number("speed", on and opts.speed or 1)
-    mp.msg.info(on and "live-catchup: speeding up" or "live-catchup: back at 1.0x")
+local function set_catching(speed)
+    if speed == catching then return end
+    catching = speed
+    mp.set_property_number("speed", speed or 1)
+    mp.msg.info(speed and string.format("live-catchup: speeding up to %.2fx", speed) or "live-catchup: back at 1.0x")
+end
+
+-- seeking inside the demuxer cache is instant: no reconnect, no new burst
+local function seek_to_edge(cache)
+    local edge = mp.get_property_number("demuxer-cache-time")
+    if not edge then return false end
+    last_seek = mp.get_time()
+    mp.msg.info(string.format("live-catchup: %.1fs behind, seeking to edge", cache))
+    mp.commandv("seek", edge - opts.seek_margin, "absolute+exact")
+    set_catching(nil)
+    return true
 end
 
 -- mpv reports a (growing) duration for live HLS, so the app flags live files per file instead
 local function update_live()
     local flags = mp.get_property_native("options/script-opts") or {}
     live = opts.enabled and flags["live-catchup-live"] == "yes"
-    if not live then set_catching(false) end
+    loaded_at = live and mp.get_time() or nil
+    if not live then set_catching(nil) end
 end
 
 local function on_cache(_, cache)
     -- paused: the cache keeps growing, and seeking now would blank the paused frame; resume re-checks below
     if not live or not cache or mp.get_property_bool("pause") then return end
-    if cache > opts.seek_above then
-        local edge = mp.get_property_number("demuxer-cache-time")
-        -- a decoder (or provider burst) that can't keep up refills the cache at once: seeking every second leaves only black frames
-        if edge and mp.get_time() - last_seek >= opts.seek_cooldown then
-            last_seek = mp.get_time()
-            mp.msg.info(string.format("live-catchup: %.1fs behind, seeking to edge", cache))
-            mp.commandv("seek", edge - opts.seek_margin, "absolute+exact")
+    if loaded_at then
+        local since = mp.get_time() - loaded_at
+        if since > opts.burst_window then
+            loaded_at = nil
+        elseif since >= opts.burst_after and cache > opts.burst_above then
+            loaded_at = nil
+            if seek_to_edge(cache) then return end
         end
-        set_catching(false)
+    end
+    -- a decoder (or provider burst) that can't keep up refills the cache at once: seeking every second leaves only black frames
+    if cache > opts.seek_above and mp.get_time() - last_seek >= opts.seek_cooldown and seek_to_edge(cache) then
+        return
+    end
+    if cache > opts.fast_above then
+        set_catching(opts.fast_speed)
+    elseif catching then
+        if cache < opts.stop_below then
+            set_catching(nil)
+        elseif catching == opts.fast_speed then
+            set_catching(opts.speed)
+        end
     elseif cache > opts.start_above then
-        set_catching(true)
-    elseif cache < opts.stop_below then
-        set_catching(false)
+        set_catching(opts.speed)
     end
 end
 
-mp.register_event("start-file", function() catching, last_seek = false, -math.huge end)
+-- Go live: seek to the edge when enough is buffered, else reconnect (replays the entry with its loadfile options)
+mp.register_script_message("live-catchup-go-live", function()
+    if not live then return end
+    local cache = mp.get_property_number("demuxer-cache-duration")
+    if cache and not mp.get_property_bool("pause") and cache > opts.seek_margin + 0.5 and seek_to_edge(cache) then
+        return
+    end
+    mp.commandv("playlist-play-index", "current")
+end)
+
+mp.register_event("start-file", function() catching, last_seek, loaded_at = nil, -math.huge, nil end)
 mp.register_event("file-loaded", update_live)
 mp.observe_property("demuxer-cache-duration", "number", on_cache)
 mp.observe_property("pause", "bool", function(_, paused)
