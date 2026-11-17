@@ -192,9 +192,11 @@ fn menu_picked(a: &mut SlintApp, sel: Sel, id: &str) {
     let (profile, tab) = (a.profile(), a.state.tab);
     match (&sel, id) {
         (Sel::Category(s, k), "hide") => {
-            let res = a.db.set_category_hidden(profile, *s, tab, k, true);
-            a.report(res);
-            a.reload_categories();
+            let (s, k) = (*s, k.clone());
+            a.write(
+                move |db| db.set_category_hidden(profile, s, tab, &k, true),
+                |a| a.reload_categories(),
+            );
         }
         (Sel::Category(s, k), "pin") => toggle_pin(a, *s, k),
         (Sel::Category(s, k), "hidematch") => {
@@ -208,10 +210,11 @@ fn menu_picked(a: &mut SlintApp, sel: Sel, id: &str) {
         }
         (Sel::Category(s, k), _) if id.starts_with("sort:") => {
             let mode = SortMode::parse(&id["sort:".len()..]);
-            let res =
-                a.db.set_setting(Some(profile), &sort_key(tab, *s, k), mode.as_str());
-            a.report(res);
-            a.reload_streams();
+            let key = sort_key(tab, *s, k);
+            a.write(
+                move |db| db.set_setting(Some(profile), &key, mode.as_str()),
+                |a| a.reload_streams(),
+            );
         }
         (Sel::Group(g), "rename") => {
             let name = a
@@ -232,10 +235,11 @@ fn toggle_pin(a: &mut SlintApp, s: i64, k: &str) {
         .categories
         .iter()
         .any(|c| c.source_id == s && c.key == k && c.pinned);
-    let res =
-        a.db.set_category_pinned(a.profile(), s, a.state.tab, k, !pinned);
-    a.report(res);
-    a.reload_categories();
+    let (profile, tab, k) = (a.profile(), a.state.tab, k.to_owned());
+    a.write(
+        move |db| db.set_category_pinned(profile, s, tab, &k, !pinned),
+        |a| a.reload_categories(),
+    );
 }
 
 pub fn connect(win: &AppWindow) {

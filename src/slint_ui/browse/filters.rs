@@ -106,9 +106,11 @@ pub fn connect(win: &AppWindow) {
             if mode == a.browse.sort {
                 return;
             }
-            let res = a.db.set_setting(Some(a.profile()), &key, mode.as_str());
-            a.report(res);
-            a.reload_streams();
+            let profile = a.profile();
+            a.write(
+                move |db| db.set_setting(Some(profile), &key, mode.as_str()),
+                |a| a.reload_streams(),
+            );
         });
     });
     api.on_chip_clicked(|id| {

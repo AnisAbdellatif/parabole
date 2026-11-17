@@ -131,32 +131,32 @@ fn toggle_watched(a: &mut SlintApp, episode_id: &str, watched: bool) {
     };
     let profile = a.profile();
     let key = episode_key(episode_id);
-    let res = if watched {
-        let label = crate::episodes::find(&ctx.seasons, episode_id)
-            .map_or_else(String::new, |(s, e)| crate::episodes::label(s, e));
-        a.db.record_episode_watch(profile, source, &key, &label, &ctx.key)
-            .and_then(|_| {
-                a.db.set_watched(profile, source, MediaKind::Series, &key, true)
-            })
-    } else {
-        a.db.set_watched(profile, source, MediaKind::Series, &key, false)
-    };
-    let saved = res.is_ok();
-    a.report(res);
-    if saved
-        && let Some((season, ep)) = crate::episodes::find(&ctx.seasons, episode_id)
-        && let Some(number) = ep.episode_num
-    {
-        a.worker.send(Command::TraktHistory {
-            profile,
-            source,
-            series_key: ctx.key.clone(),
-            season: season.number,
-            number,
-            watched,
-        });
-    }
-    refresh_progress(a);
+    let label = crate::episodes::find(&ctx.seasons, episode_id)
+        .map_or_else(String::new, |(s, e)| crate::episodes::label(s, e));
+    let trakt = crate::episodes::find(&ctx.seasons, episode_id)
+        .and_then(|(season, ep)| Some((season.number, ep.episode_num?)));
+    let series_key = ctx.key.clone();
+    a.write_with(
+        move |db| {
+            if watched {
+                db.record_episode_watch(profile, source, &key, &label, &ctx.key)?;
+            }
+            db.set_watched(profile, source, MediaKind::Series, &key, watched)
+        },
+        move |a, saved| {
+            if let (true, Some((season, number))) = (saved, trakt) {
+                a.worker.send(Command::TraktHistory {
+                    profile,
+                    source,
+                    series_key,
+                    season,
+                    number,
+                    watched,
+                });
+            }
+            refresh_progress(a);
+        },
+    );
 }
 
 fn refresh_progress(a: &mut SlintApp) {

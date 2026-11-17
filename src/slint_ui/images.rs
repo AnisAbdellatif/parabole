@@ -8,8 +8,11 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 use std::sync::{Arc, Condvar, Mutex};
+use std::time::{Duration, Instant};
 
 const WORKERS: usize = 4;
+/// A failed download is retried after this long (a Wi-Fi blip must not blank posters all session).
+const RETRY_AFTER: Duration = Duration::from_secs(600);
 
 pub struct Lru<V> {
     map: HashMap<String, (V, u64)>,
@@ -114,7 +117,7 @@ fn pop_blocking(q: &Shared) -> Option<Key> {
 pub struct Images {
     lru: RefCell<[Lru<Image>; 3]>,
     pending: RefCell<HashSet<Key>>,
-    failed: RefCell<HashSet<Key>>,
+    failed: RefCell<HashMap<Key, Instant>>,
     queue: Option<Shared>,
 }
 
@@ -200,7 +203,13 @@ impl Images {
             return Some(img);
         }
         let key = (size, url.to_owned());
-        if !self.failed.borrow().contains(&key) && self.pending.borrow_mut().insert(key.clone()) {
+        let mut failed = self.failed.borrow_mut();
+        if failed.get(&key).is_some_and(|t| t.elapsed() < RETRY_AFTER) {
+            return None;
+        }
+        failed.remove(&key);
+        drop(failed);
+        if self.pending.borrow_mut().insert(key.clone()) {
             push(queue, key);
         }
         None
@@ -213,7 +222,7 @@ impl Images {
 
     pub fn fail(&self, url: String, size: Size) {
         self.pending.borrow_mut().remove(&(size, url.clone()));
-        self.failed.borrow_mut().insert((size, url));
+        self.failed.borrow_mut().insert((size, url), Instant::now());
     }
 }
 
@@ -262,5 +271,38 @@ mod tests {
         assert!(imgs.cached("http://x/a", Size::Poster).is_some());
         assert!(imgs.cached("http://x/a", Size::Logo).is_none());
         assert!(imgs.cached("http://x/a", Size::Backdrop).is_none());
+    }
+
+    fn with_queue() -> (Rc<Images>, Shared) {
+        let q = Shared::default();
+        let imgs = Rc::new(Images {
+            lru: RefCell::new(SIZES.map(|s| Lru::new(s.cap()))),
+            pending: Default::default(),
+            failed: Default::default(),
+            queue: Some(q.clone()),
+        });
+        (imgs, q)
+    }
+
+    fn queued(q: &Shared) -> usize {
+        q.0.lock().unwrap().jobs.len()
+    }
+
+    #[test]
+    fn old_failure_is_retried_fresh_one_is_not() {
+        let (imgs, q) = with_queue();
+        let url = "http://x/a";
+        imgs.fail(url.into(), Size::Poster);
+        assert!(imgs.get(url, Size::Poster).is_none());
+        assert_eq!(queued(&q), 0);
+        let old = Instant::now()
+            .checked_sub(RETRY_AFTER + Duration::from_secs(1))
+            .unwrap();
+        imgs.failed
+            .borrow_mut()
+            .insert((Size::Poster, url.into()), old);
+        assert!(imgs.get(url, Size::Poster).is_none());
+        assert_eq!(queued(&q), 1);
+        assert!(imgs.failed.borrow().is_empty());
     }
 }

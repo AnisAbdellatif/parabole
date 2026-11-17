@@ -110,7 +110,11 @@ pub fn tick(a: &mut SlintApp) {
     zap_idle(a);
     autonext_due(a);
     let SlintApp {
-        player, db, worker, ..
+        player,
+        db,
+        writer,
+        worker,
+        ..
     } = a;
     let (Some(core), Some(s)) = (player.core.as_mut(), player.session.as_mut()) else {
         if let Some(c) = player.core.as_mut() {
@@ -133,13 +137,13 @@ pub fn tick(a: &mut SlintApp) {
                 s.error = Some("The stream stopped and could not be reopened".into());
                 give_up = s.stream_id.filter(|_| s.is_live());
                 if s.is_live() {
-                    quality::on_give_up(db, s);
+                    quality::on_give_up(writer, s);
                 }
             }
             EndAction::Finish => finished = true,
         }
     }
-    quality::on_tick(db, core, s);
+    quality::on_tick(writer, core, s);
     if let Some(pos) = core.state().time_pos {
         if pos > STABLE_AFTER_S {
             s.attempt = 0;
@@ -174,7 +178,7 @@ pub fn tick(a: &mut SlintApp) {
         return;
     }
     scrobble::tick(worker, s, core.state().paused);
-    track_memory::tick(db, core, s);
+    track_memory::tick(db, writer, core, s);
     let due_save = !s.is_live() && s.last_save.elapsed() >= SAVE_EVERY;
     if due_save {
         save_position(a);

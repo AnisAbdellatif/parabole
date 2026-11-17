@@ -69,11 +69,15 @@ pub fn action(a: &mut SlintApp, id: &str) -> bool {
             let now = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_or(0, |d| d.as_secs() as i64);
-            let res = a.db.set_scan_since(a.profile(), now);
-            match res {
-                Ok(()) => a.toast("Rescanning…"),
-                Err(e) => a.toast(format!("{e:#}")),
-            }
+            let profile = a.profile();
+            a.write_with(
+                move |db| db.set_scan_since(profile, now),
+                |a, ok| {
+                    if ok {
+                        a.toast("Rescanning…");
+                    }
+                },
+            );
         }
         _ => return false,
     }
