@@ -228,7 +228,7 @@ Treat the application-data directory as sensitive: source configuration contains
 
 ## Current limits
 
-Parabole is at version `0.2.0`. It does not currently provide catch-up TV or replay browsing, recording, parental PINs or cloud synchronization. Live-edge catch-up adjusts playback toward the current broadcast; it is not a provider’s replay or archive service.
+Parabole is at version `0.2.1`. It does not currently provide catch-up TV or replay browsing, recording, parental PINs or cloud synchronization. Live-edge catch-up adjusts playback toward the current broadcast; it is not a provider’s replay or archive service.
 
 ## Development
 
