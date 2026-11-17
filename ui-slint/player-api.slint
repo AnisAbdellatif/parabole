@@ -56,6 +56,8 @@ export global PlayerApi {
     in property <string> epg-now;
     // Seconds the live playhead trails the fetched edge.
     in property <float> behind: 0;
+    // Seconds behind below which a live stream counts as live (no Go live pill).
+    in property <float> live-ok-s: 3;
     // Real picture-in-picture: the window is small, frameless and always on top.
     in property <bool> pip: false;
     // Auto-next card: empty label = hidden.

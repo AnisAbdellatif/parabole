@@ -14,17 +14,16 @@ export component PlayerControls inherits Rectangle {
     private property <bool> seekable: !PlayerApi.is-live && PlayerApi.duration > 0;
     private property <string> info-text: root.seekable
         ? PlayerApi.pos-text + " / −" + Clock.fmt(PlayerApi.duration - PlayerApi.position)
-        : PlayerApi.is-live ? (PlayerApi.behind >= 1 ? "−" + Clock.fmt(PlayerApi.behind) + " behind live" : "Live") : "";
+        : PlayerApi.is-live ? (PlayerApi.behind >= PlayerApi.live-ok-s ? "−" + Clock.fmt(PlayerApi.behind) + " behind live" : "Live") : "";
     // Narrow rows drop items by priority instead of overlapping: each `uN` is the width used so far.
+    // The Go live slot comes last in the chain (dropped first) and sits left of the right-aligned group, so it never shifts buttons.
     private property <length> slot: 34px;
     private property <length> avail: root.width - 24px;
     private property <length> u0: (root.docked ? 3 : 2) * root.slot - 2px + 4px;
     private property <bool> mute-on: root.u0 + root.slot <= root.avail;
     private property <length> u1: root.u0 + (root.mute-on ? root.slot : 0px);
-    private property <bool> pill-on: PlayerApi.is-live && PlayerApi.behind >= 3 && root.u1 + 76px <= root.avail;
-    private property <length> u2: root.u1 + (root.pill-on ? 76px : 0px);
-    private property <bool> subs-on: PlayerApi.sub-tracks.length > 0 && root.u2 + root.slot <= root.avail;
-    private property <length> u3: root.u2 + (root.subs-on ? root.slot : 0px);
+    private property <bool> subs-on: PlayerApi.sub-tracks.length > 0 && root.u1 + root.slot <= root.avail;
+    private property <length> u3: root.u1 + (root.subs-on ? root.slot : 0px);
     private property <bool> audio-on: PlayerApi.audio-tracks.length > 0 && root.u3 + root.slot <= root.avail;
     private property <length> u4: root.u3 + (root.audio-on ? root.slot : 0px);
     private property <bool> vol-on: root.width >= 360px && root.u4 + 82px <= root.avail;
@@ -38,6 +37,8 @@ export component PlayerControls inherits Rectangle {
     private property <bool> mini-on: root.u8 + root.slot <= root.avail;
     private property <length> u9: root.u8 + (root.mini-on ? root.slot : 0px);
     private property <bool> text-on: root.info-text != "" && root.u9 + measure.preferred-width + 8px <= root.avail;
+    private property <length> u10: root.u9 + (root.text-on ? measure.preferred-width + 8px : 0px);
+    private property <bool> pill-on: PlayerApi.is-live && root.u10 + 76px <= root.avail;
     height: (root.seekable ? 20px : 0px) + 44px + 28px;
     background: @linear-gradient(180deg, #00000000 0%, #000000c0 100%);
     bg := TouchArea { }
@@ -90,10 +91,12 @@ export component PlayerControls inherits Rectangle {
                     vertical-alignment: center;
                 }
             }
+            Rectangle { horizontal-stretch: 1; }
             if root.pill-on: Rectangle {
                 cross-axis-self-alignment: stretch;
                 width: 74px;
                 Pill {
+                    visible: PlayerApi.behind >= PlayerApi.live-ok-s;
                     text: "Go live";
                     primary: true;
                     height: 26px;
@@ -102,7 +105,6 @@ export component PlayerControls inherits Rectangle {
                     clicked => { PlayerApi.go-live(); }
                 }
             }
-            Rectangle { horizontal-stretch: 1; }
             if root.subs-on: TrackMenu {
                 icon: Icons.subtitles;
                 tip: "Subtitles";
