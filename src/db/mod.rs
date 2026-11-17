@@ -66,7 +66,7 @@ impl Db {
     }
 
     /// Makes every later write on this connection fail.
-    #[cfg(test)]
+    #[cfg(all(test, unix))]
     pub(crate) fn make_read_only(&self) {
         self.conn.execute_batch("PRAGMA query_only = ON;").unwrap();
     }
