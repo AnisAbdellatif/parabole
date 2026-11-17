@@ -52,7 +52,14 @@ where
     match day {
         0 => "Today".into(),
         1 => "Tomorrow".into(),
-        _ => fmt(now + day * 86400, tz, "%a %-d %b"),
+        // calendar days, not 86400 s steps: a DST day is 23 or 25 h long
+        _ => tz
+            .timestamp_opt(now, 0)
+            .single()
+            .zip(u64::try_from(day).ok())
+            .and_then(|(t, d)| t.date_naive().checked_add_days(chrono::Days::new(d)))
+            .map(|d| d.format("%a %-d %b").to_string())
+            .unwrap_or_default(),
     }
 }
 
