@@ -19,6 +19,11 @@ component PlaybackTab inherits VerticalLayout {
             padding-top: 5px;
             DCheck { text: "Low-latency buffering"; checked <=> DialogApi.set-low-latency; }
             DCheck { text: "Catch up to the live edge"; checked <=> DialogApi.set-catchup; }
+            HorizontalLayout {
+                spacing: 8px;
+                DField { width: 60px; text <=> DialogApi.set-live-ok; }
+                Text { text: "s behind still counts as live"; color: Theme.text-dim; font-size: Theme.fs-sm; vertical-alignment: center; }
+            }
         }
     }
 }

@@ -80,6 +80,7 @@ pub fn push(a: &mut SlintApp) {
     api.set_dur_text(st.duration.map(fmt_time).unwrap_or_default().into());
     api.set_tech(chrome::tech_line(core).into());
     api.set_behind(chrome::behind_s(core));
+    api.set_live_ok_s(ar.settings.live_ok() as f32);
     api.set_tag(if s.is_live() { "LIVE" } else { "VOD" }.into());
     api.set_title(s.req.title.as_str().into());
     api.set_meta(meta_line(s.req.media, st.duration).into());

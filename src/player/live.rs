@@ -69,6 +69,11 @@ fn low_latency() -> Vec<(&'static str, String)> {
     pairs.into_iter().map(|(k, v)| (k, v.to_string())).collect()
 }
 
+fn script_opts(live: bool, ok_s: f64) -> String {
+    let flag = if live { "yes" } else { "no" };
+    format!("live-catchup-live={flag},live-catchup-ok={ok_s}")
+}
+
 /// Per-file options for one play request. VOD gets only the catch-up "not live" flag.
 pub fn file_options(settings: &PlayerSettings, media: MediaKind) -> Vec<(&'static str, String)> {
     let live = media == MediaKind::Live;
@@ -77,8 +82,7 @@ pub fn file_options(settings: &PlayerSettings, media: MediaKind) -> Vec<(&'stati
         opts.extend(low_latency());
     }
     if script_path(settings).is_some() {
-        let flag = if live { "yes" } else { "no" };
-        opts.push(("script-opts", format!("live-catchup-live={flag}")));
+        opts.push(("script-opts", script_opts(live, settings.live_ok())));
     }
     opts
 }
@@ -127,6 +131,16 @@ mod tests {
                 .iter()
                 .all(|k| k == "script-opts")
         );
+    }
+
+    #[test]
+    fn script_opts_carry_live_flag_and_ok_seconds() {
+        let ok = PlayerSettings::default().live_ok();
+        assert_eq!(
+            script_opts(true, ok),
+            "live-catchup-live=yes,live-catchup-ok=3"
+        );
+        assert!(script_opts(false, 2.5).contains("live-catchup-ok=2.5"));
     }
 
     #[test]

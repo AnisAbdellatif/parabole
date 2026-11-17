@@ -57,6 +57,19 @@ fn opt_path(s: &str) -> Option<PathBuf> {
     (!s.is_empty()).then(|| PathBuf::from(s))
 }
 
+/// Whole seconds without a trailing ".0".
+fn live_ok_text(secs: f64) -> String {
+    format!("{secs}")
+}
+
+/// Accepts "3", "2.5" and "2,5".
+fn parse_live_ok(text: &str) -> Result<f64, String> {
+    text.trim()
+        .replace(',', ".")
+        .parse::<f64>()
+        .map_err(|_| "Live delay must be a number of seconds".to_string())
+}
+
 fn detect_text() -> String {
     let defaults = PlayerSettings::default();
     let found = |kind| {
@@ -108,6 +121,7 @@ impl SlintApp {
         api.set_set_episode(pick_opt(&s.episode_player));
         api.set_set_low_latency(s.live_low_latency);
         api.set_set_catchup(s.live_catchup);
+        api.set_set_live_ok(live_ok_text(s.live_ok()).into());
         api.set_set_mpv_path(path_text(&s.mpv_path));
         api.set_set_vlc_path(path_text(&s.vlc_path));
         api.set_set_template(s.custom_template.as_str().into());
@@ -123,6 +137,7 @@ impl SlintApp {
         let api = w.global::<DialogApi>();
         let mpv_args =
             shlex::split(&api.get_set_mpv_args()).ok_or("Unbalanced quotes in mpv args")?;
+        let live_ok_s = parse_live_ok(&api.get_set_live_ok())?;
         let s = PlayerSettings {
             default: kind_at(api.get_set_default()).unwrap_or(PlayerKind::Mpv),
             live_player: kind_at(api.get_set_live() - 1),
@@ -130,6 +145,7 @@ impl SlintApp {
             episode_player: kind_at(api.get_set_episode() - 1),
             live_low_latency: api.get_set_low_latency(),
             live_catchup: api.get_set_catchup(),
+            live_ok_s,
             mpv_path: opt_path(&api.get_set_mpv_path()),
             vlc_path: opt_path(&api.get_set_vlc_path()),
             custom_template: api.get_set_template().trim().to_string(),
@@ -210,4 +226,18 @@ pub fn connect(win: &AppWindow) {
             Err(e) => a.toast(e),
         });
     });
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn live_ok_text_round_trips() {
+        assert_eq!(live_ok_text(3.0), "3");
+        assert_eq!(live_ok_text(2.5), "2.5");
+        assert_eq!(parse_live_ok("3"), Ok(3.0));
+        assert_eq!(parse_live_ok(" 2,5 "), Ok(2.5));
+        assert!(parse_live_ok("x").is_err());
+    }
 }

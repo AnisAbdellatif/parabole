@@ -23,6 +23,8 @@ pub struct PlayerSettings {
     pub live_low_latency: bool,
     /// Live only: speed up / seek back to the live edge when playback falls behind.
     pub live_catchup: bool,
+    /// Live only: seconds behind the edge that still count as live (no Go live pill, no catch-up). Read via `live_ok`.
+    pub live_ok_s: f64,
 }
 
 impl Default for PlayerSettings {
@@ -38,6 +40,7 @@ impl Default for PlayerSettings {
             mpv_args: Vec::new(),
             live_low_latency: true,
             live_catchup: true,
+            live_ok_s: 3.0,
         }
     }
 }
@@ -50,6 +53,15 @@ impl PlayerSettings {
             MediaKind::Series => &self.episode_player,
         };
         over.clone().unwrap_or_else(|| self.default.clone())
+    }
+
+    /// `live_ok_s` clamped to 0.5..=30 s; NaN falls back to 3 s.
+    pub fn live_ok(&self) -> f64 {
+        if self.live_ok_s.is_nan() {
+            3.0
+        } else {
+            self.live_ok_s.clamp(0.5, 30.0)
+        }
     }
 }
 
@@ -65,6 +77,21 @@ mod tests {
         assert_eq!(s.mpv_args, ["--x"]);
         assert!(s.live_low_latency && s.live_catchup);
         assert_eq!(s.live_player, None);
+    }
+
+    #[test]
+    fn live_ok_is_clamped() {
+        let ok = |v| {
+            PlayerSettings {
+                live_ok_s: v,
+                ..Default::default()
+            }
+            .live_ok()
+        };
+        assert_eq!(ok(f64::NAN), 3.0);
+        assert_eq!(ok(0.0), 0.5);
+        assert_eq!(ok(100.0), 30.0);
+        assert_eq!(ok(3.0), 3.0);
     }
 
     #[test]

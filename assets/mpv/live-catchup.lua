@@ -10,6 +10,8 @@ local opts = {
 require("mp.options").read_options(opts, "live-catchup")
 
 local live, catching, last_seek, loaded_at = false, nil, -math.huge, nil
+-- per-file thresholds derived from live-catchup-ok (seconds behind that still count as live)
+local th = { start = opts.start_above, stop = opts.stop_below, fast = opts.fast_above, burst = opts.burst_above, seek = opts.seek_above }
 
 local function set_catching(speed)
     if speed == catching then return end
@@ -33,6 +35,8 @@ end
 local function update_live()
     local flags = mp.get_property_native("options/script-opts") or {}
     live = opts.enabled and flags["live-catchup-live"] == "yes"
+    local ok = tonumber(flags["live-catchup-ok"]) or 3
+    th = { start = ok, stop = math.max(ok - 0.5, 0.5), fast = ok + 1.5, burst = ok, seek = math.max(opts.seek_above, ok + 5) }
     loaded_at = live and mp.get_time() or nil
     if not live then set_catching(nil) end
 end
@@ -44,24 +48,24 @@ local function on_cache(_, cache)
         local since = mp.get_time() - loaded_at
         if since > opts.burst_window then
             loaded_at = nil
-        elseif since >= opts.burst_after and cache > opts.burst_above then
+        elseif since >= opts.burst_after and cache > th.burst then
             loaded_at = nil
             if seek_to_edge(cache) then return end
         end
     end
     -- a decoder (or provider burst) that can't keep up refills the cache at once: seeking every second leaves only black frames
-    if cache > opts.seek_above and mp.get_time() - last_seek >= opts.seek_cooldown and seek_to_edge(cache) then
+    if cache > th.seek and mp.get_time() - last_seek >= opts.seek_cooldown and seek_to_edge(cache) then
         return
     end
-    if cache > opts.fast_above then
+    if cache > th.fast then
         set_catching(opts.fast_speed)
     elseif catching then
-        if cache < opts.stop_below then
+        if cache < th.stop then
             set_catching(nil)
         elseif catching == opts.fast_speed then
             set_catching(opts.speed)
         end
-    elseif cache > opts.start_above then
+    elseif cache > th.start then
         set_catching(opts.speed)
     end
 end
