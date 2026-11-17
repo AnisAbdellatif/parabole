@@ -66,7 +66,7 @@ impl Trakt {
         let Some(item) = item else { return };
         let res = self.post(profile, action.path(), &scrobble_body(&item, progress));
         match res {
-            Ok(Some(s)) if !transient(s) => {
+            Ok(Some(s)) if !transient(s) && s != 401 => {
                 if settled(s) {
                     self.flush(profile);
                 }
@@ -115,7 +115,7 @@ impl Trakt {
             ("/sync/history/remove", history_body(&item, None))
         };
         match self.post(profile, path, &body) {
-            Ok(Some(s)) if !transient(s) => {
+            Ok(Some(s)) if !transient(s) && s != 401 => {
                 if settled(s) {
                     self.flush(profile);
                 }
