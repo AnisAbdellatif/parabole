@@ -43,6 +43,8 @@ pub struct PlayerArea {
     mini: bool,
     /// Window geometry to restore when leaving picture-in-picture.
     windowed: Option<pip::Geometry>,
+    /// Polls the window until a fullscreen exit settles, then applies the PiP change.
+    mini_timer: Option<Rc<slint::Timer>>,
     zap_items: Rc<slint::VecModel<StreamItem>>,
     zap_timer: slint::Timer,
     /// Stream ids behind `PlayerApi.pane-items`, same order.

@@ -1,9 +1,13 @@
 use crate::model::PlayRequest;
 use crate::player::argv::origin_header;
 use crate::player::{PlayerSettings, live};
-use anyhow::Result;
+use anyhow::{Context, Result, bail};
 use serde_json::json;
+use std::io::{BufRead, BufReader, Write};
 use std::path::{Path, PathBuf};
+use std::time::Duration;
+
+const REPLY_TIMEOUT: Duration = Duration::from_millis(500);
 
 pub fn socket_path() -> PathBuf {
     let pid = std::process::id();
@@ -44,21 +48,9 @@ pub fn loadfile_payload(settings: &PlayerSettings, req: &PlayRequest) -> String 
     json!({ "command": ["loadfile", req.url, "replace", -1, opts] }).to_string()
 }
 
-#[cfg(unix)]
-pub fn send(path: &Path, payload: &str) -> Result<()> {
-    use anyhow::{Context, bail};
-    use std::io::{BufRead, BufReader, Write};
-    use std::os::unix::net::UnixStream;
-    use std::time::Duration;
-
-    const TIMEOUT: Duration = Duration::from_millis(500);
-    let mut stream = UnixStream::connect(path).context("mpv IPC connect failed")?;
-    stream.set_write_timeout(Some(TIMEOUT))?;
-    stream.set_read_timeout(Some(TIMEOUT))?;
-    stream.write_all(payload.as_bytes())?;
-    stream.write_all(b"\n")?;
-    // mpv interleaves async events with the command reply; skip until the reply.
-    let mut lines = BufReader::new(stream).lines();
+/// Reads mpv's reply to one command, skipping interleaved async events.
+fn read_reply(reader: impl BufRead) -> Result<()> {
+    let mut lines = reader.lines();
     for _ in 0..50 {
         let line = lines.next().context("mpv IPC closed")??;
         let Ok(v) = serde_json::from_str::<serde_json::Value>(&line) else {
@@ -73,19 +65,35 @@ pub fn send(path: &Path, payload: &str) -> Result<()> {
     bail!("no reply from mpv")
 }
 
+#[cfg(unix)]
+pub fn send(path: &Path, payload: &str) -> Result<()> {
+    use std::os::unix::net::UnixStream;
+
+    let mut stream = UnixStream::connect(path).context("mpv IPC connect failed")?;
+    stream.set_write_timeout(Some(REPLY_TIMEOUT))?;
+    stream.set_read_timeout(Some(REPLY_TIMEOUT))?;
+    stream.write_all(payload.as_bytes())?;
+    stream.write_all(b"\n")?;
+    read_reply(BufReader::new(stream))
+}
+
 #[cfg(not(unix))]
 pub fn send(path: &Path, payload: &str) -> Result<()> {
-    use anyhow::Context;
-    use std::io::Write;
-
-    // shortcut: write-only, reply not read; upgrade if silent loadfile failures show up on Windows.
     let mut pipe = std::fs::OpenOptions::new()
+        .read(true)
         .write(true)
         .open(path)
         .context("mpv IPC connect failed")?;
     pipe.write_all(payload.as_bytes())?;
     pipe.write_all(b"\n")?;
-    Ok(())
+    let reader = pipe.try_clone()?;
+    let (tx, rx) = std::sync::mpsc::channel();
+    // named-pipe reads cannot time out; the thread ends when mpv closes the pipe
+    std::thread::spawn(move || {
+        let _ = tx.send(read_reply(BufReader::new(reader)));
+    });
+    rx.recv_timeout(REPLY_TIMEOUT)
+        .unwrap_or_else(|_| bail!("no reply from mpv"))
 }
 
 #[cfg(test)]
@@ -134,6 +142,30 @@ mod tests {
                 "http-header-fields": "Origin: http://o"
             }]})
         );
+    }
+
+    fn reply(input: &str) -> Result<()> {
+        read_reply(std::io::Cursor::new(input.to_owned()))
+    }
+
+    #[test]
+    fn reply_skips_events_then_succeeds() {
+        reply("{\"event\":\"x\"}\n{\"error\":\"success\",\"data\":null}\n").unwrap();
+    }
+
+    #[test]
+    fn reply_rejection_is_error() {
+        assert!(reply("{\"error\":\"invalid parameter\"}\n").is_err());
+    }
+
+    #[test]
+    fn reply_skips_garbage() {
+        reply("not json\n{\"error\":\"success\"}\n").unwrap();
+    }
+
+    #[test]
+    fn reply_empty_input_is_error() {
+        assert!(reply("").is_err());
     }
 
     #[test]
