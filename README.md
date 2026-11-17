@@ -53,11 +53,34 @@ Profiles keep separate favorites, category arrangements and watch history. Creat
 
 Profiles are library preferences, not password-protected accounts or parental controls.
 
+## TV guide
+Live channels can show what is on now and next, with a progress bar on each row and in the player. Open a channel's guide to see its schedule.
+
+- **Provider guides:** the Xtream `xmltv.php` guide or the playlist's `url-tvg` is picked up automatically.
+- **More guides:** add XMLTV URLs (plain or gzipped) in **Settings → TV guides**, or add public guides for your playlist's countries in one click. Guides can be enabled, disabled and reordered.
+- **Channel matching:** channels are linked to guide entries by guide id, then by name. When the automatic match is wrong, use **Change channel…** in the channel's guide; **Automatic** restores the automatic link.
+
+Guides refresh in the background. Guide coverage and accuracy depend on the guide's publisher.
+
+## Smart tab
+The **Smart** tab groups the same channel from all your sources into one entry, best version first. Filter by quality: 4K, Full HD, HD, SD, 50/60 fps or unknown.
+
+Quality comes from playback (recorded a few seconds after the first frame) and from an optional background scanner. The scanner needs `ffprobe` (part of FFmpeg) installed, probes the categories you pick, pauses while you watch, and can be paused or restarted. If a live stream fails, the player can switch to the same channel from another source.
+
+## Sports
+The optional **Sports** tab (enable it in **Settings → Sports**) lists football, basketball, tennis, F1, WWE and UFC events by day, with All, Live and Upcoming filters and a search. Select an event to see which TV channels show it, per country, filtered by the languages you choose. Click a channel to copy its name, then find it in your library.
+
+Listings come from free sources (365scores, LiveScore, TheSportsDB) and may be incomplete or change without notice.
+
+## Online details and Trakt
+- **Details:** when enabled in settings, film and series pages are completed with poster, rating, plot and cast from IMDb (free, unofficial), with Trakt as a fallback. The titles you open are sent to these services.
+- **Trakt:** connect your Trakt account in settings with a device code, then optionally report what you watch: playback progress is scrobbled, and episodes you mark watched are synced. Reports made while offline are queued and sent later.
+
 ## Playback
 
 ### Built-in player
 
-The default player uses libmpv inside the application. Keep it docked beside or below the library, expand it to fullscreen, or switch to mini-player mode.
+The default player uses libmpv inside the application. Keep it docked beside or below the library, expand it to fullscreen, or switch to the mini player: a small always-on-top window in the corner of the screen.
 
 Controls include play/pause, stop, mute, volume up to 130%, and seeking for films and episodes. Select audio and subtitle tracks from the stream; Parabole remembers language selections for a stream and restores them when possible. A playback statistics overlay is available for troubleshooting.
 
@@ -66,8 +89,9 @@ For live television:
 - Change channels with next/previous shortcuts or enter a channel number.
 - Return to the previous channel without finding it in the list again.
 - See nearby channels in the channel-switching carousel.
-- Use **Go live** to reload at the live edge.
-- Enable low-latency buffering and live-edge catch-up in settings.
+- See how far playback trails the live edge. **Go live** jumps to the end of what is already buffered, without reconnecting; it reconnects only when little is buffered.
+- With catch-up enabled, playback skips the backlog a provider sends on connect and speeds up slightly (1.1× or 1.25×) when it falls behind. Set how many seconds behind still count as live in **Settings → Playback**.
+- Low-latency buffering can be turned off in settings if a provider's streams stutter.
 - Dropped streams retry with backoff, up to a limited retry budget.
 
 Latency, available tracks and playback quality still depend on the stream and provider.
@@ -107,6 +131,7 @@ Use **Cmd** on macOS and **Ctrl** on Windows and Linux. Playback shortcuts apply
 
 | Shortcut | Action |
 | --- | --- |
+| Ctrl/Cmd+1 … 5 | Live, Movies, Series, Sports, Smart |
 | Ctrl/Cmd+K | Open the command palette |
 | Ctrl/Cmd+F | Focus the current tab’s search |
 | Arrow keys, Page Up / Page Down | Navigate the library |
@@ -150,7 +175,7 @@ brew install mpv
 cargo run --release
 ```
 
-The build searches `/opt/homebrew/lib` and `/usr/local/lib` for libmpv.
+The build searches `/opt/homebrew/lib` and `/usr/local/lib` for libmpv. Install `ffmpeg` too (`brew install ffmpeg`) if you want the Smart tab's quality scanner.
 
 ### Linux
 
@@ -190,11 +215,11 @@ This excludes both Slint and libmpv. It builds the library and tests, not a desk
 
 Parabole stores its library and preferences locally, using SQLite in the operating system’s application-data directory. Logos and posters are cached on disk. There is no cloud-sync feature.
 
-Treat the application-data directory as sensitive: source configuration contains provider credentials. Profiles are not a security boundary. Copied stream URLs can also contain usernames and passwords; do not paste them into public issues, logs or screenshots. Playback, refreshes and artwork loading contact the servers named by your sources.
+Treat the application-data directory as sensitive: source configuration contains provider credentials, and a connected Trakt account's tokens are stored there too. Profiles are not a security boundary. Copied stream URLs can also contain usernames and passwords; do not paste them into public issues, logs or screenshots. Playback, refreshes and artwork loading contact the servers named by your sources. Other services are contacted only for the features that use them: guide URLs you add, IMDb and Trakt for online details, Trakt for scrobbling, and 365scores, LiveScore and TheSportsDB for the Sports tab.
 
 ## Current limits
 
-Parabole is at version `0.1.0`. It does not currently provide an electronic programme guide, catch-up TV browsing, recording, parental PINs or cloud synchronization. Live-edge catch-up adjusts playback toward the current broadcast; it is not a provider’s replay or archive service.
+Parabole is at version `0.2.0`. It does not currently provide catch-up TV or replay browsing, recording, parental PINs or cloud synchronization. Live-edge catch-up adjusts playback toward the current broadcast; it is not a provider’s replay or archive service.
 
 ## Development
 
